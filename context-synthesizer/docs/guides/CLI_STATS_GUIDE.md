@@ -92,4 +92,4 @@ Send `stats/alice_cli.jsonl` to the team lead.
 
 ---
 
-See also: [Usage.md](Usage.md) · [SYNTHESIZER_RND_REPORT.md](SYNTHESIZER_RND_REPORT.md)
+See also: [Usage.md](guides/Usage.md) · [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md)

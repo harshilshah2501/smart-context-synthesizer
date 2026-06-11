@@ -10,11 +10,11 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 
 | Doc | Contents |
 |-----|----------|
-| [README.md](README.md) | Quick start, env vars, file index |
-| [Usage.md](Usage.md) | Developer setup (Mode C/D primary) |
-| [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md) | 12-turn proxy simulator, cost bifurcation |
-| [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) | Mode A import details |
-| [context_os_technical_report.md](../context_os_technical_report.md) | Design rationale, OS analogy, shipped vs planned |
+| [README.md](../../README.md) | Quick start, env vars, file index |
+| [Usage.md](guides/Usage.md) | Developer setup (Mode C/D primary) |
+| [BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.md) | 12-turn proxy simulator, cost bifurcation |
+| [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details |
+| [context_os_technical_report.md](../../docs/context_os_technical_report.md) | Design rationale, OS analogy, shipped vs planned |
 
 ---
 
@@ -209,7 +209,7 @@ Starter `Claude.md` is **below Sonnet 4.6’s 1,024-token minimum** per `cache_c
 
 **Conclusion:** Proxy layout behaved correctly (cache engaged turn 4+, reads climbed turns 6–10, compaction at turn 10, cache bust on turn 11 massive prompt). **The bifurcation works; the corpus is not production-sized.**
 
-Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
+Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.md).
 
 ---
 

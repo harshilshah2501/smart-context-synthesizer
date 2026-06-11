@@ -57,15 +57,23 @@ echo "Extracting $ZIP → $EXTRACT_ROOT"
 unzip -qo "$ZIP" -d "$EXTRACT_ROOT"
 
 if [[ ! -d "$CLI_ROOT" ]]; then
-  # Some zips nest .claude at top level; find projects dir
+  # Some zips nest .claude at top level; others export projects/ only
   FOUND="$(find "$EXTRACT_ROOT" -type d -path '*/.claude/projects' 2>/dev/null | head -1)"
   if [[ -n "$FOUND" ]]; then
     CLI_ROOT="$FOUND"
+  elif [[ -d "$EXTRACT_ROOT/projects" ]]; then
+    CLI_ROOT="$EXTRACT_ROOT/projects"
   else
-    echo "ERROR: no .claude/projects found inside zip" >&2
-    exit 1
+    FOUND="$(find "$EXTRACT_ROOT" -type d -name projects 2>/dev/null | head -1)"
+    if [[ -n "$FOUND" ]]; then
+      CLI_ROOT="$FOUND"
+    else
+      echo "ERROR: no projects/ or .claude/projects found inside zip" >&2
+      exit 1
+    fi
   fi
 fi
+echo "Using CLI root: $CLI_ROOT"
 
 "$PY" "$SYNTH_DIR/import_claude_sessions.py" \
   --cli-root "$CLI_ROOT" \

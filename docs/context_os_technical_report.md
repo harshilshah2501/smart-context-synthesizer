@@ -5,7 +5,7 @@
 
 > **What this document is:** Engineering record for the **Context Synthesizer** proxy — design rationale (LLM physics, caching economics, OS memory analogy) plus what is **shipped** in `context-synthesizer/` vs **planned** next.
 >
-> **Companion docs:** [`README.md`](context-synthesizer/README.md) · [`Usage.md`](context-synthesizer/Usage.md) · [`SYNTHESIZER_RND_REPORT.md`](context-synthesizer/SYNTHESIZER_RND_REPORT.md) · [`CLI_STATS_GUIDE.md`](context-synthesizer/CLI_STATS_GUIDE.md)
+> **Companion docs:** [`README.md`](context-synthesizer/README.md) · [`Usage.md`](context-synthesizer/docs/guides/Usage.md) · [`SYNTHESIZER_RND_REPORT.md`](context-synthesizer/docs/reports/SYNTHESIZER_RND_REPORT.md) · [`CLI_STATS_GUIDE.md`](context-synthesizer/docs/guides/CLI_STATS_GUIDE.md)
 
 ---
 
@@ -362,7 +362,7 @@ Printed per request in the proxy terminal; appended to `stats/*.jsonl`; team rol
 
 ### 8.2 Collecting stats from Claude CLI developers
 
-See [`context-synthesizer/CLI_STATS_GUIDE.md`](context-synthesizer/CLI_STATS_GUIDE.md).
+See [`context-synthesizer/CLI_STATS_GUIDE.md`](context-synthesizer/docs/guides/CLI_STATS_GUIDE.md).
 
 **Two modes:**
 
@@ -438,7 +438,7 @@ Claude CLI / JetBrains POST /v1/messages
 
 ## 10. Deployment
 
-> **Team rollout:** Modes A / C / D (offline corpus import) — no package install, no proxy. See [Usage.md](context-synthesizer/Usage.md).
+> **Team rollout:** Modes A / C / D (offline corpus import) — no package install, no proxy. See [Usage.md](context-synthesizer/docs/guides/Usage.md).
 > The proxy below is the **gateway implementation** the synthesizer optimizes toward; it is not part of the team workflow.
 
 ### Gateway implementation (venv — not team workflow)
@@ -486,7 +486,7 @@ In `~/.claude/settings.json`:
 }
 ```
 
-Stats collection workflow: [`CLI_STATS_GUIDE.md`](context-synthesizer/CLI_STATS_GUIDE.md).
+Stats collection workflow: [`CLI_STATS_GUIDE.md`](context-synthesizer/docs/guides/CLI_STATS_GUIDE.md).
 
 ### Planned: PyInstaller binary
 

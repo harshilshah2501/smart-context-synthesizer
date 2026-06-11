@@ -17,7 +17,7 @@ All modes are **offline** — import session logs from disk. No API key, no prox
 | Import depth | Per-assistant-turn `usage` | Full session analysis + synthesizer counterfactual |
 | Best for | Quick weekly token snapshot | Synthesizer R&D, hot sessions, team corpus |
 
-Full comparison: [README § Data collection modes](README.md#data-collection-modes).
+Full comparison: [README § Data collection modes](../../README.md#data-collection-modes).
 
 ---
 
@@ -36,7 +36,7 @@ export TELEMETRY_DEVELOPER_ID="your-github-handle"
 .venv/bin/python context-synthesizer/import_cli_logs.py --since 2026-06-01
 ```
 
-Send `stats/*_cli.jsonl` to your team lead. See [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) for field details.
+Send `stats/*_cli.jsonl` to your team lead. See [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) for field details.
 
 ---
 
@@ -139,6 +139,6 @@ Older CLI versions may omit `usage` on some lines — upgrade Claude Code.
 
 | Doc | Contents |
 |-----|----------|
-| [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) | Mode A import details |
-| [SYNTHESIZER_RND_REPORT.md](SYNTHESIZER_RND_REPORT.md) | Corpus findings + roadmap |
-| [README.md](README.md) | Architecture overview |
+| [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details |
+| [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Corpus findings + roadmap |
+| [README.md](../../README.md) | Architecture overview |

@@ -201,4 +201,4 @@ Upload step still needs a separate sync (rclone, Drive CLI, etc.) if you want fu
 | `scripts/team_rollup.sh` | Team lead (weekly) |
 | `run_phase2_validation.py` | Team lead (after code changes) |
 
-More detail: [Usage.md](Usage.md) · [PHASE_2_REPORT.md](PHASE_2_REPORT.md) · [SYNTHESIZER_RND_REPORT.md](SYNTHESIZER_RND_REPORT.md)
+More detail: [Usage.md](guides/Usage.md) · [PHASE_2_REPORT.md](reports/PHASE_2_REPORT.md) · [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md)

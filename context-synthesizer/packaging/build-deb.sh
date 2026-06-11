@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build context-synthesizer Ubuntu .deb package
+# Build context-synthesizer Ubuntu .deb package (deprecated — see packaging/README.md)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,14 +20,14 @@ mkdir -p "$STAGE/var/lib/context-synthesizer/stats"
 mkdir -p "$STAGE/usr/share/doc/context-synthesizer"
 
 # Application
-install -m 644 "$ROOT/context-synthesizer"/*.py "$STAGE/usr/lib/context-synthesizer/"
+install -m 644 "$ROOT"/*.py "$STAGE/usr/lib/context-synthesizer/"
 install -m 644 "$ROOT/packaging/requirements.txt" "$STAGE/usr/lib/context-synthesizer/"
-install -m 644 "$ROOT/context-synthesizer/Claude.md" "$STAGE/etc/context-synthesizer/"
+install -m 644 "$ROOT/Claude.md" "$STAGE/etc/context-synthesizer/"
 
 # Docs
-install -m 644 "$ROOT/context-synthesizer/Usage.md" "$STAGE/usr/share/doc/context-synthesizer/"
-install -m 644 "$ROOT/context-synthesizer/README.md" "$STAGE/usr/share/doc/context-synthesizer/"
-install -m 644 "$ROOT/context-synthesizer/CLI_STATS_GUIDE.md" "$STAGE/usr/share/doc/context-synthesizer/"
+install -m 644 "$ROOT/docs/guides/Usage.md" "$STAGE/usr/share/doc/context-synthesizer/"
+install -m 644 "$ROOT/README.md" "$STAGE/usr/share/doc/context-synthesizer/"
+install -m 644 "$ROOT/docs/guides/CLI_STATS_GUIDE.md" "$STAGE/usr/share/doc/context-synthesizer/"
 install -m 644 "$ROOT/packaging/UBUNTU_INSTALL.md" "$STAGE/usr/share/doc/context-synthesizer/"
 
 # Config + systemd
@@ -46,7 +46,6 @@ install -m 644 "$ROOT/packaging/DEBIAN/conffiles" "$STAGE/DEBIAN/"
 install -m 755 "$ROOT/packaging/DEBIAN/postinst" "$STAGE/DEBIAN/"
 install -m 755 "$ROOT/packaging/DEBIAN/prerm" "$STAGE/DEBIAN/"
 
-# Permissions for runtime (ownership set by dpkg-deb --root-owner-group)
 chmod 755 "$STAGE/var/lib/context-synthesizer/stats"
 
 DEB_OUT="${BUILD_DIR}/${PKG_NAME}_${VERSION}_all.deb"
