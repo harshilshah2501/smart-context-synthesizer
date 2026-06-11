@@ -1,0 +1,28 @@
+# /etc/default/context-synthesizer — system-wide service (optional)
+#
+# Claude CLI developers: you do NOT need this file. Use per-user setup instead:
+#   context-synthesizer-setup-user
+# and put ANTHROPIC_API_KEY in ~/.claude/settings.json (Claude CLI forwards it).
+#
+# Optional fallback key if clients do not send x-api-key (e.g. some IDE plugins).
+ANTHROPIC_API_KEY=
+
+# Developer id stamped on every telemetry JSONL line (defaults to installing user in postinst).
+TELEMETRY_DEVELOPER_ID=
+
+# Mode B telemetry output (one JSONL line per successful /v1/messages API call)
+TELEMETRY_LOG_PATH=/var/lib/context-synthesizer/stats/telemetry.jsonl
+
+# Layer 1 rules file (replace with your production Claude.md)
+CLAUDE_MD_PATH=/etc/context-synthesizer/Claude.md
+
+# Models
+ANTHROPIC_MODEL=claude-sonnet-4-6
+COMPACTION_MODEL=claude-haiku-4-5-20251001
+
+# Proxy listen address (localhost only recommended)
+PROXY_HOST=127.0.0.1
+PROXY_PORT=8080
+
+# Compaction threshold
+MAX_TURNS_THRESHOLD=10

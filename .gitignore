@@ -1,0 +1,19 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.env
+.env.*
+
+# Sensitive session corpora and dev backups
+context-synthesizer/stats/**
+!context-synthesizer/stats/.gitignore
+context-synthesizer/claude-folder-backup.zip
+
+# Unrelated workspace projects
+m-coder-core/
+Ollama/
+stats/
+
+# Deprecated packaging build output
+packaging/build/

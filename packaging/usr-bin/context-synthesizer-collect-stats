@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+STATS_DIR="${TELEMETRY_STATS_DIR:-/var/lib/context-synthesizer/stats}"
+exec /usr/lib/context-synthesizer/.venv/bin/python /usr/lib/context-synthesizer/collect_stats.py \
+  --logs "$STATS_DIR" \
+  "$@"

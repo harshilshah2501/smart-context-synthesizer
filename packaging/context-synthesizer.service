@@ -1,0 +1,26 @@
+[Unit]
+Description=Context Synthesizer API proxy (Claude CLI / IDE gateway)
+Documentation=file:/usr/share/doc/context-synthesizer/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=context-synthesizer
+Group=context-synthesizer
+EnvironmentFile=-/etc/default/context-synthesizer
+WorkingDirectory=/usr/lib/context-synthesizer
+ExecStart=/usr/lib/context-synthesizer/.venv/bin/python /usr/lib/context-synthesizer/proxy_tool.py
+Restart=on-failure
+RestartSec=3
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/context-synthesizer
+ReadOnlyPaths=/etc/context-synthesizer /usr/lib/context-synthesizer
+
+[Install]
+WantedBy=multi-user.target
