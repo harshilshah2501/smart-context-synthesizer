@@ -13,6 +13,7 @@ CONFIG_FILE="$CONFIG_DIR/developer.env"
 
 DEVELOPER=""
 RCLONE_REMOTE=""
+SYNC_DIR=""
 ENABLE_PROXY=0
 INSTALL_CRON=0
 EXPORT_MODE="d"
@@ -31,6 +32,7 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --developer) DEVELOPER="$2"; shift 2 ;;
     --rclone-remote) RCLONE_REMOTE="$2"; shift 2 ;;
+    --sync-dir) SYNC_DIR="$2"; shift 2 ;;
     --enable-proxy) ENABLE_PROXY=1; shift ;;
     --install-cron) INSTALL_CRON=1; shift ;;
     --export-mode) EXPORT_MODE="$2"; shift 2 ;;
@@ -45,8 +47,13 @@ done
 REPO_ROOT="${INSTALL_DIR:-$_DEFAULT_ROOT}"
 
 if [[ -z "$DEVELOPER" ]]; then
-  echo "Required: --developer YOUR_GITHUB_HANDLE" >&2
+  echo "Required: --developer YOUR_ID (e.g. azure email local-part: firstname.lastname)" >&2
   usage 1
+fi
+
+if [[ "$INSTALL_CRON" -eq 1 ]] && [[ -z "$RCLONE_REMOTE" ]] && [[ -z "$SYNC_DIR" ]]; then
+  echo "Weekly cron needs an upload target: --sync-dir (OneDrive) or --rclone-remote" >&2
+  exit 1
 fi
 
 echo "=== Context Synthesizer — developer setup ==="
@@ -59,6 +66,7 @@ TELEMETRY_DEVELOPER_ID=${DEVELOPER}
 REPO_ROOT=${REPO_ROOT}
 EXPORT_MODE=${EXPORT_MODE}
 RCLONE_REMOTE=${RCLONE_REMOTE}
+SYNC_DIR=${SYNC_DIR}
 ENABLE_PROXY=${ENABLE_PROXY}
 CRON_HOUR=9
 CRON_DOW=1
@@ -85,11 +93,14 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   echo "Live benefit: use Claude Code normally — traffic routes through synthesizer proxy."
 fi
 
-if [[ -n "$RCLONE_REMOTE" ]]; then
+if [[ -n "$SYNC_DIR" ]]; then
+  mkdir -p "$SYNC_DIR"
+  echo "Weekly files copy → $SYNC_DIR (OneDrive syncs to SharePoint)"
+elif [[ -n "$RCLONE_REMOTE" ]]; then
   if ! command -v rclone >/dev/null 2>&1; then
     echo ""
     echo "Install rclone for auto-upload: https://rclone.org/install/"
-    echo "Then run: rclone config   (team lead shares remote name)"
+    echo "Or re-run with --sync-dir for OneDrive folder instead."
   fi
 fi
 
@@ -106,7 +117,9 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
 else
   echo "  Live compaction: OFF (add --enable-proxy to activate)"
 fi
-if [[ -n "$RCLONE_REMOTE" ]]; then
+if [[ -n "$SYNC_DIR" ]]; then
+  echo "  OneDrive sync: $SYNC_DIR"
+elif [[ -n "$RCLONE_REMOTE" ]]; then
   echo "  Shared drive:  $RCLONE_REMOTE"
 fi
 if [[ "$INSTALL_CRON" -eq 1 ]]; then

@@ -34,8 +34,9 @@ Usage:
   curl -fsSL <install.sh-url> | bash -s -- [options]
 
 Options (passed through to setup):
-  --developer HANDLE          Required — GitHub handle for telemetry
-  --rclone-remote PATH        rclone remote for weekly upload (e.g. gdrive:Shared/...)
+  --developer HANDLE          Required — unique id (e.g. firstname.lastname)
+  --sync-dir PATH             OneDrive local folder (no rclone) — recommended for SharePoint
+  --rclone-remote PATH        Optional rclone remote (e.g. gdrive:Shared/...)
   --enable-proxy              Route Claude Code through local synthesizer (live benefit)
   --install-cron              Monday auto-export + upload
   --export-mode d|cursor|a    Default: d (Claude Code Mode D)
@@ -64,7 +65,7 @@ while [[ $# -gt 0 ]]; do
     -h|--help) usage 0 ;;
     *)
       SETUP_ARGS+=("$1")
-      if [[ "$1" == --developer || "$1" == --rclone-remote || "$1" == --export-mode || "$1" == --api-key || "$1" == --cursor-project ]]; then
+      if [[ "$1" == --developer || "$1" == --rclone-remote || "$1" == --sync-dir || "$1" == --export-mode || "$1" == --api-key || "$1" == --cursor-project ]]; then
         SETUP_ARGS+=("$2")
         shift
       fi

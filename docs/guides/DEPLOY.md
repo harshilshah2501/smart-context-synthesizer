@@ -11,6 +11,32 @@
 
 ---
 
+## Motadata / SharePoint (no rclone)
+
+1. Team lead: create or use shared folder  
+   `ContextSynthesizer/weekly` on SharePoint (sync link in OneDrive).  
+2. Each developer: open SharePoint link → **Sync** → note local path (usually `OneDrive - Motadata/...`).  
+3. Developers run **one command** (no rclone, no API key, no proxy):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+  --developer firstname.lastname \
+  --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
+  --install-cron
+```
+
+Weekly files are **copied** into the synced folder; OneDrive uploads to SharePoint.
+
+**Team lead rollup** (same synced folder on your machine):
+
+```bash
+bash context-synthesizer/scripts/pull_from_drive.sh \
+  "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+bash context-synthesizer/scripts/team_rollup.sh
+```
+
+---
+
 ## Architecture
 
 ```text
@@ -19,7 +45,7 @@ install.sh (curl or drive)  →  ~/.local/share/context-synthesizer
 Claude Code ──► proxy (optional)        ├── weekly_sync.sh (cron)
 ~/.claude/projects/ ────────────────────┘         │
                                                   ▼
-                                        shared drive / weekly /
+                                        OneDrive sync folder (SharePoint)
                                                   │
                                         pull_from_drive.sh → team_rollup.sh
 ```
