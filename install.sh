@@ -108,7 +108,22 @@ if [[ ! -f "$INSTALL_DIR/context-synthesizer/scripts/setup_developer.sh" ]]; the
     echo "Downloading toolkit v${INSTALLER_VERSION}"
     echo "  from $TARBALL_URL"
     need_cmd curl
-    curl -fsSL "$TARBALL_URL" -o "$TMP/archive.tar.gz"
+    if ! curl -fsSL "$TARBALL_URL" -o "$TMP/archive.tar.gz"; then
+      cat >&2 <<'EOF'
+
+Download failed (HTTP 404 often means the GitHub repo is private).
+
+Use SharePoint / OneDrive instead (Motadata):
+  1. Team lead uploads install.sh + context-synthesizer-toolkit-*.tar.gz to SharePoint
+  2. After OneDrive sync, run:
+     bash "/path/to/OneDrive/.../install.sh" \
+       --tarball-file "/path/to/context-synthesizer-toolkit-YYYY.MM.DD.tar.gz" \
+       --developer YOU --sync-dir "/path/to/.../weekly" --install-cron
+
+Or make the repo public, or use: gh auth login && gh api ... (see DEPLOY.md)
+EOF
+      exit 1
+    fi
     tar -xzf "$TMP/archive.tar.gz" -C "$TMP"
   fi
 

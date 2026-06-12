@@ -6,25 +6,29 @@
 
 ## Motadata / SharePoint (no rclone, no API key)
 
+> **The GitHub repo is private** — `curl raw.githubusercontent.com/.../install.sh` returns **404**.  
+> Use **install.sh from SharePoint** (team lead uploads it once).
+
 You need **OneDrive desktop** syncing the team folder (open the SharePoint link → **Sync**).
 
-### Linux
+Team lead puts on SharePoint (e.g. `ContextSynthesizer/`):
+
+- `install.sh`
+- `context-synthesizer-toolkit-YYYY.MM.DD.tar.gz` (from `packaging/build-release-tarball.sh`)
+
+### Linux / WSL (after OneDrive sync)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+bash "$HOME/OneDrive - Motadata/ContextSynthesizer/install.sh" \
+  --tarball-file "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12.tar.gz" \
   --developer firstname.lastname \
   --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
   --install-cron
 ```
 
-### Windows (Git Bash or WSL)
+### Windows (Git Bash)
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
-  --developer firstname.lastname \
-  --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
-  --install-cron
-```
+Same paths under `$HOME/OneDrive - Motadata/...` or `/mnt/c/Users/<you>/OneDrive - Motadata/...` in WSL.
 
 Use your **Azure email local-part** for `--developer` (e.g. `harshil.shah` for `harshil.shah@motadata.com`).
 
@@ -38,7 +42,7 @@ Adjust `--sync-dir` if your OneDrive path differs (check in file manager after S
 
 ## Install (generic)
 
-### curl from GitHub
+### curl from GitHub (public repo only)
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
@@ -46,6 +50,8 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
   --sync-dir "/path/to/onedrive/ContextSynthesizer/weekly" \
   --install-cron
 ```
+
+Private repo → use SharePoint `install.sh` + `--tarball-file` (see above).
 
 ### With rclone (optional)
 

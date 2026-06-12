@@ -13,17 +13,36 @@
 
 ## Motadata / SharePoint (no rclone)
 
-1. Team lead: create or use shared folder  
-   `ContextSynthesizer/weekly` on SharePoint (sync link in OneDrive).  
-2. Each developer: open SharePoint link → **Sync** → note local path (usually `OneDrive - Motadata/...`).  
-3. Developers run **one command** (no rclone, no API key, no proxy):
+> **Repo is private** — public `curl` to `raw.githubusercontent.com` returns **404**.  
+> Publish **`install.sh` + toolkit tarball** on SharePoint instead.
+
+### Team lead — publish once
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+cd /path/to/Out-of-bound-chronicles
+bash context-synthesizer/packaging/build-release-tarball.sh
+```
+
+Upload to SharePoint folder `ContextSynthesizer/`:
+
+| File | From |
+|------|------|
+| `install.sh` | repo root |
+| `context-synthesizer-toolkit-*.tar.gz` | `context-synthesizer/packaging/build/` |
+
+Share the SharePoint sync link with the team.
+
+### Developer — one command (after OneDrive sync)
+
+```bash
+bash "$HOME/OneDrive - Motadata/ContextSynthesizer/install.sh" \
+  --tarball-file "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12.tar.gz" \
   --developer firstname.lastname \
   --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
   --install-cron
 ```
+
+Replace tarball date with the file on SharePoint. No rclone, no API key, no proxy.
 
 Weekly files are **copied** into the synced folder; OneDrive uploads to SharePoint.
 
