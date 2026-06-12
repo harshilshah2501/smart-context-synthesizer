@@ -7,7 +7,7 @@
 | **Developer** | Use Claude Code normally (proxy runs in background); 0 min/week for cron |
 | **Team lead** | Pull drive → `team_rollup.sh` (~1 min/week) |
 
-**Send developers:** [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)
+**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) (copy-paste) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) (full guide)
 
 ---
 
