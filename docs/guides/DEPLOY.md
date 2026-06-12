@@ -195,8 +195,28 @@ bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer 
 |---------|-----|
 | Download fails | Use `--tarball-file` from shared drive |
 | No Monday upload | `~/.local/state/context-synthesizer/weekly-*.log` |
+| Proxy `activating (auto-restart)` / exit 1 | See below |
 | Proxy down | `systemctl --user restart context-synthesizer-proxy` |
 | Reinstall | `bash install.sh --reinstall --developer ...` |
+
+### Proxy won't start (exit-code / auto-restart)
+
+```bash
+# 1. See the real error (systemd often hides it in status alone)
+journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
+
+# 2. Or run in the foreground
+cd /path/to/toolkit
+.venv/bin/python context-synthesizer/proxy_tool.py
+```
+
+| Error | Fix |
+|-------|-----|
+| `ModuleNotFoundError: uvicorn` (or `fastapi`) | `bash context-synthesizer/scripts/setup.sh` |
+| `address already in use` / port 8080 | `echo 'PROXY_PORT=8081' >> context-synthesizer/.env`, set `ANTHROPIC_BASE_URL` in `~/.claude/settings.json`, re-run `install_proxy_service.sh` |
+| `Claude.md not found` | Re-extract toolkit; file must exist at `context-synthesizer/Claude.md` |
+
+Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
 ---
 

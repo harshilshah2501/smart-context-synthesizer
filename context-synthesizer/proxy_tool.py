@@ -599,6 +599,18 @@ async def _handle_streaming(
 
 
 if __name__ == "__main__":
+    import sys
+
     host = os.environ.get("PROXY_HOST", "127.0.0.1")
     port = int(os.environ.get("PROXY_PORT", "8080"))
-    uvicorn.run(app, host=host, port=port)
+    try:
+        uvicorn.run(app, host=host, port=port)
+    except OSError as exc:
+        print(f"[PROXY] Failed to bind {host}:{port}: {exc}", file=sys.stderr)
+        if getattr(exc, "errno", None) in (98, 10048) or "address already in use" in str(exc).lower():
+            print(
+                f"[PROXY] Port {port} is in use. Stop the other process or set "
+                f"PROXY_PORT=8081 in context-synthesizer/.env and update ANTHROPIC_BASE_URL.",
+                file=sys.stderr,
+            )
+        raise SystemExit(1) from exc

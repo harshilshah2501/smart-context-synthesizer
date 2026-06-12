@@ -135,7 +135,10 @@ Smoke test (live compaction):
 
 ```bash
 systemctl --user status context-synthesizer-proxy
-# then open Claude Code in a project — proxy logs: ~/.local/state/context-synthesizer/proxy.log
+# if exit-code / auto-restart:
+journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
+bash context-synthesizer/scripts/check_proxy_ready.sh
+# then open Claude Code in a project
 ```
 
 Optional weekly upload test:
