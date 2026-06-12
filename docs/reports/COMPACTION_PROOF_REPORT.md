@@ -336,10 +336,9 @@ export ANTHROPIC_API_KEY=...
 
 | Doc | Purpose |
 |-----|---------|
-| [PHASE_2_REPORT.md](reports/PHASE_2_REPORT.md) | Corpus validation pass/fail |
-| [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Full R&D record |
-| [DEPLOY.md](guides/DEPLOY.md) | Weekly export playbook (monitoring, not initial proof) |
+| [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) | meet-chavda vs chandresh vs om (Phase 2 validation) |
+| [SYNTHESIZER_RND_REPORT.md](SYNTHESIZER_RND_REPORT.md) | Full R&D record |
+| [DEPLOY.md](../guides/DEPLOY.md) | Weekly export playbook (monitoring, not initial proof) |
 | [README.md](../../context-synthesizer/README.md) | Toolkit overview |
 | [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) | Full meet-chavda corpus (32 sessions) |
-| [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) | meet-chavda vs chandresh vs om |
 | [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) | om turn-100 proof (99.5%) |

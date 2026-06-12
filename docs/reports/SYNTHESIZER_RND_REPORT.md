@@ -545,7 +545,7 @@ Ordered workstream after this report:
 3. **Production L1 builder** — `build_production_claude_md.py`
 4. **Layer 3 cap** — `MAX_LAYER3_TURNS`
 
-### Phase 2 — Test (corpus-first) *(done — see `PHASE_2_REPORT.md`)*
+### Phase 2 — Test (corpus-first) *(done — see [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md); re-run via `run_phase2_validation.py`)*
 
 1. ~~`import_claude_sessions.py` on team backups~~ — **0 regression drift** vs `meet-chavda_corpus.jsonl`.
 2. ~~`analyze_hot_session.py` on 100+ turn sessions~~ — Claude `ac4ecef7` 97.5%; Cursor 6/8 ≥90%.

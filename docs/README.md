@@ -16,7 +16,6 @@ All project documentation lives here (single `docs/` tree).
 | Doc                                                                                                | Purpose                    |
 | -------------------------------------------------------------------------------------------------- | -------------------------- |
 | [reports/SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Full R&D record, roadmap   |
-| [reports/PHASE_2_REPORT.md](reports/PHASE_2_REPORT.md)                                             | Phase 2 validation         |
 | [reports/MEET_CHAVDA_CORPUS_REPORT.md](reports/MEET_CHAVDA_CORPUS_REPORT.md)                       | meet-chavda corpus (32 sessions) |
 | [reports/COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md)                           | meet-chavda turn-178 deep dive |
 | [reports/CHANDRESH_CORPUS_REPORT.md](reports/CHANDRESH_CORPUS_REPORT.md)                           | chandresh corpus test      |
