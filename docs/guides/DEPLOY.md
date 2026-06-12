@@ -213,7 +213,7 @@ cd /path/to/toolkit
 | Error | Fix |
 |-------|-----|
 | `ModuleNotFoundError: uvicorn` (or `fastapi`) | `bash context-synthesizer/scripts/setup.sh` |
-| `address already in use` / port 8080 | `echo 'PROXY_PORT=8081' >> context-synthesizer/.env`, set `ANTHROPIC_BASE_URL` in `~/.claude/settings.json`, re-run `install_proxy_service.sh` |
+| `address already in use` / port 8080 | Often **Tabby** or another IDE plugin (`ss -tlnp \| grep 8080`). Use `PROXY_PORT=8081` in `context-synthesizer/.env`, `export SYNTH_PROXY_URL=http://127.0.0.1:8081`, run `configure_claude_proxy.sh`, then `install_proxy_service.sh` |
 | `Claude.md not found` | Re-extract toolkit; file must exist at `context-synthesizer/Claude.md` |
 
 Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`

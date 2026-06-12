@@ -59,11 +59,29 @@ finally:
   exit 1
 fi
 
-# Manual smoke (shows import/traceback if anything else fails)
-if ! timeout 4 "$PY" "${REPO_ROOT}/context-synthesizer/proxy_tool.py" >/dev/null 2>&1; then
-  say "proxy failed to start — run manually for the traceback:"
-  say "  $PY ${REPO_ROOT}/context-synthesizer/proxy_tool.py"
-  exit 1
-fi
-
-echo "check_proxy_ready: OK (port $PORT, deps, Claude.md)"
+# Brief startup smoke — curl /health (timeout exit 124 is OK; exit 1 is a real crash)
+LOG="$(mktemp)"
+set +e
+"$PY" "${REPO_ROOT}/context-synthesizer/proxy_tool.py" >"$LOG" 2>&1 &
+PROXY_PID=$!
+for _ in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -sf "http://127.0.0.1:${PORT}/health" >/dev/null 2>&1; then
+    kill "$PROXY_PID" 2>/dev/null
+    wait "$PROXY_PID" 2>/dev/null || true
+    rm -f "$LOG"
+    echo "check_proxy_ready: OK (port $PORT, deps, Claude.md)"
+    exit 0
+  fi
+  if ! kill -0 "$PROXY_PID" 2>/dev/null; then
+    break
+  fi
+  sleep 0.5
+done
+kill "$PROXY_PID" 2>/dev/null
+wait "$PROXY_PID" 2>/dev/null || true
+set -e
+say "proxy failed to start on port $PORT — log:"
+tail -n 20 "$LOG" >&2 || true
+rm -f "$LOG"
+say "run manually: $PY ${REPO_ROOT}/context-synthesizer/proxy_tool.py"
+exit 1
