@@ -4,39 +4,87 @@
 
 ---
 
-## Motadata / SharePoint (no rclone, no API key)
+## Motadata — install from shared package (simplest)
 
-> **The GitHub repo is private** — `curl raw.githubusercontent.com/.../install.sh` returns **404**.  
-> Use **install.sh from SharePoint** (team lead uploads it once).
-
-You need **OneDrive desktop** syncing the team folder (open the SharePoint link → **Sync**).
-
-Team lead puts on SharePoint (e.g. `ContextSynthesizer/`):
-
-- `install.sh`
-- `context-synthesizer-toolkit-YYYY.MM.DD.tar.gz` (from `packaging/build-release-tarball.sh`)
-
-### Linux / WSL (after OneDrive sync)
+Team lead shares **one folder** on SharePoint (the built toolkit package).  
+You **Sync** it in OneDrive, then run **one command**:
 
 ```bash
-bash "$HOME/OneDrive - Motadata/ContextSynthesizer/install.sh" \
-  --tarball-file "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12.tar.gz" \
-  --developer firstname.lastname \
-  --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
-  --install-cron
+cd "/path/to/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12"
+bash run-setup.sh firstname.lastname
 ```
 
-### Windows (Git Bash)
+Example:
 
-Same paths under `$HOME/OneDrive - Motadata/...` or `/mnt/c/Users/<you>/OneDrive - Motadata/...` in WSL.
+```bash
+bash run-setup.sh harshil.shah
+```
+
+Read `INSTALL.txt` in the same folder. No GitHub, no rclone.
 
 Use your **Azure email local-part** for `--developer` (e.g. `harshil.shah` for `harshil.shah@motadata.com`).
 
-**No `--enable-proxy`** — corporate Claude has no personal API key. You get **automatic weekly reports** on SharePoint; live compaction is not enabled.
+**Primary benefit — live compaction (on by default):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Log in to Claude Code (Max/Pro) as usual — the CLI forwards auth to the proxy; no separate API key at setup.
+
+**Optional — weekly SharePoint reports:** Monday cron copies session summaries to your synced folder for team rollup (`ENABLE_WEEKLY_CRON=1` in `team.conf`).
 
 **How upload works:** cron copies files into your local OneDrive folder → OneDrive app syncs to SharePoint. No rclone.
 
 Adjust `--sync-dir` if your OneDrive path differs (check in file manager after Sync).
+
+---
+
+## Ubuntu Linux (native, not WSL)
+
+**Install command is the same** — `bash run-setup.sh firstname.lastname`.  
+The toolkit targets Linux first (cron, systemd, `~/.claude/projects/`).
+
+### Prerequisites (once per machine)
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip
+```
+
+### Getting the package onto Ubuntu
+
+| Method | How |
+|--------|-----|
+| **OneDrive sync** (best for auto-upload) | Install a OneDrive client, sync the SharePoint folder, run `run-setup.sh` from the synced package path |
+| **Download tarball** | Get `context-synthesizer-toolkit-*.tar.gz` from SharePoint in the browser → extract → `bash run-setup.sh` |
+
+Ubuntu has **no Microsoft OneDrive desktop app** like Windows. Common options:
+
+1. **[abraunegg/onedrive](https://github.com/abraunegg/onedrive)** — syncs SharePoint/OneDrive to e.g. `~/OneDrive` or `~/OneDrive - Motadata`  
+2. **IT-provided sync** — if Motadata mounts the folder elsewhere, set that path in `team.conf` → `SYNC_DIR`
+
+### `team.conf` on Ubuntu
+
+Edit `SYNC_DIR` to match **your** synced weekly folder, for example:
+
+```bash
+SYNC_DIR="$HOME/OneDrive/ContextSynthesizer/weekly"
+# or, if the client uses the Motadata label:
+SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+```
+
+Then:
+
+```bash
+cd ~/OneDrive/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12
+bash run-setup.sh firstname.lastname
+```
+
+### Ubuntu vs Windows — what is identical
+
+| Piece | Ubuntu | Windows |
+|-------|--------|---------|
+| `run-setup.sh` | ✓ | ✓ (Git Bash / WSL) |
+| Weekly cron | ✓ (`cron`) | ✓ (WSL cron or Task Scheduler — cron via WSL) |
+| Claude Code logs | `~/.claude/projects/` | Same in WSL; native Windows path differs |
+| Weekly upload | Copy → synced folder | Copy → OneDrive app syncs |
+
+**Without any OneDrive sync on Ubuntu**, install still works, but Monday uploads stay local unless you add sync (onedrive client or ask IT for a shared mount).
 
 ---
 
@@ -48,6 +96,7 @@ Adjust `--sync-dir` if your OneDrive path differs (check in file manager after S
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
   --developer YOUR_ID \
   --sync-dir "/path/to/onedrive/ContextSynthesizer/weekly" \
+  --enable-proxy \
   --install-cron
 ```
 
@@ -59,17 +108,18 @@ Private repo → use SharePoint `install.sh` + `--tarball-file` (see above).
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
   --developer YOUR_ID \
   --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
+  --enable-proxy \
   --install-cron
 ```
 
 ---
 
-## What you get (Motadata default)
+## What you get (default via run-setup.sh / team.conf)
 
 | After setup | You do | Benefit |
 |-------------|--------|---------|
-| `--install-cron` + `--sync-dir` | Nothing weekly | `summary.md` + JSONL appear on SharePoint every Monday |
-| `--enable-proxy` | Not used | Requires personal API key |
+| `ENABLE_PROXY=1` (default) | Use Claude Code normally | Live context compaction during sessions |
+| `ENABLE_WEEKLY_CRON=1` (default) | Nothing weekly | `summary.md` + JSONL on SharePoint every Monday |
 
 ---
 
@@ -81,13 +131,18 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
 | **OneDrive app** + synced team folder | Replaces rclone |
 | Claude Code | `~/.claude/projects/` from normal use |
 
-Smoke test:
+Smoke test (live compaction):
+
+```bash
+systemctl --user status context-synthesizer-proxy
+# then open Claude Code in a project — proxy logs: ~/.local/state/context-synthesizer/proxy.log
+```
+
+Optional weekly upload test:
 
 ```bash
 bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/weekly_sync.sh
 ```
-
-Check files appear in your OneDrive `ContextSynthesizer/weekly` folder.
 
 ---
 

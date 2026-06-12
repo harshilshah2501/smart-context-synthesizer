@@ -7,7 +7,7 @@ All project documentation lives here (single `docs/` tree).
 | Doc                                                    | Purpose                              |
 | ------------------------------------------------------ | ------------------------------------ |
 | [guides/Usage.md](guides/Usage.md)                     | Per-mode setup (A / C / D)           |
-| [guides/DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) | **Developers:** one-time setup, zero weekly chores |
+| [guides/DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) | **Developers:** one-time setup, live compaction proxy (default) |
 | [guides/DEPLOY.md](guides/DEPLOY.md)                   | Team lead — shared drive, rollup |
 | [guides/CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details                |
 

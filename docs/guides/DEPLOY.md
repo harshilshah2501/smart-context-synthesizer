@@ -1,50 +1,59 @@
 # Deploying the Context Synthesizer
 
-**Developers never clone git.** They run **`install.sh` once** (~5 min). After that: optional live proxy + automatic weekly uploads.
+**Developers never clone git.** They run **`install.sh` once** (~5 min). After that: **live compaction proxy** (primary) + optional weekly SharePoint uploads.
 
 | Role | After setup |
 |------|-------------|
-| **Developer** | **0 min/week** (cron + background proxy) |
+| **Developer** | Use Claude Code normally (proxy runs in background); 0 min/week for cron |
 | **Team lead** | Pull drive → `team_rollup.sh` (~1 min/week) |
 
 **Send developers:** [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)
 
 ---
 
-## Motadata / SharePoint (no rclone)
+## Motadata / SharePoint — share the package directly
 
-> **Repo is private** — public `curl` to `raw.githubusercontent.com` returns **404**.  
-> Publish **`install.sh` + toolkit tarball** on SharePoint instead.
+> **Repo is private** — do not use `curl` from GitHub.  
+> **Share one installer package** on SharePoint; developers run **`run-setup.sh`**.
 
-### Team lead — publish once
+### Team lead — build & share once
 
 ```bash
 cd /path/to/Out-of-bound-chronicles
 bash context-synthesizer/packaging/build-release-tarball.sh
 ```
 
-Upload to SharePoint folder `ContextSynthesizer/`:
+Upload **one** of these to SharePoint (`ContextSynthesizer/`):
 
-| File | From |
-|------|------|
-| `install.sh` | repo root |
-| `context-synthesizer-toolkit-*.tar.gz` | `context-synthesizer/packaging/build/` |
+| Share | What |
+|-------|------|
+| **Recommended** | Extracted folder `context-synthesizer-toolkit-YYYY.MM.DD/` from `packaging/build/` |
+| Or | Single file `context-synthesizer-toolkit-YYYY.MM.DD.tar.gz` (devs extract after sync) |
 
-Share the SharePoint sync link with the team.
-
-### Developer — one command (after OneDrive sync)
+**Configure once** in the package (before or after upload):
 
 ```bash
-bash "$HOME/OneDrive - Motadata/ContextSynthesizer/install.sh" \
-  --tarball-file "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.12.tar.gz" \
-  --developer firstname.lastname \
-  --sync-dir "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" \
-  --install-cron
+# Edit team.conf inside the package folder:
+SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+ENABLE_PROXY=1          # live compaction (default)
+ENABLE_WEEKLY_CRON=1    # optional Monday SharePoint upload (default)
 ```
 
-Replace tarball date with the file on SharePoint. No rclone, no API key, no proxy.
+Share the SharePoint link → team clicks **Sync** in OneDrive.
 
-Weekly files are **copied** into the synced folder; OneDrive uploads to SharePoint.
+### Developer — one command
+
+Open terminal in the synced package folder:
+
+```bash
+bash run-setup.sh harshil.shah
+```
+
+Use Azure email local-part (`firstname.lastname`). No git or rclone.
+
+See `INSTALL.txt` inside the package. **Live compaction is on by default** (`ENABLE_PROXY=1` in `team.conf`). Claude Code Max/Pro login forwards auth — no per-developer API key at setup.
+
+Weekly files (optional) are **copied** into the synced folder; OneDrive uploads to SharePoint.
 
 **Team lead rollup** (same synced folder on your machine):
 
@@ -61,7 +70,7 @@ bash context-synthesizer/scripts/team_rollup.sh
 ```text
 install.sh (curl or drive)  →  ~/.local/share/context-synthesizer
                                         │
-Claude Code ──► proxy (optional)        ├── weekly_sync.sh (cron)
+Claude Code ──► proxy (default ON)      ├── weekly_sync.sh (cron, optional)
 ~/.claude/projects/ ────────────────────┘         │
                                                   ▼
                                         OneDrive sync folder (SharePoint)
@@ -124,11 +133,12 @@ bash /path/from/drive/install.sh \
   --install-cron
 ```
 
-| Flag | Effect |
-|------|--------|
-| `--enable-proxy` | Live compaction during Claude Code sessions |
-| `--install-cron` | Monday auto-export + upload |
-| `--rclone-remote` | Shared drive destination |
+| Flag / `team.conf` | Effect |
+|--------------------|--------|
+| `ENABLE_PROXY=1` / `--enable-proxy` | Live compaction during Claude Code sessions (**default** in `run-setup.sh`) |
+| `ENABLE_WEEKLY_CRON=1` / `--install-cron` | Monday auto-export + upload (**default** in `run-setup.sh`) |
+| `--sync-dir` / `SYNC_DIR` | OneDrive folder for weekly upload (SharePoint teams) |
+| `--rclone-remote` | Shared drive destination (optional) |
 
 ---
 
@@ -143,9 +153,9 @@ bash /path/from/drive/install.sh \
 
 ## Step 3 — What developers see
 
-### Live (`--enable-proxy`)
+### Live (default via `ENABLE_PROXY=1` / `--enable-proxy`)
 
-Claude Code unchanged — synthesizer runs as `context-synthesizer-proxy` user service.
+Claude Code unchanged — synthesizer runs as `context-synthesizer-proxy` user service. Auth comes from your Claude Code session (Max/Pro); optional `ANTHROPIC_API_KEY` in `context-synthesizer/.env` for non-CLI clients.
 
 ### Weekly (automatic)
 

@@ -13,10 +13,8 @@ ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
 
 mkdir -p "$UNIT_DIR"
 
-if [[ ! -f "$ENV_FILE" ]] && [[ -z "${ANTHROPIC_API_KEY:-}" ]]; then
-  echo "Missing API key. Create $ENV_FILE with ANTHROPIC_API_KEY=... or export it before setup." >&2
-  exit 1
-fi
+# API key optional at install: Claude Code forwards x-api-key per request (Max/Pro login).
+# Optional fallback: ANTHROPIC_API_KEY in context-synthesizer/.env for non-CLI clients.
 
 cat >"$UNIT_FILE" <<EOF
 [Unit]

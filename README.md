@@ -23,6 +23,10 @@ Offline R&D toolkit for **smart context compaction** — study long IDE sessions
 
 ## Quick start (developers — no git)
 
+**SharePoint / Motadata package (recommended):** `bash run-setup.sh firstname.lastname` — live compaction on by default (`ENABLE_PROXY=1` in `team.conf`).
+
+**curl / rclone:**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
   --developer YOUR_HANDLE \

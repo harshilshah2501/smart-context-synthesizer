@@ -6,7 +6,7 @@
 | `build-deb.sh`, `DEBIAN/`, `*.service` | Legacy `.deb` — unmaintained |
 | `UBUNTU_INSTALL.md` | Historical |
 
-**Developer delivery:** root [`install.sh`](../../install.sh) — curl or `--tarball-file` from drive.
+**Developer delivery:** `run-setup.sh` in the package (live compaction on by default) or root [`install.sh`](../../install.sh) — curl or `--tarball-file` from drive.
 
 ```bash
 bash context-synthesizer/packaging/build-release-tarball.sh

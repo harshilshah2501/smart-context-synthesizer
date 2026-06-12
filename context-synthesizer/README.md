@@ -35,6 +35,8 @@ All modes are **offline** — no API key, no proxy.
 
 ## Quick start (developers)
 
+**Motadata / SharePoint package:** `bash run-setup.sh firstname.lastname` — **live compaction on by default** (`ENABLE_PROXY=1` in `team.conf`).
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
   --developer YOUR_HANDLE \
@@ -43,7 +45,7 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
   --install-cron
 ```
 
-Installs to `~/.local/share/context-synthesizer` — no git clone.
+Installs to `~/.local/share/context-synthesizer` — no git clone. Proxy uses Claude Code session auth (Max/Pro); no separate API key at setup.
 
 R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 

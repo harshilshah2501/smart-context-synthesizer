@@ -40,7 +40,7 @@ Options (passed through to setup):
   --enable-proxy              Route Claude Code through local synthesizer (live benefit)
   --install-cron              Monday auto-export + upload
   --export-mode d|cursor|a    Default: d (Claude Code Mode D)
-  --api-key KEY               Anthropic API key (proxy only; else prompted once)
+  --api-key KEY               Optional proxy fallback key (Claude CLI forwards auth by default)
 
 Installer-only:
   --install-dir PATH          Default: ~/.local/share/context-synthesizer

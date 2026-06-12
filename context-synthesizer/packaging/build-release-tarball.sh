@@ -33,6 +33,10 @@ install -m 644 "$ROOT/context-synthesizer/packaging/team.conf.example" "$STAGE/"
 cat >"$STAGE/team.conf" <<'EOF'
 # Team lead: set SYNC_DIR to your synced weekly folder.
 SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+# Primary: live compaction via local proxy (Claude Code Max/Pro login).
+ENABLE_PROXY=1
+# Optional: Monday corpus export to SharePoint for team rollup.
+ENABLE_WEEKLY_CRON=1
 EXTRA_SETUP_ARGS=()
 EOF
 

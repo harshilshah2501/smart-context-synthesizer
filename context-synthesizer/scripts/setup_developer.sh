@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time developer setup: venv + config + optional proxy + weekly cron + drive upload.
+# One-time developer setup: venv + config + live proxy (primary) + optional weekly cron + drive upload.
 #
 # Usage:
 #   curl -fsSL <install.sh-url> | bash -s -- --developer YOU --rclone-remote 'gdrive:...' --enable-proxy --install-cron
@@ -80,18 +80,15 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
   if [[ -n "$API_KEY" ]]; then
     grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null || echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
-  elif [[ ! -f "$ENV_FILE" ]] || ! grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null; then
-    echo ""
-    echo "Proxy needs ANTHROPIC_API_KEY (Claude API / Max BYOK for local gateway)."
-    read -r -s -p "Paste API key (hidden): " API_KEY
-    echo ""
-    echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
+    chmod 600 "$ENV_FILE" 2>/dev/null || true
   fi
-  chmod 600 "$ENV_FILE" 2>/dev/null || true
   bash "$SCRIPT_DIR/configure_claude_proxy.sh"
   bash "$SCRIPT_DIR/install_proxy_service.sh"
   echo ""
-  echo "Live benefit: use Claude Code normally — traffic routes through synthesizer proxy."
+  echo "Live compaction: ON — use Claude Code normally (logged in to Max/Pro)."
+  echo "  Claude CLI forwards auth to the proxy; no separate API key needed at setup."
+  echo "  Optional fallback key: context-synthesizer/.env → ANTHROPIC_API_KEY=..."
+  echo "  Check proxy: systemctl --user status context-synthesizer-proxy"
 fi
 
 if [[ -n "$SYNC_DIR" ]]; then
@@ -130,5 +127,11 @@ else
 fi
 echo ""
 echo "Smoke test:"
-echo "  bash ${REPO_ROOT}/context-synthesizer/scripts/weekly_sync.sh"
+if [[ "$ENABLE_PROXY" -eq 1 ]]; then
+  echo "  systemctl --user status context-synthesizer-proxy"
+  echo "  # then use Claude Code — logs: ~/.local/state/context-synthesizer/"
+fi
+if [[ "$INSTALL_CRON" -eq 1 ]]; then
+  echo "  bash ${REPO_ROOT}/context-synthesizer/scripts/weekly_sync.sh"
+fi
 echo "Install location: ${REPO_ROOT}"

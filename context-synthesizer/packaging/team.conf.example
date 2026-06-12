@@ -6,6 +6,9 @@ SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
 # Ubuntu with abraunegg/onedrive (often):
 # SYNC_DIR="$HOME/OneDrive/ContextSynthesizer/weekly"
 
-# Optional extra install.sh flags (leave empty if unused):
+# Primary USP: live context compaction (Claude Code → local proxy).
+ENABLE_PROXY=1
+# Optional: weekly SharePoint telemetry for team lead.
+ENABLE_WEEKLY_CRON=1
 EXTRA_SETUP_ARGS=()
 # EXTRA_SETUP_ARGS=(--export-mode cursor --cursor-project my-project)

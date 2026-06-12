@@ -491,8 +491,8 @@ Claude CLI / JetBrains POST /v1/messages
 
 ## 10. Deployment
 
-> **Team rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `curl …/install.sh | bash` (no git clone), optional background proxy for **live benefit**, cron + rclone for **automatic weekly reports**. Team lead: [DEPLOY.md](guides/DEPLOY.md).
-> The proxy below is the **gateway implementation**; developers enable it with `install.sh … --enable-proxy` (systemd user service — no manual terminal).
+> **Team rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `bash run-setup.sh` from SharePoint package (or `install.sh`); **live compaction proxy on by default** (`ENABLE_PROXY=1`), optional Monday SharePoint upload (`ENABLE_WEEKLY_CRON=1`). Team lead: [DEPLOY.md](guides/DEPLOY.md).
+> The proxy below is the **gateway implementation**; `run-setup.sh` / `install.sh --enable-proxy` installs a systemd user service — no manual terminal.
 
 ### Gateway implementation (venv — not team workflow)
 
@@ -571,7 +571,7 @@ pyinstaller --onefile context-synthesizer/proxy_tool.py
 
 **Complementary chain:** `rtk` → **Context Synthesizer** → Anthropic API → `claude-devtools` for visual audit. Corpus validation: `compare_compaction.py` + [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md).
 
-**Zero-touch rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — one-line `install.sh` (no git), optional background proxy, weekly auto-upload via rclone.
+**Zero-touch rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `run-setup.sh` / `install.sh` (no git), live compaction proxy by default, optional weekly upload via OneDrive sync or rclone.
 
 ---
 

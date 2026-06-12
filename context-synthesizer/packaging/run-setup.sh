@@ -27,7 +27,13 @@ if [[ -z "${SYNC_DIR:-}" ]]; then
   exit 1
 fi
 
-ARGS=(--developer "$DEVELOPER" --sync-dir "$SYNC_DIR" --install-cron)
+# Live compaction (proxy) is the primary benefit; weekly cron is optional telemetry.
+ENABLE_PROXY="${ENABLE_PROXY:-1}"
+ENABLE_WEEKLY_CRON="${ENABLE_WEEKLY_CRON:-1}"
+
+ARGS=(--developer "$DEVELOPER" --sync-dir "$SYNC_DIR")
+[[ "$ENABLE_PROXY" == 1 ]] && ARGS+=(--enable-proxy)
+[[ "$ENABLE_WEEKLY_CRON" == 1 ]] && ARGS+=(--install-cron)
 if [[ -n "${EXTRA_SETUP_ARGS+x}" && ${#EXTRA_SETUP_ARGS[@]} -gt 0 ]]; then
   ARGS+=("${EXTRA_SETUP_ARGS[@]}")
 fi

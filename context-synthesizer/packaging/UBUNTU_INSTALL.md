@@ -1,6 +1,6 @@
 # Ubuntu Package Install — deprecated
 
-> **This path was dropped.** The team uses Claude Max (no API key) — see [Usage.md](../context-synthesizer/Usage.md) for **Mode D** (offline corpus). No `.deb`, no systemd service.
+> **This path was dropped.** Current install: `bash run-setup.sh` from the SharePoint toolkit package — live compaction via **systemd user service** (`context-synthesizer-proxy`). Offline corpus: [Usage.md](../../docs/guides/Usage.md) **Mode D**. No `.deb`.
 >
 > The files below remain for historical reference only.
 

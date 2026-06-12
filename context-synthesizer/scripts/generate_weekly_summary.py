@@ -95,7 +95,7 @@ def main() -> int:
         f"",
         f"## What this means",
         f"",
-        f"- **If you use the local proxy** (`setup_developer.sh --enable-proxy`): Claude Code routes through the synthesizer automatically — long sessions stay bounded instead of growing unbounded history.",
+        f"- **Live compaction** (default via `run-setup.sh` / `--enable-proxy`): Claude Code routes through the synthesizer automatically — long sessions stay bounded instead of growing unbounded history.",
         f"- **This report** shows how much smaller a synthesizer-shaped payload would be vs keeping the full transcript (counterfactual).",
         f"- Corpus average compression (all sessions): **{pct(avg_comp)}**.",
         f"",
