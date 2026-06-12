@@ -4,7 +4,7 @@ Import **native Claude Code session logs** for per-turn token bifurcation (`inpu
 
 Mode A writes `source: cli_import` (per assistant turn). For session-level compression
 estimates and hot-session analysis, use **Mode D** (`source: claude_corpus`) or **Mode C**
-(`source: cursor_import`). See [README § modes](README.md#data-collection-modes).
+(`source: cursor_import`). See [README § modes](../../context-synthesizer/README.md#data-collection-modes).
 
 ---
 

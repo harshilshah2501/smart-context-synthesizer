@@ -25,9 +25,9 @@ install -m 644 "$ROOT/packaging/requirements.txt" "$STAGE/usr/lib/context-synthe
 install -m 644 "$ROOT/Claude.md" "$STAGE/etc/context-synthesizer/"
 
 # Docs
-install -m 644 "$ROOT/docs/guides/Usage.md" "$STAGE/usr/share/doc/context-synthesizer/"
+install -m 644 "$ROOT/../docs/guides/Usage.md" "$STAGE/usr/share/doc/context-synthesizer/"
 install -m 644 "$ROOT/README.md" "$STAGE/usr/share/doc/context-synthesizer/"
-install -m 644 "$ROOT/docs/guides/CLI_STATS_GUIDE.md" "$STAGE/usr/share/doc/context-synthesizer/"
+install -m 644 "$ROOT/../docs/guides/CLI_STATS_GUIDE.md" "$STAGE/usr/share/doc/context-synthesizer/"
 install -m 644 "$ROOT/packaging/UBUNTU_INSTALL.md" "$STAGE/usr/share/doc/context-synthesizer/"
 
 # Config + systemd

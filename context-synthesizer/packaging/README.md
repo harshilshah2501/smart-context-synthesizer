@@ -1,12 +1,16 @@
-# packaging/ — deprecated
-
-**Not used for team rollout.** The project uses offline **Modes A / C / D** (session corpus import). No `.deb`, no proxy.
+# packaging/
 
 | Path | Status |
 |------|--------|
-| `build-deb.sh`, `DEBIAN/`, `*.service` | Legacy — unmaintained |
-| `UBUNTU_INSTALL.md` | Historical reference only |
+| **`build-release-tarball.sh`** | **Current** — bundle for shared drive (no git for developers) |
+| `build-deb.sh`, `DEBIAN/`, `*.service` | Legacy `.deb` — unmaintained |
+| `UBUNTU_INSTALL.md` | Historical |
 
-**Current delivery:** Python scripts in the parent directory run from the repo venv. See [Usage.md](../docs/guides/Usage.md).
+**Developer delivery:** root [`install.sh`](../../install.sh) — curl or `--tarball-file` from drive.
 
-Team workflow uses offline Modes A / C / D only — see [Usage.md](../docs/guides/Usage.md).
+```bash
+bash context-synthesizer/packaging/build-release-tarball.sh
+# → packaging/build/context-synthesizer-toolkit-*.tar.gz
+```
+
+See [DEPLOY.md](../../docs/guides/DEPLOY.md) · [DEVELOPER_ONBOARDING.md](../../docs/guides/DEVELOPER_ONBOARDING.md).

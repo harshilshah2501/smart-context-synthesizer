@@ -10,7 +10,8 @@ __pycache__/
 context-synthesizer/stats/**
 !context-synthesizer/stats/.gitignore
 context-synthesizer/*.zip
-context-synthesizer/docs/notes/
+/*.jsonl
+docs/notes/
 
 # Nested clones / accidental duplicates
 context-synthesizer/smart-context-synthesizer/

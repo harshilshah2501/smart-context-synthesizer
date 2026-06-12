@@ -1,18 +1,22 @@
 # Context Synthesizer
 
-Offline analysis and tuning toolkit for **smart context compaction** — study long IDE sessions, estimate synthesizer-shaped payloads, and tune Dreaming rules.
+Offline analysis and tuning toolkit for **smart context compaction**.
 
 `proxy_tool.py` is the **gateway implementation target**; the team workflow is **offline** corpus import (Modes A / C / D).
 
-**Full doc index:** [docs/README.md](docs/README.md)
+**All documentation:** [../docs/README.md](../docs/README.md)
 
 | Doc | Read when |
 |-----|-----------|
-| [docs/guides/Usage.md](docs/guides/Usage.md) | Per-mode setup (A / C / D) |
-| [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md) | Team rollout, weekly export |
-| [docs/reports/SYNTHESIZER_RND_REPORT.md](docs/reports/SYNTHESIZER_RND_REPORT.md) | R&D record, roadmap |
-| [docs/reports/COMPACTION_PROOF_REPORT.md](docs/reports/COMPACTION_PROOF_REPORT.md) | Turn-178 proof (simple terms) |
-| [docs/reports/CHANDRESH_CORPUS_REPORT.md](docs/reports/CHANDRESH_CORPUS_REPORT.md) | New corpus test |
+| [../docs/guides/Usage.md](../docs/guides/Usage.md) | Per-mode setup (A / C / D) |
+| [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Start here** — one-time setup |
+| [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Team lead — drive + rollup |
+| [../docs/reports/SYNTHESIZER_RND_REPORT.md](../docs/reports/SYNTHESIZER_RND_REPORT.md) | R&D record, roadmap |
+| [../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md](../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md) | meet-chavda corpus (reference) |
+| [../docs/reports/COMPACTION_PROOF_REPORT.md](../docs/reports/COMPACTION_PROOF_REPORT.md) | Turn-178 deep dive |
+| [../docs/reports/CHANDRESH_CORPUS_REPORT.md](../docs/reports/CHANDRESH_CORPUS_REPORT.md) | chandresh corpus test |
+| [../docs/reports/OM_CORPUS_REPORT.md](../docs/reports/OM_CORPUS_REPORT.md) | om Org Mgmt session |
+| [../docs/reports/CORPUS_COMPARATIVE_ANALYSIS.md](../docs/reports/CORPUS_COMPARATIVE_ANALYSIS.md) | Three-developer comparison |
 | [../docs/context_os_technical_report.md](../docs/context_os_technical_report.md) | Gateway design |
 
 ---
@@ -29,28 +33,19 @@ All modes are **offline** — no API key, no proxy.
 
 ---
 
-## Quick start
+## Quick start (developers)
 
 ```bash
-cd ~/Out-of-bound-chronicles
-bash context-synthesizer/scripts/setup.sh
-
-# Mode D — corpus import
-.venv/bin/python context-synthesizer/import_claude_sessions.py \
-  --developer "$(whoami)" --min-turns 25
-
-# Hot session deep-dive
-.venv/bin/python context-synthesizer/analyze_hot_session.py --source claude --largest
-
-# Compaction proof at a spike turn
-.venv/bin/python context-synthesizer/compare_compaction.py \
-  --session ac4ecef7 --turn 178
-
-# Phase 2 regression
-.venv/bin/python context-synthesizer/run_phase2_validation.py
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+  --developer YOUR_HANDLE \
+  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
+  --enable-proxy \
+  --install-cron
 ```
 
-Full rollout: [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md)
+Installs to `~/.local/share/context-synthesizer` — no git clone.
+
+R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 
 ---
 
@@ -60,24 +55,11 @@ Full rollout: [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md)
 |------|---------|
 | `import_*.py` | Mode A/C/D corpus import |
 | `analyze_hot_session.py` | Single-session deep dive |
-| `analyze_claude_caching.py` | Native cache behavior |
 | `compare_compaction.py` | Naive vs Dreaming v4 at a spike turn |
 | `collect_stats.py` | Team aggregate |
-| `run_phase2_validation.py` | Repeatable Phase 2 suite |
 | `compaction.py` | Dreaming v4 rules |
 | `proxy_tool.py` | Gateway (not team workflow) |
-| `scripts/` | `setup.sh`, weekly export, backup import |
+| `scripts/` | setup, weekly export, backup import |
 | `stats/` | Local corpora (**gitignored**) |
 | `packaging/` | Deprecated `.deb` legacy |
-| `docs/guides/` | How-to |
-| `docs/reports/` | Analysis & proof reports |
-
----
-
-## Shipped vs planned
-
-| Shipped | Planned |
-|---------|---------|
-| Mode A/C/D pipeline | Production ~200K `Claude.md` |
-| Dreaming v4 + `compare_compaction.py` | Live gateway pilot (BYOK) |
-| Phase 2/3 scripts + reports | |
+| `../docs/` | All guides and reports |

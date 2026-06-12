@@ -1,7 +1,7 @@
 # Benchmark Analysis — 12-Turn Simulator Run
 
 > **Not a team workflow.** Internal gateway validation via `test_simulator.py` + `proxy_tool.py`.
-> Team data collection uses offline **Modes A / C / D** — see [README.md](../../README.md).
+> Team data collection uses offline **Modes A / C / D** — see [README.md](../../context-synthesizer/README.md).
 
 **Date:** 2026-06-10  
 **Session:** `simulator-benchmark`  
@@ -13,8 +13,8 @@ This document explains the simulator output line-by-line: what each number means
 
 **Related docs:**
 
-- [Context Synthesizer technical report](../../docs/context_os_technical_report.md) — architecture, shipped vs planned, §8.1 summary
-- [README](../../README.md) — quick start
+- [Context Synthesizer technical report](../context_os_technical_report.md) — architecture, shipped vs planned, §8.1 summary
+- [README](../../context-synthesizer/README.md) — quick start
 - [Anthropic Prompt Caching docs](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)
 
 **Corpus note:** Shipped starter `Claude.md` is ~380 tokens (below Sonnet 4.6's 1,024-token cache minimum). Production target is ~200K tokens — re-run after swapping the file.
@@ -471,4 +471,4 @@ The proxy's index-aligned layout behaved correctly:
 
 Next step: load the real `Claude.md`, re-run the simulator, and compare Section 3.2 warm-turn patterns against `cache_read ≈ 200,000`.
 
-See also: [Context Synthesizer technical report](../../docs/context_os_technical_report.md) for full architecture and shipped vs. planned features.
+See also: [Context Synthesizer technical report](../context_os_technical_report.md) for full architecture and shipped vs. planned features.

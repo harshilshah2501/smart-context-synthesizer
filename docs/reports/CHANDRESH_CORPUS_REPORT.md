@@ -195,3 +195,12 @@ bash context-synthesizer/scripts/import_claude_backup.sh \
 .venv/bin/python context-synthesizer/collect_stats.py \
   --logs context-synthesizer/stats/weekly/2026-06-11_chandresh_claude_backup.jsonl
 ```
+
+---
+
+## See also
+
+- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — meet-chavda vs chandresh vs om
+- [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) — om Org Mgmt session (120 turns)
+- [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) — meet-chavda reference corpus
+- [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — meet-chavda turn 178 deep dive

@@ -17,7 +17,7 @@ All modes are **offline** — import session logs from disk. No API key, no prox
 | Import depth | Per-assistant-turn `usage` | Full session analysis + synthesizer counterfactual |
 | Best for | Quick weekly token snapshot | Synthesizer R&D, hot sessions, team corpus |
 
-Full comparison: [README § Data collection modes](../../README.md#data-collection-modes).
+Full comparison: [README § Data collection modes](../../context-synthesizer/README.md#data-collection-modes).
 
 ---
 
@@ -141,4 +141,4 @@ Older CLI versions may omit `usage` on some lines — upgrade Claude Code.
 |-----|----------|
 | [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details |
 | [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Corpus findings + roadmap |
-| [README.md](../../README.md) | Architecture overview |
+| [README.md](../../context-synthesizer/README.md) | Architecture overview |

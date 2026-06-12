@@ -2,32 +2,36 @@
 
 Offline R&D toolkit for **smart context compaction** — study long IDE sessions, estimate synthesizer-shaped payloads, and tune Dreaming rules.
 
-**Start here:** [context-synthesizer/README.md](context-synthesizer/README.md)
+**Start here:** [context-synthesizer/README.md](context-synthesizer/README.md)  
+**All docs:** [docs/README.md](docs/README.md)
 
 ## Repository layout
 
 ```
 .
-├── README.md                          ← you are here
-├── docs/
-│   └── context_os_technical_report.md ← gateway design (proxy_tool.py)
+├── README.md                 ← you are here
+├── docs/                     ← all documentation (guides, reports, architecture)
+│   ├── guides/
+│   ├── reports/
+│   └── context_os_technical_report.md
 └── context-synthesizer/
-    ├── *.py                           ← import pipeline, compaction, gateway
-    ├── scripts/                       ← setup, weekly export, team rollup
-    ├── docs/
-    │   ├── guides/                    ← Usage, DEPLOY, CLI_STATS_GUIDE
-    │   └── reports/                   ← R&D reports, proof studies, corpus notes
-    ├── packaging/                     ← deprecated .deb (legacy)
-    └── stats/                         ← local corpora (gitignored)
+    ├── *.py                  ← import pipeline, compaction, gateway
+    ├── scripts/
+    ├── packaging/            ← deprecated .deb (legacy)
+    └── stats/                ← local corpora (gitignored)
 ```
 
-## Quick start
+## Quick start (developers — no git)
 
 ```bash
-cd ~/Out-of-bound-chronicles
-bash context-synthesizer/scripts/setup.sh
-bash context-synthesizer/scripts/export_weekly_corpus.sh --mode d
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+  --developer YOUR_HANDLE \
+  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
+  --enable-proxy \
+  --install-cron
 ```
+
+Team lead: [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md) · Developers: [docs/guides/DEVELOPER_ONBOARDING.md](docs/guides/DEVELOPER_ONBOARDING.md)
 
 ## What is not in this repo
 
