@@ -81,7 +81,7 @@ INSTALLER_SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -f "$INSTALLER_SRC/context-synthesizer/scripts/setup_developer.sh" ]]; then
   echo "Using local toolkit at $INSTALLER_SRC"
   exec bash "$INSTALLER_SRC/context-synthesizer/scripts/setup_developer.sh" \
-    --install-dir "$INSTALL_DIR" "${SETUP_ARGS[@]}"
+    --install-dir "$INSTALLER_SRC" "${SETUP_ARGS[@]}"
 fi
 
 need_cmd() {

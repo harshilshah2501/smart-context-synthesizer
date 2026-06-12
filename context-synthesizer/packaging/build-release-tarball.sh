@@ -27,12 +27,24 @@ rsync -a \
   "$ROOT/docs" \
   "$STAGE/"
 
+install -m 644 "$ROOT/context-synthesizer/packaging/INSTALL.txt" "$STAGE/"
+install -m 755 "$ROOT/context-synthesizer/packaging/run-setup.sh" "$STAGE/"
+install -m 644 "$ROOT/context-synthesizer/packaging/team.conf.example" "$STAGE/"
+cat >"$STAGE/team.conf" <<'EOF'
+# Team lead: set SYNC_DIR to your synced weekly folder.
+SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+EXTRA_SETUP_ARGS=()
+EOF
+
 mkdir -p "$OUT"
 TARBALL="${OUT}/${NAME}.tar.gz"
 tar -czf "$TARBALL" -C "$OUT" "$NAME"
 
 echo "Built: $TARBALL"
 echo ""
-echo "Upload to SharePoint (with install.sh from repo root), then developers run:"
-echo "  bash /path/to/OneDrive/.../install.sh --tarball-file /path/to/$(basename "$TARBALL") \\"
-echo "    --developer HANDLE --sync-dir '/path/to/.../weekly' --install-cron"
+echo "Share on SharePoint:"
+echo "  Option A — upload $(basename "$TARBALL") (devs extract after sync)"
+echo "  Option B — upload extracted folder $NAME/ (devs sync folder as-is)"
+echo ""
+echo "Team lead: edit team.conf (SYNC_DIR) in the package once."
+echo "Developer: bash run-setup.sh firstname.lastname"
