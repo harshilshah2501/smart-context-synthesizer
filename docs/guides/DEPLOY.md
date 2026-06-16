@@ -53,7 +53,7 @@ Use Azure email local-part (`firstname.lastname`). No git or rclone.
 
 See `INSTALL.txt` inside the package. **Live compaction is on by default** (`ENABLE_PROXY=1` in `team.conf`). Claude Code Max/Pro login forwards auth — no per-developer API key at setup.
 
-**Live dashboard:** after setup, open `http://127.0.0.1:<PROXY_PORT>/dashboard` (default `8080`, or `8081` if port conflict) — billing bifurcation, L1–L4 layers, naive vs shaped savings, compactions. Updates as you use Claude Code.
+**Live dashboard:** after setup, run `bash context-synthesizer/scripts/open_dashboard.sh`. On **WSL**, open the **WSL IP** URL in Windows browser (not `127.0.0.1`). See [DASHBOARD.md](DASHBOARD.md).
 
 Weekly files (optional) are **copied** into the synced folder; OneDrive uploads to SharePoint.
 
@@ -159,7 +159,7 @@ bash /path/from/drive/install.sh \
 
 Claude Code unchanged — synthesizer runs as `context-synthesizer-proxy` user service. Auth comes from your Claude Code session (Max/Pro); optional `ANTHROPIC_API_KEY` in `context-synthesizer/.env` for non-CLI clients.
 
-**Dashboard:** `http://127.0.0.1:<PROXY_PORT>/dashboard` — per-turn billing split (cache read / write / uncached), four-layer payload, naive IDE history vs shaped context, cumulative $ saved, compaction timeline. See [DASHBOARD.md](DASHBOARD.md).
+**Dashboard:** run `bash context-synthesizer/scripts/open_dashboard.sh` — per-turn billing split, four-layer payload, naive vs shaped, cumulative $ saved. WSL: use WSL IP in Windows browser. See [DASHBOARD.md](DASHBOARD.md).
 
 ### Weekly (automatic)
 
@@ -222,7 +222,7 @@ cd /path/to/toolkit
 
 Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
-**Live dashboard:** `http://127.0.0.1:<PROXY_PORT>/dashboard` — billing bifurcation, L1–L4 layers, naive vs shaped, compactions. See [DASHBOARD.md](DASHBOARD.md).
+**Dashboard (WSL):** `bash context-synthesizer/scripts/open_dashboard.sh` — do not use `127.0.0.1` in Windows browser. See [DASHBOARD.md](DASHBOARD.md).
 
 ---
 
@@ -233,6 +233,8 @@ Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 | `install.sh` (repo root) | **Developer entry point** |
 | `packaging/build-release-tarball.sh` | Team lead — build drive bundle |
 | `scripts/setup_developer.sh` | Called by install.sh |
+| `scripts/check_proxy_ready.sh` | Preflight before proxy install |
+| `scripts/open_dashboard.sh` | Print/open dashboard URL (WSL-aware) |
 | `scripts/weekly_sync.sh` | Cron |
 | `static/dashboard.html` + `/dashboard` | Live bifurcation UI (same port as proxy) |
 | `scripts/pull_from_drive.sh` | Team lead |

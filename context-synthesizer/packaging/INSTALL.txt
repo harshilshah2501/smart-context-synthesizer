@@ -11,12 +11,11 @@ TEAM LEAD (once)
    (ENABLE_PROXY=1 and ENABLE_WEEKLY_CRON=1 are on by default)
 4. Share the SharePoint link; tell team to click Sync in OneDrive
 
-UBUNTU LINUX
+UBUNTU / WSL
 ------------
-  sudo apt install -y python3 python3-venv
-  Use OneDrive sync (e.g. abraunegg/onedrive) OR download tarball from SharePoint.
-  Set SYNC_DIR in team.conf to your Linux sync path (often ~/OneDrive/... not Windows path).
+  sudo apt install -y python3 python3-venv   # if needed
   Same command: bash run-setup.sh firstname.lastname
+  WSL + Windows browser: use open_dashboard.sh (WSL IP, not 127.0.0.1 in Chrome)
 
 DEVELOPER (once, ~5 min)
 ------------------------
@@ -38,7 +37,8 @@ SMOKE TEST
 ----------
   systemctl --user status context-synthesizer-proxy
   bash context-synthesizer/scripts/check_proxy_ready.sh
-  open http://127.0.0.1:8080/dashboard   # or :8081 if PROXY_PORT in context-synthesizer/.env
+  bash context-synthesizer/scripts/open_dashboard.sh
+  bash context-synthesizer/scripts/open_dashboard.sh --open   # WSL → Windows browser
   # use Claude Code — dashboard charts update per API call
 
 Optional weekly upload test:
@@ -51,12 +51,12 @@ PRIMARY — Live compaction (default ON, ENABLE_PROXY=1):
 - Dreaming v4 compacts history during long sessions (~90-99% smaller shaped context)
 - Use Claude Code while logged in to Max/Pro — CLI forwards auth; no extra API key at setup
 
-LIVE DASHBOARD — http://127.0.0.1:<PROXY_PORT>/dashboard:
+LIVE DASHBOARD — bash context-synthesizer/scripts/open_dashboard.sh:
 - Billing bifurcation: cache read / cache write / uncached tokens per turn
 - Four-layer payload: L1 rules, L2 ledger, L3 recent, L4 prompt
 - Naive IDE history vs shaped context (where compaction saves size)
 - Cumulative $ saved, compaction timeline, tuning recommendations
-- See docs/guides/DASHBOARD.md
+- WSL: open WSL IP URL in Windows browser (see docs/guides/DASHBOARD.md)
 
 OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
 - Automatic summary.md + JSONL every Monday for team rollup
@@ -64,5 +64,5 @@ OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
 SUPPORT
 -------
   docs/guides/DEVELOPER_ONBOARDING.md  — install & smoke test
-  docs/guides/DASHBOARD.md             — live metrics UI
+  docs/guides/DASHBOARD.md             — live metrics UI (incl. WSL)
   docs/guides/DEPLOY.md                — team lead rollup

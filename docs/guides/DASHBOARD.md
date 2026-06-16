@@ -2,7 +2,9 @@
 
 Real-time bifurcation of **where the Context Synthesizer saves tokens and cost** — served by the same proxy process as Claude Code traffic.
 
-**URL:** `http://127.0.0.1:<PROXY_PORT>/dashboard` (default port `8080`, or `8081` if configured in `context-synthesizer/.env`)
+**URL:** run `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
+
+**WSL + Windows browser:** use the **WSL IP** URL (e.g. `http://172.22.x.x:8080/dashboard`), not `127.0.0.1` in Chrome/Edge.
 
 ---
 

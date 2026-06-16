@@ -20,9 +20,11 @@ Example: `bash run-setup.sh harshil.shah` (Azure email local-part)
 
 ```bash
 systemctl --user status context-synthesizer-proxy
+bash context-synthesizer/scripts/open_dashboard.sh
+bash context-synthesizer/scripts/open_dashboard.sh --open   # WSL → Windows browser
 ```
 
-Open **live dashboard**: http://127.0.0.1:8080/dashboard (or :8081 if Tabby uses 8080)
+**WSL:** use the **WSL IP** URL printed above (not `127.0.0.1` in Windows Chrome).
 
 Use Claude Code — charts update per turn (billing split, L1–L4 layers, naive vs shaped savings).
 
@@ -33,7 +35,7 @@ journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
 bash context-synthesizer/scripts/check_proxy_ready.sh
 ```
 
-Full docs in package: `INSTALL.txt`, `docs/guides/DASHBOARD.md`
+Full docs: `INSTALL.txt`, `docs/guides/DASHBOARD.md`
 
 Thanks,  
 Harshil

@@ -64,6 +64,7 @@ R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 | `proxy_tool.py` | Gateway + `/dashboard` live telemetry UI |
 | `dashboard_api.py` / `dashboard_routes.py` | Dashboard aggregation + SSE |
 | `static/dashboard.html` | Live bifurcation charts |
+| `scripts/open_dashboard.sh` | Print/open dashboard URL (WSL-aware) |
 | `scripts/` | setup, weekly export, backup import |
 | `stats/` | Local corpora (**gitignored**) |
 | `packaging/` | Deprecated `.deb` legacy |

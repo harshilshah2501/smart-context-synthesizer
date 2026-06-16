@@ -2,7 +2,7 @@
 
 Offline R&D toolkit for **smart context compaction** — study long IDE sessions, estimate synthesizer-shaped payloads, and tune Dreaming rules.
 
-**Team install:** SharePoint package + `bash run-setup.sh` → live proxy + **[dashboard](docs/guides/DASHBOARD.md)** at `http://127.0.0.1:<port>/dashboard`.
+**Team install:** SharePoint package + `bash run-setup.sh` → live proxy + **[dashboard](docs/guides/DASHBOARD.md)** (`open_dashboard.sh`; WSL users: WSL IP in Windows browser).
 
 **Start here:** [context-synthesizer/README.md](context-synthesizer/README.md)  
 **All docs:** [docs/README.md](docs/README.md)

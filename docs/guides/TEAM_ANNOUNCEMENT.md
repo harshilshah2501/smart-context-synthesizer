@@ -47,7 +47,7 @@ Setup takes ~5 minutes. It will:
 - Create a local Python environment
 - Start the **live compaction proxy** (background service)
 - Point Claude Code at the proxy automatically
-- Enable the **live dashboard** at `http://127.0.0.1:8080/dashboard`
+- Enable the **live dashboard** — `bash context-synthesizer/scripts/open_dashboard.sh`
 - *(Optional)* Schedule Monday session summaries to SharePoint for team rollup
 
 **You do not need a personal Anthropic API key** — Claude Code forwards your existing login.
@@ -60,13 +60,17 @@ systemctl --user status context-synthesizer-proxy
 
 Status should be **active (running)**.
 
-Open the **live dashboard** in your browser:
+Open the **live dashboard**:
 
-```text
-http://127.0.0.1:8080/dashboard
+```bash
+bash context-synthesizer/scripts/open_dashboard.sh
+bash context-synthesizer/scripts/open_dashboard.sh --open   # opens Windows browser (WSL)
 ```
 
-*(Use `:8081` if setup printed `PROXY_PORT=8081` — common when Tabby uses 8080.)*
+**WSL users:** use the **WSL IP** URL printed by the script (e.g. `http://172.22.x.x:8080/dashboard`).  
+`127.0.0.1` in Windows Chrome often fails with `ERR_EMPTY_RESPONSE` (Tabby or separate Windows localhost).
+
+*(Use port `8081` if setup printed `PROXY_PORT=8081`.)*
 
 Use Claude Code in any project — the dashboard updates per turn with:
 
@@ -99,7 +103,7 @@ Harshil
 
 ## Short version (quick ping)
 
-> Context Synthesizer on SharePoint: [link](https://motadataindia-my.sharepoint.com/:f:/g/personal/harshil_shah_motadata_com/IgBhQlYbLSLgRa2PO0LB8JoNAUkR135NoV-Nc2ssPJnwgmM?e=LvMdib) → Sync → `cd context-synthesizer-toolkit-YYYY.MM.DD` → `bash run-setup.sh your.name`. ~5 min. Check proxy: `systemctl --user status context-synthesizer-proxy`. Dashboard: `http://127.0.0.1:8080/dashboard`. Details in `INSTALL.txt`.
+> … Check proxy: `systemctl --user status context-synthesizer-proxy`. Dashboard: `bash context-synthesizer/scripts/open_dashboard.sh` (WSL IP for Windows browser). Details in `INSTALL.txt`.
 
 ---
 

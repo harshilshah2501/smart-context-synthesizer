@@ -26,13 +26,33 @@ Use your **Azure email local-part** for `--developer` (e.g. `harshil.shah` for `
 
 **Primary benefit — live compaction (on by default):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Log in to Claude Code (Max/Pro) as usual — the CLI forwards auth to the proxy; no separate API key at setup.
 
-**Live dashboard:** open `http://127.0.0.1:8080/dashboard` (or `:8081` if `PROXY_PORT=8081` in `context-synthesizer/.env`) to see **where savings come from** — billing bifurcation, L1–L4 layers, naive vs shaped context, compactions. Updates automatically as you code. Full guide: [DASHBOARD.md](DASHBOARD.md).
+**Live dashboard:** `bash context-synthesizer/scripts/open_dashboard.sh` prints the correct URL. On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md). Full guide: billing bifurcation, L1–L4 layers, naive vs shaped, compactions.
 
 **Optional — weekly SharePoint reports:** Monday cron copies session summaries to your synced folder for team rollup (`ENABLE_WEEKLY_CRON=1` in `team.conf`).
 
 **How upload works:** cron copies files into your local OneDrive folder → OneDrive app syncs to SharePoint. No rclone.
 
 Adjust `--sync-dir` if your OneDrive path differs (check in file manager after Sync).
+
+---
+
+## WSL + Windows browser (common at Motadata)
+
+Proxy and Claude Code run **inside WSL**. The live dashboard is served from WSL too.
+
+| Where | URL |
+|-------|-----|
+| **WSL terminal** (`curl`, Claude Code) | `http://127.0.0.1:<PROXY_PORT>/dashboard` |
+| **Windows Chrome/Edge** | `http://<WSL_IP>:<PROXY_PORT>/dashboard` — **not** `127.0.0.1` |
+
+Helper (prints both URLs; `--open` launches Windows browser):
+
+```bash
+bash context-synthesizer/scripts/open_dashboard.sh
+bash context-synthesizer/scripts/open_dashboard.sh --open
+```
+
+If Windows shows **`ERR_EMPTY_RESPONSE`** but `curl` in WSL works → you hit the wrong localhost (often **Tabby on Windows :8080**). Use the WSL IP from `open_dashboard.sh`.
 
 ---
 
@@ -82,7 +102,7 @@ bash run-setup.sh firstname.lastname
 | Piece | Ubuntu | Windows |
 |-------|--------|---------|
 | `run-setup.sh` | ✓ | ✓ (Git Bash / WSL) |
-| Live proxy + `/dashboard` | ✓ | ✓ (WSL) |
+| Live proxy + `/dashboard` | ✓ | ✓ (WSL — use WSL IP in Windows browser) |
 | Weekly cron | ✓ (`cron`) | ✓ (WSL cron or Task Scheduler — cron via WSL) |
 | Claude Code logs | `~/.claude/projects/` | Same in WSL; native Windows path differs |
 | Weekly upload | Copy → synced folder | Copy → OneDrive app syncs |
@@ -134,17 +154,15 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
 | `python3`, `curl`, `tar` | Linux / macOS / WSL |
 | **OneDrive app** + synced team folder | Replaces rclone |
 | Claude Code | `~/.claude/projects/` from normal use |
-| Browser | For live dashboard (local only — `127.0.0.1`) |
+| Browser | Live dashboard — WSL IP in Windows browser; see `open_dashboard.sh` |
 
 ### Smoke test (live compaction + dashboard)
 
 ```bash
 systemctl --user status context-synthesizer-proxy
 bash context-synthesizer/scripts/check_proxy_ready.sh
-
-# Dashboard (8081 if Tabby or another app uses 8080)
-open http://127.0.0.1:8080/dashboard
-# or: grep PROXY_PORT context-synthesizer/.env
+bash context-synthesizer/scripts/open_dashboard.sh
+# Windows browser: use the WSL IP URL printed above (or --open)
 ```
 
 Use Claude Code in a project — charts should update per API call. Badge top-left should show **live**.
