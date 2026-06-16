@@ -15,7 +15,10 @@ UBUNTU / WSL
 ------------
   sudo apt install -y python3 python3-venv   # if needed
   Same command: bash run-setup.sh firstname.lastname
-  WSL + Windows browser: use open_dashboard.sh (WSL IP, not 127.0.0.1 in Chrome)
+
+  WSL — enable systemd once (/etc/wsl.conf → [boot] systemd=true, then wsl --shutdown)
+  WSL + Windows browser: bash context-synthesizer/scripts/open_dashboard.sh
+        (WSL IP + ?token=... — not 127.0.0.1 in Chrome)
 
 DEVELOPER (once, ~5 min)
 ------------------------
@@ -23,7 +26,7 @@ DEVELOPER (once, ~5 min)
      Windows — SharePoint link → Sync (OneDrive desktop app)
      Ubuntu  — OneDrive Linux client sync, OR download .tar.gz from SharePoint and extract
 2. Open terminal in the package folder, e.g.:
-     .../ContextSynthesizer/context-synthesizer-toolkit-YYYY.MM.DD/
+     .../ContextSynthesizer/context-synthesizer-toolkit-2026.06.16/
 3. Run (use your Azure email local-part as id):
 
      bash run-setup.sh firstname.lastname
@@ -39,6 +42,7 @@ SMOKE TEST
   bash context-synthesizer/scripts/check_proxy_ready.sh
   bash context-synthesizer/scripts/open_dashboard.sh
   bash context-synthesizer/scripts/open_dashboard.sh --open   # WSL → Windows browser
+  # WSL: URLs include ?token=... — use open_dashboard.sh output, do not bookmark bare /dashboard
   # use Claude Code — dashboard charts update per API call
 
 Optional weekly upload test:
@@ -57,6 +61,7 @@ LIVE DASHBOARD — bash context-synthesizer/scripts/open_dashboard.sh:
 - Naive IDE history vs shaped context (where compaction saves size)
 - Cumulative $ saved, compaction timeline, tuning recommendations
 - WSL: open WSL IP URL in Windows browser (see docs/guides/DASHBOARD.md)
+- WSL: DASHBOARD_TOKEN auto-set in context-synthesizer/.env — open via open_dashboard.sh only
 
 OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
 - Automatic summary.md + JSONL every Monday for team rollup
@@ -64,5 +69,5 @@ OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
 SUPPORT
 -------
   docs/guides/DEVELOPER_ONBOARDING.md  — install & smoke test
-  docs/guides/DASHBOARD.md             — live metrics UI (incl. WSL)
+  docs/guides/DASHBOARD.md             — live metrics UI (incl. WSL + token)
   docs/guides/DEPLOY.md                — team lead rollup

@@ -16,14 +16,24 @@ We’re rolling out the **Context Synthesizer** PoC. It routes **Claude Code** t
 
 1. Open the SharePoint folder: [Context-Synthesizer](https://motadataindia-my.sharepoint.com/:f:/g/personal/harshil_shah_motadata_com/IgBhQlYbLSLgRa2PO0LB8JoNAUkR135NoV-Nc2ssPJnwgmM?e=LvMdib)
 2. Click **Sync** in OneDrive so it appears locally, e.g.  
-   `OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-YYYY.MM.DD`  
+   `OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.16`  
    *(Ubuntu without the Windows OneDrive app: download the `.tar.gz` from SharePoint and extract it.)*
 
 ### Prerequisites (once per machine)
 
 - **Python 3** + venv — Ubuntu: `sudo apt install -y python3 python3-venv`
 - **Claude Code** installed and logged in (Max/Pro as usual)
-- **Linux or WSL** recommended (proxy + cron use systemd)
+- **Linux or WSL with systemd** (proxy + cron use a user service)
+
+**WSL only — enable systemd once** (if setup fails at the proxy step):
+
+```text
+# /etc/wsl.conf
+[boot]
+systemd=true
+```
+
+Then from Windows PowerShell: `wsl --shutdown`, reopen WSL, and re-run `run-setup.sh`.
 
 ### Install (one command)
 
@@ -38,7 +48,7 @@ Use your **Azure email local-part** as the ID (e.g. `harshil.shah` for `harshil.
 Example:
 
 ```bash
-cd "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-YYYY.MM.DD"
+cd "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.16"
 bash run-setup.sh harshil.shah
 ```
 
@@ -56,19 +66,18 @@ Setup takes ~5 minutes. It will:
 
 ```bash
 systemctl --user status context-synthesizer-proxy
-```
-
-Status should be **active (running)**.
-
-Open the **live dashboard**:
-
-```bash
+bash context-synthesizer/scripts/check_proxy_ready.sh
 bash context-synthesizer/scripts/open_dashboard.sh
 bash context-synthesizer/scripts/open_dashboard.sh --open   # opens Windows browser (WSL)
 ```
 
-**WSL users:** use the **WSL IP** URL printed by the script (e.g. `http://172.22.x.x:8080/dashboard`).  
-`127.0.0.1` in Windows Chrome often fails with `ERR_EMPTY_RESPONSE` (Tabby or separate Windows localhost).
+Status should be **active (running)**.
+
+**WSL users:**
+
+- Use the **WSL IP** URL printed by `open_dashboard.sh` (e.g. `http://172.22.x.x:8080/dashboard?token=...`).
+- Do **not** use `127.0.0.1` in Windows Chrome — often `ERR_EMPTY_RESPONSE` (Tabby or separate Windows localhost).
+- On WSL, setup auto-generates **`DASHBOARD_TOKEN`** — always open the dashboard via `open_dashboard.sh` (URLs include `?token=...`). Do not bookmark without the token.
 
 *(Use port `8081` if setup printed `PROXY_PORT=8081`.)*
 
@@ -103,7 +112,7 @@ Harshil
 
 ## Short version (quick ping)
 
-> … Check proxy: `systemctl --user status context-synthesizer-proxy`. Dashboard: `bash context-synthesizer/scripts/open_dashboard.sh` (WSL IP for Windows browser). Details in `INSTALL.txt`.
+> … Check proxy: `systemctl --user status context-synthesizer-proxy`. Dashboard: `bash context-synthesizer/scripts/open_dashboard.sh` (WSL IP + `?token=` for Windows browser). Details in `INSTALL.txt`.
 
 ---
 

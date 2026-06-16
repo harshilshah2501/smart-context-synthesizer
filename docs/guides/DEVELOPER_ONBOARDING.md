@@ -22,11 +22,11 @@ bash run-setup.sh harshil.shah
 
 Read `INSTALL.txt` in the same folder. No GitHub, no rclone.
 
-Use your **Azure email local-part** for `--developer` (e.g. `harshil.shah` for `harshil.shah@motadata.com`).
+Use your **Azure email local-part** as the setup ID (e.g. `bash run-setup.sh harshil.shah` for `harshil.shah@motadata.com`).
 
 **Primary benefit — live compaction (on by default):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Log in to Claude Code (Max/Pro) as usual — the CLI forwards auth to the proxy; no separate API key at setup.
 
-**Live dashboard:** `bash context-synthesizer/scripts/open_dashboard.sh` prints the correct URL. On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md). Full guide: billing bifurcation, L1–L4 layers, naive vs shaped, compactions.
+**Live dashboard:** `bash context-synthesizer/scripts/open_dashboard.sh` prints the correct URL (on WSL, includes `?token=...`). On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md).
 
 **Optional — weekly SharePoint reports:** Monday cron copies session summaries to your synced folder for team rollup (`ENABLE_WEEKLY_CRON=1` in `team.conf`).
 
@@ -40,12 +40,16 @@ Adjust `--sync-dir` if your OneDrive path differs (check in file manager after S
 
 Proxy and Claude Code run **inside WSL**. The live dashboard is served from WSL too.
 
+**WSL systemd (once):** `/etc/wsl.conf` → `[boot]` / `systemd=true`, then `wsl --shutdown` from Windows and reopen WSL. Required for the proxy user service.
+
 | Where | URL |
 |-------|-----|
-| **WSL terminal** (`curl`, Claude Code) | `http://127.0.0.1:<PROXY_PORT>/dashboard` |
-| **Windows Chrome/Edge** | `http://<WSL_IP>:<PROXY_PORT>/dashboard` — **not** `127.0.0.1` |
+| **WSL terminal** (`curl`, Claude Code) | From `open_dashboard.sh` — `http://127.0.0.1:<PROXY_PORT>/dashboard?token=...` |
+| **Windows Chrome/Edge** | From `open_dashboard.sh` — `http://<WSL_IP>:<PROXY_PORT>/dashboard?token=...` — **not** `127.0.0.1` |
 
-Helper (prints both URLs; `--open` launches Windows browser):
+WSL setup auto-generates **`DASHBOARD_TOKEN`** in `context-synthesizer/.env`. Always use URLs from `open_dashboard.sh`; do not bookmark `/dashboard` without `?token=`.
+
+Helper (prints authenticated URLs; `--open` launches Windows browser):
 
 ```bash
 bash context-synthesizer/scripts/open_dashboard.sh
