@@ -5,12 +5,11 @@ No git. No GitHub. No rclone. No separate API key at setup (Claude Code Max/Pro 
 
 TEAM LEAD (once)
 ----------------
-1. Build or use the provided context-synthesizer-toolkit-*.tar.gz
-2. Extract on SharePoint (or upload the .tar.gz and tell devs to extract after sync)
-3. Copy team.conf.example → team.conf
-4. Edit team.conf → set SYNC_DIR to your synced OneDrive weekly folder
+1. Build: bash context-synthesizer/packaging/build-release-tarball.sh
+2. Upload to SharePoint (extracted folder recommended, or .tar.gz)
+3. Edit team.conf → set SYNC_DIR to your synced OneDrive weekly folder
    (ENABLE_PROXY=1 and ENABLE_WEEKLY_CRON=1 are on by default)
-5. Share the SharePoint folder link; tell team to click Sync in OneDrive
+4. Share the SharePoint link; tell team to click Sync in OneDrive
 
 UBUNTU LINUX
 ------------
@@ -25,7 +24,7 @@ DEVELOPER (once, ~5 min)
      Windows — SharePoint link → Sync (OneDrive desktop app)
      Ubuntu  — OneDrive Linux client sync, OR download .tar.gz from SharePoint and extract
 2. Open terminal in the package folder, e.g.:
-     .../ContextSynthesizer/context-synthesizer-toolkit-...
+     .../ContextSynthesizer/context-synthesizer-toolkit-YYYY.MM.DD/
 3. Run (use your Azure email local-part as id):
 
      bash run-setup.sh firstname.lastname
@@ -33,18 +32,17 @@ DEVELOPER (once, ~5 min)
    Example:
      bash run-setup.sh harshil.shah
 
-4. Done. Live compaction runs in the background; optional Monday reports copy to SharePoint.
+4. Done. Live compaction + dashboard run in the background.
 
 SMOKE TEST
 ----------
   systemctl --user status context-synthesizer-proxy
-  open http://127.0.0.1:8080/dashboard   # or :8081 if PROXY_PORT set in .env
-  # then use Claude Code — live charts update per API call
+  bash context-synthesizer/scripts/check_proxy_ready.sh
+  open http://127.0.0.1:8080/dashboard   # or :8081 if PROXY_PORT in context-synthesizer/.env
+  # use Claude Code — dashboard charts update per API call
 
 Optional weekly upload test:
   bash context-synthesizer/scripts/weekly_sync.sh
-
-(After install, toolkit may also live in ~/.local/share/context-synthesizer)
 
 WHAT YOU GET
 ------------
@@ -53,9 +51,18 @@ PRIMARY — Live compaction (default ON, ENABLE_PROXY=1):
 - Dreaming v4 compacts history during long sessions (~90-99% smaller shaped context)
 - Use Claude Code while logged in to Max/Pro — CLI forwards auth; no extra API key at setup
 
+LIVE DASHBOARD — http://127.0.0.1:<PROXY_PORT>/dashboard:
+- Billing bifurcation: cache read / cache write / uncached tokens per turn
+- Four-layer payload: L1 rules, L2 ledger, L3 recent, L4 prompt
+- Naive IDE history vs shaped context (where compaction saves size)
+- Cumulative $ saved, compaction timeline, tuning recommendations
+- See docs/guides/DASHBOARD.md
+
 OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
 - Automatic summary.md + JSONL every Monday for team rollup
 
 SUPPORT
 -------
-See docs/guides/DEVELOPER_ONBOARDING.md inside this package.
+  docs/guides/DEVELOPER_ONBOARDING.md  — install & smoke test
+  docs/guides/DASHBOARD.md             — live metrics UI
+  docs/guides/DEPLOY.md                — team lead rollup

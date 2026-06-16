@@ -17,6 +17,7 @@ rsync -a \
   --exclude='.venv' \
   --exclude='**/__pycache__' \
   --exclude='context-synthesizer/stats' \
+  --exclude='context-synthesizer/packaging/build' \
   --exclude='context-synthesizer/*.zip' \
   --exclude='*.jsonl' \
   --exclude='m-coder-core' \
@@ -52,3 +53,4 @@ echo "  Option B — upload extracted folder $NAME/ (devs sync folder as-is)"
 echo ""
 echo "Team lead: edit team.conf (SYNC_DIR) in the package once."
 echo "Developer: bash run-setup.sh firstname.lastname"
+echo "Dashboard:  http://127.0.0.1:8080/dashboard (after proxy is running)"

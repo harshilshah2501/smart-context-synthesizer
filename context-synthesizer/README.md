@@ -61,7 +61,9 @@ R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 | `compare_compaction.py` | Naive vs Dreaming v4 at a spike turn |
 | `collect_stats.py` | Team aggregate |
 | `compaction.py` | Dreaming v4 rules |
-| `proxy_tool.py` | Gateway (not team workflow) |
+| `proxy_tool.py` | Gateway + `/dashboard` live telemetry UI |
+| `dashboard_api.py` / `dashboard_routes.py` | Dashboard aggregation + SSE |
+| `static/dashboard.html` | Live bifurcation charts |
 | `scripts/` | setup, weekly export, backup import |
 | `stats/` | Local corpora (**gitignored**) |
 | `packaging/` | Deprecated `.deb` legacy |

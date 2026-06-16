@@ -7,7 +7,7 @@
 | **Developer** | Use Claude Code normally (proxy runs in background); 0 min/week for cron |
 | **Team lead** | Pull drive → `team_rollup.sh` (~1 min/week) |
 
-**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) (copy-paste) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) (full guide)
+**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) (copy-paste) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [DASHBOARD.md](DASHBOARD.md) (live metrics)
 
 ---
 
@@ -53,6 +53,8 @@ Use Azure email local-part (`firstname.lastname`). No git or rclone.
 
 See `INSTALL.txt` inside the package. **Live compaction is on by default** (`ENABLE_PROXY=1` in `team.conf`). Claude Code Max/Pro login forwards auth — no per-developer API key at setup.
 
+**Live dashboard:** after setup, open `http://127.0.0.1:<PROXY_PORT>/dashboard` (default `8080`, or `8081` if port conflict) — billing bifurcation, L1–L4 layers, naive vs shaped savings, compactions. Updates as you use Claude Code.
+
 Weekly files (optional) are **copied** into the synced folder; OneDrive uploads to SharePoint.
 
 **Team lead rollup** (same synced folder on your machine):
@@ -68,14 +70,14 @@ bash context-synthesizer/scripts/team_rollup.sh
 ## Architecture
 
 ```text
-install.sh (curl or drive)  →  ~/.local/share/context-synthesizer
+install.sh / run-setup.sh  →  toolkit folder (or ~/.local/share/context-synthesizer)
                                         │
-Claude Code ──► proxy (default ON)      ├── weekly_sync.sh (cron, optional)
-~/.claude/projects/ ────────────────────┘         │
-                                                  ▼
-                                        OneDrive sync folder (SharePoint)
-                                                  │
-                                        pull_from_drive.sh → team_rollup.sh
+Claude Code ──► proxy (default ON) ─────┼── /dashboard  (live bifurcation UI)
+~/.claude/projects/ ────────────────────┼── weekly_sync.sh (cron, optional)
+                                        ▼
+                              OneDrive sync folder (SharePoint)
+                                        │
+                              pull_from_drive.sh → team_rollup.sh
 ```
 
 ---
@@ -157,6 +159,8 @@ bash /path/from/drive/install.sh \
 
 Claude Code unchanged — synthesizer runs as `context-synthesizer-proxy` user service. Auth comes from your Claude Code session (Max/Pro); optional `ANTHROPIC_API_KEY` in `context-synthesizer/.env` for non-CLI clients.
 
+**Dashboard:** `http://127.0.0.1:<PROXY_PORT>/dashboard` — per-turn billing split (cache read / write / uncached), four-layer payload, naive IDE history vs shaped context, cumulative $ saved, compaction timeline. See [DASHBOARD.md](DASHBOARD.md).
+
 ### Weekly (automatic)
 
 On shared drive: `YYYY-MM-DD_handle_summary.md` + JSONL.
@@ -230,6 +234,7 @@ Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 | `packaging/build-release-tarball.sh` | Team lead — build drive bundle |
 | `scripts/setup_developer.sh` | Called by install.sh |
 | `scripts/weekly_sync.sh` | Cron |
+| `static/dashboard.html` + `/dashboard` | Live bifurcation UI (same port as proxy) |
 | `scripts/pull_from_drive.sh` | Team lead |
 
 More: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CORPUS_COMPARATIVE_ANALYSIS.md](../reports/CORPUS_COMPARATIVE_ANALYSIS.md)
