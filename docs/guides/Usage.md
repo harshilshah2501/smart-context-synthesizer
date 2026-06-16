@@ -1,6 +1,10 @@
-# Context Synthesizer — Developer Setup Guide
+# Context Synthesizer — Offline R&D Modes
 
-**Team rollout:** see **[DEPLOY.md](DEPLOY.md)** for one-time setup, weekly export scripts, and team-lead rollup.
+**Team rollout (install + live proxy):** see **[DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)** — one command from the SharePoint package (`bash run-setup.sh firstname.lastname`).
+
+**Team leads:** [DEPLOY.md](DEPLOY.md) · [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md)
+
+**This guide** covers offline corpus import (Modes A / C / D) for R&D — no API key, no proxy.
 
 ## Modes at a glance
 
@@ -36,7 +40,7 @@ export TELEMETRY_DEVELOPER_ID="your-github-handle"
 .venv/bin/python context-synthesizer/import_cli_logs.py --since 2026-06-01
 ```
 
-Send `stats/*_cli.jsonl` to your team lead. See [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) for field details.
+Send `stats/*_cli.jsonl` to your team lead. See [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) for field details.
 
 ---
 
@@ -139,6 +143,6 @@ Older CLI versions may omit `usage` on some lines — upgrade Claude Code.
 
 | Doc | Contents |
 |-----|----------|
-| [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details |
-| [SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Corpus findings + roadmap |
+| [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) | Mode A import details |
+| [SYNTHESIZER_RND_REPORT.md](../reports/SYNTHESIZER_RND_REPORT.md) | Corpus findings + roadmap |
 | [README.md](../../context-synthesizer/README.md) | Architecture overview |

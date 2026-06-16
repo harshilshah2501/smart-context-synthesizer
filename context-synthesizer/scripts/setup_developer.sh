@@ -57,6 +57,27 @@ fi
 REPO_ROOT="${INSTALL_DIR:-$_DEFAULT_ROOT}"
 export REPO_ROOT
 
+check_systemd_user() {
+  if ! command -v systemctl >/dev/null 2>&1; then
+    echo "ERROR: systemctl not found — live proxy requires systemd user services." >&2
+    exit 1
+  fi
+  if ! systemctl --user show-environment >/dev/null 2>&1; then
+    echo "" >&2
+    echo "ERROR: systemd user session is not available." >&2
+    if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+      echo "  WSL: add to /etc/wsl.conf:" >&2
+      echo "    [boot]" >&2
+      echo "    systemd=true" >&2
+      echo "  Then run 'wsl --shutdown' from Windows PowerShell and reopen WSL." >&2
+    else
+      echo "  Linux: run 'loginctl enable-linger \$USER' and ensure a user session is active." >&2
+    fi
+    echo "  Or re-run without --enable-proxy for offline-only setup." >&2
+    exit 1
+  fi
+}
+
 echo "=== Context Synthesizer — developer setup ==="
 bash "$SCRIPT_DIR/setup.sh"
 
@@ -77,6 +98,7 @@ chmod 600 "$CONFIG_FILE"
 echo "Wrote $CONFIG_FILE"
 
 if [[ "$ENABLE_PROXY" -eq 1 ]]; then
+  check_systemd_user
   ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
   if [[ -n "$API_KEY" ]]; then
     grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null || echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
@@ -88,6 +110,11 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
       echo 'PROXY_HOST=0.0.0.0' >>"$ENV_FILE"
       echo "WSL detected → PROXY_HOST=0.0.0.0 (Windows browser uses WSL IP, not 127.0.0.1)"
     fi
+    if ! grep -q '^DASHBOARD_TOKEN=' "$ENV_FILE" 2>/dev/null; then
+      DASH_TOKEN="$(openssl rand -hex 16 2>/dev/null || tr -dc 'a-f0-9' </dev/urandom | head -c 32)"
+      echo "DASHBOARD_TOKEN=${DASH_TOKEN}" >>"$ENV_FILE"
+      echo "WSL detected → DASHBOARD_TOKEN set (use open_dashboard.sh for authenticated URL)"
+    fi
   fi
   bash "$SCRIPT_DIR/configure_claude_proxy.sh"
   bash "$SCRIPT_DIR/install_proxy_service.sh"
@@ -96,14 +123,7 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   echo "  Claude CLI forwards auth to the proxy; no separate API key needed at setup."
   echo "  Optional fallback key: context-synthesizer/.env → ANTHROPIC_API_KEY=..."
   echo "  Check proxy: systemctl --user status context-synthesizer-proxy"
-  PROXY_PORT_LINE="$(grep -E '^PROXY_PORT=' "$ENV_FILE" 2>/dev/null || true)"
-  PROXY_PORT="${PROXY_PORT_LINE#PROXY_PORT=}"
-  PROXY_PORT="${PROXY_PORT:-8080}"
-  echo "  Live dashboard: http://127.0.0.1:${PROXY_PORT}/dashboard"
-  if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
-    WSL_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
-    [[ -n "$WSL_IP" ]] && echo "  Windows browser: http://${WSL_IP}:${PROXY_PORT}/dashboard"
-  fi
+  echo "  Dashboard: bash context-synthesizer/scripts/open_dashboard.sh"
 fi
 
 if [[ -n "$SYNC_DIR" ]]; then

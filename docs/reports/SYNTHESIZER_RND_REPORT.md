@@ -1,7 +1,9 @@
 # Context Synthesizer — R&D Report
 
-**Date:** 2026-06-10 (updated 2026-06-11)  
-**Status:** Phase 1–3 complete — weekly corpus deploy live (`DEPLOY.md`)  
+> **Rollout doc:** This report is the R&D record. For Motadata team install (live proxy, dashboard, SharePoint), use **[DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md)** and **[TEAM_ANNOUNCEMENT.md](../guides/TEAM_ANNOUNCEMENT.md)**.
+
+**Date:** 2026-06-10 (updated 2026-06-16)  
+**Status:** Phase 1–3 complete — live proxy + dashboard + SharePoint deploy live  
 **Audience:** Team leads, infrastructure engineers, future maintainers  
 
 This document captures the full arc of the Context Synthesizer project: goals, architecture, data-collection strategy, empirical findings from real developer sessions, and the strategic conclusion that **optimization lives in history shape—not in enabling prompt caching**.
@@ -11,9 +13,10 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 | Doc                                                                 | Contents                                         |
 | ------------------------------------------------------------------- | ------------------------------------------------ |
 | [README.md](../../context-synthesizer/README.md)                    | Quick start, env vars, file index                |
-| [Usage.md](guides/Usage.md)                                         | Developer setup (Mode C/D primary)               |
-| [BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.md)              | 12-turn proxy simulator, cost bifurcation        |
-| [CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md)                     | Mode A import details                            |
+| [Usage.md](../guides/Usage.md)                                         | Offline corpus modes (A/C/D)                     |
+| [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md)              | 12-turn proxy simulator, cost bifurcation        |
+| [CLI_STATS_GUIDE.md](../guides/CLI_STATS_GUIDE.md)                     | Mode A import details                            |
+| [DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md)         | **Team rollout** — live proxy + dashboard        |
 | [context_os_technical_report.md](../context_os_technical_report.md) | Design rationale, OS analogy, shipped vs planned |
 
 ---
@@ -43,9 +46,9 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 
 ## 1. Executive Summary
 
-The **Context Synthesizer** is an offline R&D toolkit for **smart context compaction**. It imports long IDE sessions (Modes **A**, **C**, **D**), measures native token usage and history bloat, and estimates how much smaller a **four-layer gateway payload** would be. The gateway itself lives in `proxy_tool.py` (implementation target, not used in the team workflow).
+The **Context Synthesizer** is a toolkit for **smart context compaction**. It ships a **live proxy** (`proxy_tool.py`) for Claude Code sessions plus **offline R&D modes** (A, C, D) that import long IDE sessions, measure native token usage, and estimate how much smaller a **four-layer gateway payload** would be.
 
-**Key finding from real developer data (three corpora — see [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md)):**
+**Key finding from real developer data (three corpora — see [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md)):**
 
 meet-chavda (32 sessions, 859 turns):
 
@@ -59,7 +62,9 @@ meet-chavda (32 sessions, 859 turns):
 
 **Bottom line:** Claude Code already caches brilliantly. Our value is as a **history architect**—shrinking and stabilizing what gets cached—not as a caching enabler.
 
-**Team workflow:** Offline corpus only — **Mode D** (Claude Max), **Mode C** (Cursor), or **Mode A** (default Claude Code import). No live proxy, no API key.
+**Team workflow (Motadata rollout):** SharePoint package → `bash run-setup.sh firstname.lastname` → live compaction proxy (default) + optional Monday corpus export. No git, no per-dev API key. See [DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md).
+
+**Offline R&D workflow:** Mode **D** (Claude Max), **Mode C** (Cursor), or **Mode A** (Claude Code import) — see [Usage.md](../guides/Usage.md).
 
 ---
 
@@ -211,7 +216,7 @@ Starter `Claude.md` is **below Sonnet 4.6’s 1,024-token minimum** per `cache_c
 
 **Conclusion:** Proxy layout behaved correctly (cache engaged turn 4+, reads climbed turns 6–10, compaction at turn 10, cache bust on turn 11 massive prompt). **The bifurcation works; the corpus is not production-sized.**
 
-Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.md).
+Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 ---
 
@@ -253,11 +258,11 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.
 
 | Developer | Report | Hot session | Turns | Compression | Spike-turn proof |
 |-----------|--------|-------------|------:|------------:|-----------------:|
-| meet-chavda | [MEET_CHAVDA_CORPUS_REPORT.md](reports/MEET_CHAVDA_CORPUS_REPORT.md) | `ac4ecef7` | 415 | 97.5% | turn 178: **99.5%** |
-| chandresh | [CHANDRESH_CORPUS_REPORT.md](reports/CHANDRESH_CORPUS_REPORT.md) | `d326033e` | 28 | 68.9% | turn 23: **95.2%** |
-| om | [OM_CORPUS_REPORT.md](reports/OM_CORPUS_REPORT.md) | `dcb92020` | 120 | 90.9% | turn 100: **99.5%** |
+| meet-chavda | [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) | `ac4ecef7` | 415 | 97.5% | turn 178: **99.5%** |
+| chandresh | [CHANDRESH_CORPUS_REPORT.md](CHANDRESH_CORPUS_REPORT.md) | `d326033e` | 28 | 68.9% | turn 23: **95.2%** |
+| om | [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) | `dcb92020` | 120 | 90.9% | turn 100: **99.5%** |
 
-Full three-way comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md).
+Full three-way comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md).
 
 ---
 
@@ -510,6 +515,9 @@ Always verify: `total_input = input_tokens + cache_read_input_tokens + cache_cre
 | Component                                | Location                                        |
 | ---------------------------------------- | ----------------------------------------------- |
 | Four-layer index-aligned payload         | `proxy_tool.py`                                 |
+| Live proxy + systemd user service        | `proxy_tool.py`, `install_proxy_service.sh`     |
+| Live dashboard (billing bifurcation)     | `dashboard_api.py`, `static/dashboard.html`     |
+| Dashboard token auth (WSL)               | `dashboard_auth.py`, `DASHBOARD_TOKEN` in `.env`  |
 | Per-session `X-Session-Id`               | `resolve_session_id()`                          |
 | Async + streaming                        | `AsyncAnthropic`, `_handle_streaming()`         |
 | Dreaming @ turn 10                       | `maybe_trigger_compaction()`, `dream_compact()` |
@@ -520,16 +528,17 @@ Always verify: `total_input = input_tokens + cache_read_input_tokens + cache_cre
 | Native caching analyzer                  | `analyze_claude_caching.py`                     |
 | Team stats rollup                        | `collect_stats.py`                              |
 | Dreaming v4 + token/turn compaction      | `compaction.py`, `proxy_tool.py`                |
+| SharePoint package + `run-setup.sh`      | `packaging/build-release-tarball.sh`            |
+| `scripts/import_claude_backup.sh`        | One-command unzip + import pipeline           |
+| `scripts/weekly_sync.sh`                 | Developer weekly export + upload              |
+| `scripts/team_rollup.sh`                 | Team lead aggregation                         |
+| `DEPLOY.md` + `DEVELOPER_ONBOARDING.md`  | Motadata rollout guides                       |
 
 ### Planned (pre-production)
 
 | Item                                 | Notes                                         |
 | ------------------------------------ | --------------------------------------------- |
 | Full ~200K production `Claude.md`    | Team architecture corpus; starter ~380 tokens |
-| `scripts/import_claude_backup.sh`    | One-command unzip + import pipeline           |
-| `scripts/export_weekly_corpus.sh`    | Developer weekly export                       |
-| `scripts/team_rollup.sh`             | Team lead aggregation                         |
-| `DEPLOY.md`                          | Full rollout guide                            |
 | Phase 2 benchmark with production L1 | Re-run `test_simulator.py`                    |
 
 ---

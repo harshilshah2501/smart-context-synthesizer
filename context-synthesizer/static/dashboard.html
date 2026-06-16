@@ -357,6 +357,19 @@
     }
 
     let refreshTimer = null;
+    const DASHBOARD_TOKEN = new URLSearchParams(location.search).get('token') || '';
+
+    function withAuth(qs) {
+      if (DASHBOARD_TOKEN) qs.set('token', DASHBOARD_TOKEN);
+      return qs;
+    }
+
+    function showError(msg) {
+      document.getElementById('liveBadge').textContent = 'error';
+      document.getElementById('liveBadge').className = 'badge off';
+      document.getElementById('footer').textContent = msg;
+    }
+
     function scheduleRefresh() {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(loadData, 400);
@@ -365,26 +378,35 @@
     async function loadData() {
       const dev = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
-      const qs = new URLSearchParams();
+      const qs = withAuth(new URLSearchParams());
       if (dev) qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
-      const res = await fetch('/api/dashboard/data?' + qs.toString());
-      const data = await res.json();
-      renderKpis(data.summary);
-      renderCharts(data.series);
-      renderRecs(data.recommendations);
-      renderCompactions(data.compactions);
-      renderRecent(data.recent);
-      fillSelect('devFilter', data.filters.developers, dev);
-      fillSelect('sessionFilter', data.filters.sessions, session);
-      document.getElementById('footer').textContent =
-        `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events`;
+      try {
+        const res = await fetch('/api/dashboard/data?' + qs.toString());
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showError(`Dashboard API ${res.status}: ${err.detail || res.statusText}. Run open_dashboard.sh for the token URL.`);
+          return;
+        }
+        const data = await res.json();
+        renderKpis(data.summary);
+        renderCharts(data.series);
+        renderRecs(data.recommendations);
+        renderCompactions(data.compactions);
+        renderRecent(data.recent);
+        fillSelect('devFilter', data.filters.developers, dev);
+        fillSelect('sessionFilter', data.filters.sessions, session);
+        document.getElementById('footer').textContent =
+          `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events`;
+      } catch (err) {
+        showError(`Failed to load dashboard: ${err.message || err}`);
+      }
     }
 
     function connectStream() {
       const dev = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
-      const qs = new URLSearchParams();
+      const qs = withAuth(new URLSearchParams());
       if (dev) qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       const es = new EventSource('/api/dashboard/stream?' + qs.toString());

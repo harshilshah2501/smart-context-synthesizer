@@ -59,6 +59,7 @@ class SessionState:
     turn_counter: int = 0
     lifetime_turns: int = 0
     api_key: str | None = None
+    compaction_in_flight: bool = False
     lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
 
@@ -181,6 +182,8 @@ def _trim_layer3(session: SessionState) -> None:
 
 
 def _compaction_due(session: SessionState) -> tuple[bool, str | None]:
+    if session.compaction_in_flight:
+        return False, None
     if session.turn_counter < 1:
         return False, None
     if session.turn_counter >= MAX_TURNS_THRESHOLD:
@@ -260,24 +263,27 @@ def record_telemetry(
         context=context,
         synthesis=synthesis,
     )
-    append_event(
-        TelemetryEvent(
-            ts=utc_now_iso(),
-            source="proxy",
-            developer_id=developer_id,
-            session_id=session_id,
-            model=model,
-            latency_s=elapsed_time,
-            usage=snap,
-            cost=cost,
-            turn_number=context.turn_number,
-            layer3_messages=context.layer3_messages,
-            compaction_triggered=compaction_triggered,
-            client=client,
-            context=context,
-            synthesis=synthesis,
+    try:
+        append_event(
+            TelemetryEvent(
+                ts=utc_now_iso(),
+                source="proxy",
+                developer_id=developer_id,
+                session_id=session_id,
+                model=model,
+                latency_s=elapsed_time,
+                usage=snap,
+                cost=cost,
+                turn_number=context.turn_number,
+                layer3_messages=context.layer3_messages,
+                compaction_triggered=compaction_triggered,
+                client=client,
+                context=context,
+                synthesis=synthesis,
+            )
         )
-    )
+    except OSError as exc:
+        print(f"[TELEMETRY] Failed to append event: {exc}")
 
 
 def record_compaction_telemetry(
@@ -293,27 +299,30 @@ def record_compaction_telemetry(
 ) -> None:
     snap = UsageSnapshot.from_api(usage)
     cost = compute_costs(snap)
-    append_event(
-        TelemetryEvent(
-            ts=utc_now_iso(),
-            source="compaction",
-            developer_id=developer_id,
-            session_id=session_id,
-            model=COMPACTION_MODEL,
-            latency_s=elapsed_time,
-            usage=snap,
-            cost=cost,
-            client="proxy",
-            extra={
-                "turns_compacted": turns_compacted,
-                "ledger_chars_before": ledger_chars_before,
-                "ledger_chars_after": ledger_chars_after,
-                "ledger_delta_chars": ledger_chars_after - ledger_chars_before,
-                "trigger_reason": trigger_reason,
-                "dreaming_version": "v4",
-            },
+    try:
+        append_event(
+            TelemetryEvent(
+                ts=utc_now_iso(),
+                source="compaction",
+                developer_id=developer_id,
+                session_id=session_id,
+                model=COMPACTION_MODEL,
+                latency_s=elapsed_time,
+                usage=snap,
+                cost=cost,
+                client="proxy",
+                extra={
+                    "turns_compacted": turns_compacted,
+                    "ledger_chars_before": ledger_chars_before,
+                    "ledger_chars_after": ledger_chars_after,
+                    "ledger_delta_chars": ledger_chars_after - ledger_chars_before,
+                    "trigger_reason": trigger_reason,
+                    "dreaming_version": "v4",
+                },
+            )
         )
-    )
+    except OSError as exc:
+        print(f"[TELEMETRY] Failed to append compaction event: {exc}")
 
 
 async def dream_compact(
@@ -324,10 +333,10 @@ async def dream_compact(
     developer_id: str = "unknown",
     api_key: str | None = None,
     trigger_reason: str = "turn_threshold",
-) -> None:
+) -> bool:
     """Background synthesis: merge sliding-window turns into the history ledger."""
     if not turns_snapshot:
-        return
+        return False
 
     print(
         f"[MEMORY MANAGER] Dreaming v4 for session {session_id} "
@@ -337,7 +346,7 @@ async def dream_compact(
     key = api_key or DEFAULT_API_KEY
     if not key:
         print(f"[MEMORY MANAGER] Skipping compaction for {session_id}: no API key available.")
-        return
+        return False
 
     try:
         start_time = time.perf_counter()
@@ -352,7 +361,7 @@ async def dream_compact(
         new_ledger = extract_assistant_text(response.content).strip()
         if not new_ledger:
             print(f"[MEMORY MANAGER] Compaction produced empty ledger for {session_id}; keeping prior.")
-            return
+            return False
 
         session = await get_session(session_id)
         async with session.lock:
@@ -368,8 +377,10 @@ async def dream_compact(
             ledger_chars_after=len(new_ledger),
             trigger_reason=trigger_reason,
         )
+        return True
     except Exception as exc:
         print(f"[MEMORY MANAGER] Compaction failed for {session_id}: {exc}")
+        return False
 
 
 async def maybe_trigger_compaction(
@@ -384,20 +395,29 @@ async def maybe_trigger_compaction(
 
     turns_snapshot = list(session.rolling_recent_turns)
     ledger_snapshot = session.history_ledger
-    session.rolling_recent_turns.clear()
-    session.turn_counter = 0
+    session.compaction_in_flight = True
 
     print(f"[MEMORY MANAGER] Compaction due ({reason}) for session {session_id}. Dreaming in background...")
-    asyncio.create_task(
-        dream_compact(
-            session_id,
-            turns_snapshot,
-            ledger_snapshot,
-            developer_id=developer_id,
-            api_key=session.api_key,
-            trigger_reason=reason,
-        )
-    )
+
+    async def finalize_compaction() -> None:
+        try:
+            ok = await dream_compact(
+                session_id,
+                turns_snapshot,
+                ledger_snapshot,
+                developer_id=developer_id,
+                api_key=session.api_key,
+                trigger_reason=reason,
+            )
+            async with session.lock:
+                if ok:
+                    session.rolling_recent_turns.clear()
+                    session.turn_counter = 0
+        finally:
+            async with session.lock:
+                session.compaction_in_flight = False
+
+    asyncio.create_task(finalize_compaction())
     return True
 
 
@@ -448,6 +468,7 @@ async def health() -> dict[str, str]:
 async def startup() -> None:
     global CLAUDE_MD_CONTENT
     CLAUDE_MD_CONTENT = load_claude_md()
+    from dashboard_auth import dashboard_localhost_only, dashboard_token
     from telemetry import TELEMETRY_LOG_PATH
 
     l1_est = estimate_tokens(len(CLAUDE_MD_CONTENT))
@@ -467,7 +488,19 @@ async def startup() -> None:
     print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback")
     host = os.environ.get("PROXY_HOST", "127.0.0.1")
     port = os.environ.get("PROXY_PORT", "8080")
-    print(f"[PROXY] Live dashboard: http://{host}:{port}/dashboard")
+    dash_url = f"http://{host}:{port}/dashboard"
+    if dashboard_token():
+        dash_url += "?token=<DASHBOARD_TOKEN>"
+    print(f"[PROXY] Live dashboard: {dash_url}")
+    if host == "0.0.0.0" and not dashboard_token() and not dashboard_localhost_only():
+        print(
+            "[PROXY] ⚠ PROXY_HOST=0.0.0.0 without DASHBOARD_TOKEN — "
+            "dashboard is reachable on your LAN. Set DASHBOARD_TOKEN in .env or re-run setup."
+        )
+    if dashboard_localhost_only():
+        print("[PROXY] Dashboard: localhost-only (DASHBOARD_LOCALHOST_ONLY=1)")
+    elif dashboard_token():
+        print("[PROXY] Dashboard: token required (DASHBOARD_TOKEN set)")
 
 
 @app.post("/v1/messages")

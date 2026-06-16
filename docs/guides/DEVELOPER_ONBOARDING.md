@@ -177,7 +177,6 @@ journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
 
 ```bash
 echo 'PROXY_PORT=8081' >> context-synthesizer/.env
-export SYNTH_PROXY_URL=http://127.0.0.1:8081
 bash context-synthesizer/scripts/configure_claude_proxy.sh
 bash context-synthesizer/scripts/install_proxy_service.sh
 ```

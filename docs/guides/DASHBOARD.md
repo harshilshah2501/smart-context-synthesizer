@@ -14,6 +14,10 @@ systemctl --user restart context-synthesizer-proxy
 bash context-synthesizer/scripts/open_dashboard.sh --open
 ```
 
+**Dashboard auth (WSL):** new WSL installs auto-generate `DASHBOARD_TOKEN` in `.env`. Always open the dashboard via `open_dashboard.sh` — URLs include `?token=...`. Do not share the token outside your machine.
+
+**Native Linux (optional):** set `DASHBOARD_LOCALHOST_ONLY=1` to block non-loopback access without a token. See `context-synthesizer/.env.example`.
+
 ---
 
 ## What you see
@@ -67,6 +71,7 @@ API:
 | Issue | Fix |
 |-------|-----|
 | Empty dashboard | Confirm proxy is active; use Claude Code through proxy |
+| **401 on dashboard** | Use URL from `open_dashboard.sh` (includes `?token=`). Token is in `context-synthesizer/.env` |
 | Wrong port | Match `PROXY_PORT` in `.env` (e.g. `8081` if Tabby uses 8080) |
 | Old data only | Check `telemetry.jsonl` path; live SSE badge should show **live** |
 | **`ERR_EMPTY_RESPONSE` in Windows browser** (curl in WSL works) | See **WSL + Windows browser** below |
@@ -91,10 +96,7 @@ hostname -I | awk '{print $1}'
 One-liner to open from WSL:
 
 ```bash
-PORT=$(grep -E '^PROXY_PORT=' context-synthesizer/.env 2>/dev/null | cut -d= -f2); PORT=${PORT:-8080}
-WSL_IP=$(hostname -I | awk '{print $1}')
-echo "Dashboard: http://${WSL_IP}:${PORT}/dashboard"
-cmd.exe /c start "http://${WSL_IP}:${PORT}/dashboard" 2>/dev/null || true
+bash context-synthesizer/scripts/open_dashboard.sh --open
 ```
 
 **Windows 11 (mirrored networking):** `localhost` from Windows may forward to WSL — if it still fails, use the WSL IP above.

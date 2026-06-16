@@ -6,10 +6,11 @@ import asyncio
 import json
 from pathlib import Path
 
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import FileResponse, StreamingResponse
 
-from dashboard_api import dashboard_payload, merge_events
+from dashboard_api import dashboard_payload
+from dashboard_auth import dashboard_token, verify_dashboard_access
 from telemetry import TELEMETRY_LOG_PATH, get_live_events
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
@@ -17,14 +18,15 @@ router = APIRouter(tags=["dashboard"])
 
 
 @router.get("/dashboard")
-async def dashboard_page() -> FileResponse:
+async def dashboard_page(_: None = Depends(verify_dashboard_access)) -> FileResponse:
     return FileResponse(STATIC_DIR / "dashboard.html", media_type="text/html")
 
 
 @router.get("/api/dashboard/meta")
-async def dashboard_meta() -> dict:
+async def dashboard_meta(_: None = Depends(verify_dashboard_access)) -> dict:
     return {
         "telemetry_log": str(TELEMETRY_LOG_PATH),
+        "auth_required": bool(dashboard_token()),
         "endpoints": {
             "page": "/dashboard",
             "data": "/api/dashboard/data",
@@ -35,6 +37,7 @@ async def dashboard_meta() -> dict:
 
 @router.get("/api/dashboard/data")
 async def dashboard_data(
+    _: None = Depends(verify_dashboard_access),
     limit: int = Query(500, ge=1, le=5000),
     developer_id: str | None = None,
     session_id: str | None = None,
@@ -53,6 +56,7 @@ async def dashboard_data(
 @router.get("/api/dashboard/stream")
 async def dashboard_stream(
     request: Request,
+    _: None = Depends(verify_dashboard_access),
     since: int = Query(0, ge=0),
     developer_id: str | None = None,
     session_id: str | None = None,

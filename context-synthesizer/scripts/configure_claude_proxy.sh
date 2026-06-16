@@ -7,6 +7,20 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/config.sh"
 load_developer_config
 
+ENV_FILE="${REPO_ROOT}/context-synthesizer/.env"
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  # shellcheck disable=SC1090
+  source "$ENV_FILE"
+  set +a
+fi
+
+# Claude Code runs locally; PROXY_HOST=0.0.0.0 is for dashboard bind only.
+if [[ -z "${SYNTH_PROXY_URL:-}" ]]; then
+  PROXY_PORT="${PROXY_PORT:-8080}"
+  export SYNTH_PROXY_URL="http://127.0.0.1:${PROXY_PORT}"
+fi
+
 PY="${REPO_ROOT}/.venv/bin/python"
 SETTINGS="${CLAUDE_SETTINGS_PATH:-$HOME/.claude/settings.json}"
 

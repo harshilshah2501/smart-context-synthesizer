@@ -95,7 +95,7 @@ def merge_events(
             for k in ("ts", "source", "session_id", "turn_number", "model", "developer_id")
         )
 
-    for ev in file_events + live_slice:
+    for ev in live_slice + file_events:
         key = _key(ev)
         if key in seen:
             continue

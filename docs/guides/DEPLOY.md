@@ -1,6 +1,6 @@
 # Deploying the Context Synthesizer
 
-**Developers never clone git.** They run **`install.sh` once** (~5 min). After that: **live compaction proxy** (primary) + optional weekly SharePoint uploads.
+**Developers never clone git.** They run **`run-setup.sh` once** (~5 min) from the SharePoint package. After that: **live compaction proxy** (primary) + optional weekly SharePoint uploads.
 
 | Role | After setup |
 |------|-------------|
@@ -8,6 +8,8 @@
 | **Team lead** | Pull drive → `team_rollup.sh` (~1 min/week) |
 
 **Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) (copy-paste) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [DASHBOARD.md](DASHBOARD.md) (live metrics)
+
+> **Motadata teams:** use only the section below. Skip [Alternative: GitHub / rclone](#alternative-github--rclone).
 
 ---
 
@@ -65,12 +67,18 @@ bash context-synthesizer/scripts/pull_from_drive.sh \
 bash context-synthesizer/scripts/team_rollup.sh
 ```
 
+Optional team-lead cron (Mondays 09:15, adjust path to your synced toolkit):
+
+```cron
+15 9 * * 1 bash /path/to/context-synthesizer-toolkit-YYYY.MM.DD/context-synthesizer/scripts/pull_from_drive.sh "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" && bash /path/to/context-synthesizer-toolkit-YYYY.MM.DD/context-synthesizer/scripts/team_rollup.sh
+```
+
 ---
 
 ## Architecture
 
 ```text
-install.sh / run-setup.sh  →  toolkit folder (or ~/.local/share/context-synthesizer)
+run-setup.sh / install.sh  →  toolkit folder (SharePoint sync, in-place)
                                         │
 Claude Code ──► proxy (default ON) ─────┼── /dashboard  (live bifurcation UI)
 ~/.claude/projects/ ────────────────────┼── weekly_sync.sh (cron, optional)
@@ -82,126 +90,16 @@ Claude Code ──► proxy (default ON) ─────┼── /dashboard  (l
 
 ---
 
-## Step 0 — Team lead: publish installer (once)
-
-### Path A — GitHub raw (public repo)
-
-Developers use:
-
-```text
-https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh
-```
-
-Pin the link in Slack/wiki. Updates when you push to `main`.
-
-### Path B — shared drive only (recommended for private teams)
-
-Build a tarball from your machine:
-
-```bash
-cd /path/to/Out-of-bound-chronicles
-bash context-synthesizer/packaging/build-release-tarball.sh
-```
-
-Upload to shared drive:
-
-- `context-synthesizer-toolkit-YYYY.MM.DD.tar.gz`
-- `install.sh` (copy from repo root)
-
-Share the drive folder + rclone remote name with developers.
-
----
-
-## Step 1 — Developer install (copy-paste to Slack)
-
-**GitHub:**
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
-  --developer THEIR_HANDLE \
-  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
-```
-
-**Shared drive:**
-
-```bash
-bash /path/from/drive/install.sh \
-  --tarball-file /path/from/drive/context-synthesizer-toolkit-2026.06.12.tar.gz \
-  --developer THEIR_HANDLE \
-  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
-```
-
-| Flag / `team.conf` | Effect |
-|--------------------|--------|
-| `ENABLE_PROXY=1` / `--enable-proxy` | Live compaction during Claude Code sessions (**default** in `run-setup.sh`) |
-| `ENABLE_WEEKLY_CRON=1` / `--install-cron` | Monday auto-export + upload (**default** in `run-setup.sh`) |
-| `--sync-dir` / `SYNC_DIR` | OneDrive folder for weekly upload (SharePoint teams) |
-| `--rclone-remote` | Shared drive destination (optional) |
-
----
-
-## Step 2 — rclone (team lead, once)
-
-1. Create `ContextSynthesizer/weekly/` on Google Drive (or S3).  
-2. `rclone config` → remote name e.g. `gdrive`.  
-3. Give developers the remote path: `gdrive:Shared/ContextSynthesizer/weekly`  
-4. Each developer configures the **same remote name** on their machine (`rclone config` once).
-
----
-
-## Step 3 — What developers see
-
-### Live (default via `ENABLE_PROXY=1` / `--enable-proxy`)
-
-Claude Code unchanged — synthesizer runs as `context-synthesizer-proxy` user service. Auth comes from your Claude Code session (Max/Pro); optional `ANTHROPIC_API_KEY` in `context-synthesizer/.env` for non-CLI clients.
-
-**Dashboard:** run `bash context-synthesizer/scripts/open_dashboard.sh` — per-turn billing split, four-layer payload, naive vs shaped, cumulative $ saved. WSL: use WSL IP in Windows browser. See [DASHBOARD.md](DASHBOARD.md).
-
-### Weekly (automatic)
-
-On shared drive: `YYYY-MM-DD_handle_summary.md` + JSONL.
-
----
-
-## Step 4 — Team lead weekly rollup
-
-```bash
-# On team lead machine (git checkout OK for lead, or install same way)
-bash context-synthesizer/scripts/pull_from_drive.sh \
-  'gdrive:Shared/ContextSynthesizer/weekly'
-
-bash context-synthesizer/scripts/team_rollup.sh
-```
-
-Optional cron (Mondays 09:15):
-
-```cron
-15 9 * * 1 bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/pull_from_drive.sh 'gdrive:Shared/ContextSynthesizer/weekly' && bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/team_rollup.sh
-```
-
----
-
-## Backup zip import (team lead)
-
-```bash
-bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer meet-chavda
-```
-
----
-
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| Download fails | Use `--tarball-file` from shared drive |
-| No Monday upload | `~/.local/state/context-synthesizer/weekly-*.log` |
+| Setup fails at proxy step | Enable systemd (WSL: `[boot] systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`) |
+| Download fails | Use tarball from SharePoint; extract and run `run-setup.sh` from package folder |
+| No Monday upload | Check `~/.local/state/context-synthesizer/weekly-*.log`; verify `SYNC_DIR` in `team.conf` |
 | Proxy `activating (auto-restart)` / exit 1 | See below |
 | Proxy down | `systemctl --user restart context-synthesizer-proxy` |
-| Reinstall | `bash install.sh --reinstall --developer ...` |
+| Reinstall | `bash install.sh --reinstall --developer ...` from package root |
 
 ### Proxy won't start (exit-code / auto-restart)
 
@@ -217,7 +115,7 @@ cd /path/to/toolkit
 | Error | Fix |
 |-------|-----|
 | `ModuleNotFoundError: uvicorn` (or `fastapi`) | `bash context-synthesizer/scripts/setup.sh` |
-| `address already in use` / port 8080 | Often **Tabby** or another IDE plugin (`ss -tlnp \| grep 8080`). Use `PROXY_PORT=8081` in `context-synthesizer/.env`, `export SYNTH_PROXY_URL=http://127.0.0.1:8081`, run `configure_claude_proxy.sh`, then `install_proxy_service.sh` |
+| `address already in use` / port 8080 | Often **Tabby** or another IDE plugin (`ss -tlnp \| grep 8080`). Set `PROXY_PORT=8081` in `context-synthesizer/.env`, then re-run `configure_claude_proxy.sh` and `install_proxy_service.sh` |
 | `Claude.md not found` | Re-extract toolkit; file must exist at `context-synthesizer/Claude.md` |
 
 Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
@@ -230,8 +128,9 @@ Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
 | Script | Who |
 |--------|-----|
-| `install.sh` (repo root) | **Developer entry point** |
-| `packaging/build-release-tarball.sh` | Team lead — build drive bundle |
+| `run-setup.sh` (package root) | **Developer entry point** (Motadata) |
+| `install.sh` (package root) | Called by `run-setup.sh`; also direct install |
+| `packaging/build-release-tarball.sh` | Team lead — build SharePoint bundle |
 | `scripts/setup_developer.sh` | Called by install.sh |
 | `scripts/check_proxy_ready.sh` | Preflight before proxy install |
 | `scripts/open_dashboard.sh` | Print/open dashboard URL (WSL-aware) |
@@ -240,3 +139,82 @@ Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 | `scripts/pull_from_drive.sh` | Team lead |
 
 More: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CORPUS_COMPARATIVE_ANALYSIS.md](../reports/CORPUS_COMPARATIVE_ANALYSIS.md)
+
+---
+
+## Backup zip import (team lead)
+
+```bash
+bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer meet-chavda
+```
+
+---
+
+## Alternative: GitHub / rclone
+
+> **Not for Motadata rollout.** Use SharePoint + `run-setup.sh` above. This section is for public-repo or Google Drive deployments.
+
+### Publish installer (once)
+
+**Path A — GitHub raw (public repo only):**
+
+```text
+https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh
+```
+
+**Path B — shared drive tarball:**
+
+```bash
+bash context-synthesizer/packaging/build-release-tarball.sh
+# Upload context-synthesizer-toolkit-YYYY.MM.DD.tar.gz + install.sh to shared drive
+```
+
+### Developer install (rclone)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
+  --developer THEIR_HANDLE \
+  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
+  --enable-proxy \
+  --install-cron
+```
+
+Or from a synced drive tarball:
+
+```bash
+bash /path/from/drive/install.sh \
+  --tarball-file /path/from/drive/context-synthesizer-toolkit-YYYY.MM.DD.tar.gz \
+  --developer THEIR_HANDLE \
+  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
+  --enable-proxy \
+  --install-cron
+```
+
+| Flag / `team.conf` | Effect |
+|--------------------|--------|
+| `ENABLE_PROXY=1` / `--enable-proxy` | Live compaction during Claude Code sessions (**default** in `run-setup.sh`) |
+| `ENABLE_WEEKLY_CRON=1` / `--install-cron` | Monday auto-export + upload (**default** in `run-setup.sh`) |
+| `--sync-dir` / `SYNC_DIR` | OneDrive folder for weekly upload (SharePoint teams) |
+| `--rclone-remote` | Shared drive destination (optional) |
+
+### rclone setup (team lead, once)
+
+1. Create `ContextSynthesizer/weekly/` on Google Drive (or S3).  
+2. `rclone config` → remote name e.g. `gdrive`.  
+3. Give developers the remote path: `gdrive:Shared/ContextSynthesizer/weekly`  
+4. Each developer configures the **same remote name** on their machine (`rclone config` once).
+
+### Team lead weekly rollup (rclone)
+
+```bash
+bash context-synthesizer/scripts/pull_from_drive.sh \
+  'gdrive:Shared/ContextSynthesizer/weekly'
+
+bash context-synthesizer/scripts/team_rollup.sh
+```
+
+Optional cron (Mondays 09:15):
+
+```cron
+15 9 * * 1 bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/pull_from_drive.sh 'gdrive:Shared/ContextSynthesizer/weekly' && bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/team_rollup.sh
+```
