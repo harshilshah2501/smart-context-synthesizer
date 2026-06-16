@@ -93,6 +93,10 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   PROXY_PORT="${PROXY_PORT_LINE#PROXY_PORT=}"
   PROXY_PORT="${PROXY_PORT:-8080}"
   echo "  Live dashboard: http://127.0.0.1:${PROXY_PORT}/dashboard"
+  if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+    WSL_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    [[ -n "$WSL_IP" ]] && echo "  Windows browser: http://${WSL_IP}:${PROXY_PORT}/dashboard"
+  fi
 fi
 
 if [[ -n "$SYNC_DIR" ]]; then
