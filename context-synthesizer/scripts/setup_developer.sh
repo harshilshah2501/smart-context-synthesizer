@@ -82,6 +82,13 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
     grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null || echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
     chmod 600 "$ENV_FILE" 2>/dev/null || true
   fi
+  # WSL: bind all interfaces so Windows browser can reach dashboard via WSL IP
+  if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
+    if ! grep -q '^PROXY_HOST=' "$ENV_FILE" 2>/dev/null; then
+      echo 'PROXY_HOST=0.0.0.0' >>"$ENV_FILE"
+      echo "WSL detected → PROXY_HOST=0.0.0.0 (Windows browser uses WSL IP, not 127.0.0.1)"
+    fi
+  fi
   bash "$SCRIPT_DIR/configure_claude_proxy.sh"
   bash "$SCRIPT_DIR/install_proxy_service.sh"
   echo ""

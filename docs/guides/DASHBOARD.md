@@ -4,7 +4,15 @@ Real-time bifurcation of **where the Context Synthesizer saves tokens and cost**
 
 **URL:** run `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
 
-**WSL + Windows browser:** use the **WSL IP** URL (e.g. `http://172.22.x.x:8080/dashboard`), not `127.0.0.1` in Chrome/Edge.
+**WSL + Windows browser:** use the **WSL IP** URL from `open_dashboard.sh` — **never** `127.0.0.1` in Windows Chrome (`ERR_EMPTY_RESPONSE`).
+
+**Required on WSL:** `PROXY_HOST=0.0.0.0` in `context-synthesizer/.env` so Windows can connect via WSL IP. New installs set this automatically; existing:
+
+```bash
+echo 'PROXY_HOST=0.0.0.0' >> context-synthesizer/.env
+systemctl --user restart context-synthesizer-proxy
+bash context-synthesizer/scripts/open_dashboard.sh --open
+```
 
 ---
 
