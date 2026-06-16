@@ -44,8 +44,10 @@ EOF
 mkdir -p "$OUT"
 TARBALL="${OUT}/${NAME}.tar.gz"
 tar -czf "$TARBALL" -C "$OUT" "$NAME"
+ln -sfn "$(basename "$TARBALL")" "${OUT}/context-synthesizer-toolkit-latest.tar.gz"
 
 echo "Built: $TARBALL"
+echo "Latest: ${OUT}/context-synthesizer-toolkit-latest.tar.gz → $(basename "$TARBALL")"
 echo ""
 echo "Share on SharePoint:"
 echo "  Option A — upload $(basename "$TARBALL") (devs extract after sync)"
