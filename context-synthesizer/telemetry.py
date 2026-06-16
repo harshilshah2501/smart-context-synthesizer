@@ -86,6 +86,9 @@ class ContextSnapshot:
     client_message_count: int = 0
     ignored_messages: int = 0
     naive_client_chars: int = 0
+    # L2a — pinned checkpoints (@synth-remember:)
+    pinned_checkpoints: int = 0
+    checkpoint_chars: int = 0
     turn_number: int = 0
     lifetime_turn: int = 0
     turns_until_compaction: int = 0
@@ -98,11 +101,21 @@ class ContextSnapshot:
 
     @property
     def payload_chars(self) -> int:
-        return self.layer1_chars + self.ledger_chars + self.layer3_chars + self.prompt_chars
+        return (
+            self.layer1_chars
+            + self.checkpoint_chars
+            + self.ledger_chars
+            + self.layer3_chars
+            + self.prompt_chars
+        )
 
     @property
     def est_layer1_tokens(self) -> int:
         return estimate_tokens(self.layer1_chars)
+
+    @property
+    def est_checkpoint_tokens(self) -> int:
+        return estimate_tokens(self.checkpoint_chars)
 
     @property
     def est_ledger_tokens(self) -> int:
@@ -126,8 +139,9 @@ class ContextSnapshot:
 
     @property
     def optimized_message_count(self) -> int:
-        # L1 + L2 + rolling turns + fresh user prompt
-        return 2 + self.layer3_messages + 1
+        # L1 + L2a (if pins) + L2b + rolling turns + fresh user prompt
+        has_pins = self.pinned_checkpoints > 0
+        return 1 + (1 if has_pins else 0) + 1 + self.layer3_messages + 1
 
     @property
     def est_naive_tokens(self) -> int:
@@ -235,6 +249,7 @@ class TelemetryEvent:
                 **{k: v for k, v in asdict(self.context).items()},
                 "payload_chars": self.context.payload_chars,
                 "est_layer1_tokens": self.context.est_layer1_tokens,
+                "est_checkpoint_tokens": self.context.est_checkpoint_tokens,
                 "est_ledger_tokens": self.context.est_ledger_tokens,
                 "est_layer3_tokens": self.context.est_layer3_tokens,
                 "est_prompt_tokens": self.context.est_prompt_tokens,
@@ -335,9 +350,12 @@ def print_telemetry_report(
             )
     if context is not None:
         print("├────────────────────────────────────────────────────────┤")
-        print(f"│ Est. L1/L2/L3/L4:   {context.est_layer1_tokens:,} / "
-              f"{context.est_ledger_tokens:,} / {context.est_layer3_tokens:,} / "
-              f"{context.est_prompt_tokens:,} tok")
+        print(f"│ Est. L1/L2a/L2b/L3/L4: {context.est_layer1_tokens:,} / "
+              f"{context.est_checkpoint_tokens:,} / {context.est_ledger_tokens:,} / "
+              f"{context.est_layer3_tokens:,} / {context.est_prompt_tokens:,} tok")
+        if context.pinned_checkpoints > 0:
+            print(f"│ Pinned checkpoints: {context.pinned_checkpoints} "
+                  f"({context.checkpoint_chars:,} chars, ~{context.est_checkpoint_tokens:,} tok)")
         print(f"│ L1 cache eligible:  {'yes' if context.l1_cache_eligible_est else 'NO':>6}")
         print(f"│ Turn {context.turn_number}/{context.max_turns_threshold} "
               f"(lifetime {context.lifetime_turn})")

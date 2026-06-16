@@ -1,5 +1,6 @@
 """
-Local API gateway proxy for JetBrains IDE → Anthropic with index-aligned prompt caching.
+Local API gateway proxy for Claude Code → Anthropic with index-aligned prompt caching
+and pinned checkpoint memory (L2a).
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from dashboard_routes import attach_dashboard
-from compaction import build_compaction_prompt, format_turns_for_compaction
+from compaction import build_compaction_prompt, extract_pins, format_turns_for_compaction
 from models import DEFAULT_CHAT_MODEL, DEFAULT_COMPACTION_MODEL
 from telemetry import (
     ContextSnapshot,
@@ -41,9 +42,14 @@ CLAUDE_MD_PATH = Path(os.environ.get("CLAUDE_MD_PATH", str(DEFAULT_CLAUDE_MD_PAT
 MAX_TURNS_THRESHOLD = int(os.environ.get("MAX_TURNS_THRESHOLD", "10"))
 MAX_LAYER3_TURNS = int(os.environ.get("MAX_LAYER3_TURNS", str(MAX_TURNS_THRESHOLD)))
 COMPACTION_TOKEN_THRESHOLD = int(os.environ.get("COMPACTION_TOKEN_THRESHOLD", "100000"))
+MAX_CHECKPOINTS = int(os.environ.get("MAX_CHECKPOINTS", "20"))
 DEFAULT_MODEL = DEFAULT_CHAT_MODEL
 COMPACTION_MODEL = DEFAULT_COMPACTION_MODEL
 LEDGER_PREFIX = "Current Architectural State:\n"
+CHECKPOINTS_PREFIX = (
+    "Pinned Checkpoints — always preserved across compactions "
+    "(bug fixes, migrations, key decisions):\n"
+)
 
 CLAUDE_MD_CONTENT: str = ""
 DEFAULT_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip() or None
@@ -53,9 +59,18 @@ _sessions_lock = asyncio.Lock()
 
 
 @dataclass
+class Checkpoint:
+    """A developer-pinned fact that must survive every compaction cycle."""
+    text: str
+    turn: int   # lifetime turn number when pinned
+    ts: str     # ISO timestamp
+
+
+@dataclass
 class SessionState:
     history_ledger: str = "Initial State: System active and optimized."
     rolling_recent_turns: list[dict[str, Any]] = field(default_factory=list)
+    pinned_checkpoints: list[Checkpoint] = field(default_factory=list)
     turn_counter: int = 0
     lifetime_turns: int = 0
     api_key: str | None = None
@@ -141,7 +156,23 @@ def build_layer1_message() -> dict[str, Any]:
     }
 
 
+def build_layer2a_message(checkpoints: list[Checkpoint]) -> dict[str, Any]:
+    """L2a — pinned checkpoints block, cached, append-only, never summarised away."""
+    bullets = "\n".join(f"- [T{c.turn}] {c.text}" for c in checkpoints)
+    return {
+        "role": "user",
+        "content": [
+            {
+                "type": "text",
+                "text": f"{CHECKPOINTS_PREFIX}{bullets}",
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
+    }
+
+
 def build_layer2_message(ledger: str) -> dict[str, Any]:
+    """L2b — mutable architectural ledger, replaced on each compaction."""
     return {
         "role": "user",
         "content": [
@@ -155,10 +186,18 @@ def build_layer2_message(ledger: str) -> dict[str, Any]:
 
 
 def build_optimized_messages(session: SessionState, user_prompt: str) -> list[dict[str, Any]]:
-    messages: list[dict[str, Any]] = [
-        build_layer1_message(),
-        build_layer2_message(session.history_ledger),
-    ]
+    """
+    Assemble the index-aligned payload:
+      [0] L1  Claude.md (static, cached)
+      [1] L2a Checkpoints (append-only, cached)  — only present when pins exist
+      [*] L2b Ledger (mutable, cached)
+      [*] L3  Rolling recent turns
+      [-1] L4 Fresh user prompt
+    """
+    messages: list[dict[str, Any]] = [build_layer1_message()]
+    if session.pinned_checkpoints:
+        messages.append(build_layer2a_message(session.pinned_checkpoints))
+    messages.append(build_layer2_message(session.history_ledger))
     messages.extend(session.rolling_recent_turns)
     messages.append({"role": "user", "content": user_prompt})
     return messages
@@ -203,6 +242,7 @@ def build_context_snapshot(
 ) -> ContextSnapshot:
     layer3_chars = sum(_message_chars(turn) for turn in session.rolling_recent_turns)
     naive_client_chars = sum(_message_chars(m) for m in incoming_messages)
+    checkpoint_chars = sum(len(c.text) for c in session.pinned_checkpoints)
     return ContextSnapshot(
         layer1_chars=len(CLAUDE_MD_CONTENT),
         ledger_chars=len(session.history_ledger) + len(LEDGER_PREFIX),
@@ -212,6 +252,8 @@ def build_context_snapshot(
         client_message_count=len(incoming_messages),
         ignored_messages=max(0, len(incoming_messages) - 1),
         naive_client_chars=naive_client_chars,
+        pinned_checkpoints=len(session.pinned_checkpoints),
+        checkpoint_chars=checkpoint_chars,
         turn_number=session.turn_counter + 1,
         lifetime_turn=session.lifetime_turns + 1,
         turns_until_compaction=max(0, MAX_TURNS_THRESHOLD - session.turn_counter - 1),
@@ -295,6 +337,7 @@ def record_compaction_telemetry(
     turns_compacted: int,
     ledger_chars_before: int,
     ledger_chars_after: int,
+    pins_active: int = 0,
     trigger_reason: str = "turn_threshold",
 ) -> None:
     snap = UsageSnapshot.from_api(usage)
@@ -316,6 +359,7 @@ def record_compaction_telemetry(
                     "ledger_chars_before": ledger_chars_before,
                     "ledger_chars_after": ledger_chars_after,
                     "ledger_delta_chars": ledger_chars_after - ledger_chars_before,
+                    "pins_active": pins_active,
                     "trigger_reason": trigger_reason,
                     "dreaming_version": "v4",
                 },
@@ -330,17 +374,24 @@ async def dream_compact(
     turns_snapshot: list[dict[str, Any]],
     ledger_snapshot: str,
     *,
+    pins_snapshot: list[Checkpoint] | None = None,
     developer_id: str = "unknown",
     api_key: str | None = None,
     trigger_reason: str = "turn_threshold",
 ) -> bool:
-    """Background synthesis: merge sliding-window turns into the history ledger."""
+    """Background synthesis: merge sliding-window turns into the history ledger.
+
+    Pins (L2a checkpoints) are passed to Haiku as context so it doesn't
+    waste ledger budget re-summarising already-guaranteed facts.
+    """
     if not turns_snapshot:
         return False
 
+    pins_snapshot = pins_snapshot or []
     print(
         f"[MEMORY MANAGER] Dreaming v4 for session {session_id} "
-        f"({len(turns_snapshot)} msgs, trigger={trigger_reason})..."
+        f"({len(turns_snapshot)} msgs, trigger={trigger_reason}, "
+        f"pins={len(pins_snapshot)})..."
     )
     ledger_chars_before = len(ledger_snapshot)
     key = api_key or DEFAULT_API_KEY
@@ -351,7 +402,8 @@ async def dream_compact(
     try:
         start_time = time.perf_counter()
         turns_text = format_turns_for_compaction(turns_snapshot, normalize_content)
-        prompt = build_compaction_prompt(ledger_snapshot, turns_text)
+        pin_texts = [c.text for c in pins_snapshot]
+        prompt = build_compaction_prompt(ledger_snapshot, turns_text, pinned=pin_texts)
         response = await anthropic_client(key).messages.create(
             model=COMPACTION_MODEL,
             max_tokens=4096,
@@ -375,6 +427,7 @@ async def dream_compact(
             turns_compacted=len(turns_snapshot) // 2,
             ledger_chars_before=ledger_chars_before,
             ledger_chars_after=len(new_ledger),
+            pins_active=len(pins_snapshot),
             trigger_reason=trigger_reason,
         )
         return True
@@ -395,6 +448,7 @@ async def maybe_trigger_compaction(
 
     turns_snapshot = list(session.rolling_recent_turns)
     ledger_snapshot = session.history_ledger
+    pins_snapshot = list(session.pinned_checkpoints)
     session.compaction_in_flight = True
 
     print(f"[MEMORY MANAGER] Compaction due ({reason}) for session {session_id}. Dreaming in background...")
@@ -405,6 +459,7 @@ async def maybe_trigger_compaction(
                 session_id,
                 turns_snapshot,
                 ledger_snapshot,
+                pins_snapshot=pins_snapshot,
                 developer_id=developer_id,
                 api_key=session.api_key,
                 trigger_reason=reason,
@@ -430,7 +485,26 @@ async def record_exchange(
     developer_id: str,
 ) -> bool:
     async with session.lock:
-        session.rolling_recent_turns.append({"role": "user", "content": user_prompt})
+        # Extract @synth-remember: pins before adding to L3.
+        # Pinned lines are removed from the stored turn so they live exclusively
+        # in L2a and are not subject to Dreaming summarisation.
+        pins, clean_prompt = extract_pins(user_prompt)
+        if pins:
+            now = utc_now_iso()
+            for pin_text in pins:
+                session.pinned_checkpoints.append(
+                    Checkpoint(text=pin_text, turn=session.lifetime_turns + 1, ts=now)
+                )
+            # LRU eviction: keep the most recent MAX_CHECKPOINTS pins
+            if len(session.pinned_checkpoints) > MAX_CHECKPOINTS:
+                session.pinned_checkpoints = session.pinned_checkpoints[-MAX_CHECKPOINTS:]
+            print(
+                f"[CHECKPOINT] +{len(pins)} pin(s) for {session_id} "
+                f"(total={len(session.pinned_checkpoints)}): {pins}"
+            )
+
+        stored_prompt = clean_prompt.strip() or user_prompt
+        session.rolling_recent_turns.append({"role": "user", "content": stored_prompt})
         session.rolling_recent_turns.append({"role": "assistant", "content": assistant_text})
         _trim_layer3(session)
         session.turn_counter += 1
@@ -484,6 +558,7 @@ async def startup() -> None:
         f"Layer3 cap {MAX_LAYER3_TURNS} turns | "
         f"token threshold {COMPACTION_TOKEN_THRESHOLD:,} (0=off)"
     )
+    print(f"[PROXY] Checkpoints: max {MAX_CHECKPOINTS} pins per session (@synth-remember:)")
     print(f"[PROXY] Telemetry log: {TELEMETRY_LOG_PATH}")
     print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback")
     host = os.environ.get("PROXY_HOST", "127.0.0.1")

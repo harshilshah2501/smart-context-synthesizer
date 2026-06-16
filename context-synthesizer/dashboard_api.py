@@ -148,6 +148,14 @@ def aggregate_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         1 for r in proxy if (r.get("context") or {}).get("l1_cache_eligible_est")
     )
 
+    # Active pins: take the value from the most recent proxy event
+    active_pins = 0
+    for rec in reversed(proxy):
+        pins = (rec.get("context") or {}).get("pinned_checkpoints")
+        if pins is not None:
+            active_pins = int(pins)
+            break
+
     return {
         "total_events": len(events),
         "proxy_requests": len(proxy),
@@ -163,6 +171,7 @@ def aggregate_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         "avg_compression_vs_naive_pct": round(_avg(compression_pcts), 1),
         "p90_compression_vs_naive_pct": round(_pctile(compression_pcts, 0.9), 1),
         "l1_cache_eligible_pct": round(l1_eligible / len(proxy) * 100, 1) if proxy else 0.0,
+        "active_pins": active_pins,
     }
 
 
@@ -177,6 +186,7 @@ def build_chart_series(events: list[dict[str, Any]], *, max_points: int = 60) ->
     uncached: list[int] = []
     output: list[int] = []
     l1: list[int] = []
+    l2a: list[int] = []
     l2: list[int] = []
     l3: list[int] = []
     l4: list[int] = []
@@ -204,6 +214,7 @@ def build_chart_series(events: list[dict[str, Any]], *, max_points: int = 60) ->
         output.append(int(usage.get("output_tokens") or 0))
 
         l1.append(int(ctx.get("est_layer1_tokens") or 0))
+        l2a.append(int(ctx.get("est_checkpoint_tokens") or 0))
         l2.append(int(ctx.get("est_ledger_tokens") or 0))
         l3.append(int(ctx.get("est_layer3_tokens") or 0))
         l4.append(int(ctx.get("est_prompt_tokens") or 0))
@@ -225,7 +236,7 @@ def build_chart_series(events: list[dict[str, Any]], *, max_points: int = 60) ->
             "uncached": uncached,
             "output": output,
         },
-        "layers": {"l1": l1, "l2": l2, "l3": l3, "l4": l4},
+        "layers": {"l1": l1, "l2a": l2a, "l2": l2, "l3": l3, "l4": l4},
         "shape_compare": {"naive": naive, "shaped": shaped},
         "cumulative_cost": {"actual": cum_actual, "baseline": cum_baseline},
         "trends": {"compression_pct": compression_pct, "uncached_tail_pct": uncached_pct},
@@ -247,6 +258,7 @@ def compaction_timeline(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "ledger_after": extra.get("ledger_chars_after"),
                 "ledger_delta": extra.get("ledger_delta_chars"),
                 "trigger": extra.get("trigger_reason"),
+                "pins_active": extra.get("pins_active", 0),
                 "cost_usd": (rec.get("cost") or {}).get("actual_usd"),
             }
         )
@@ -276,6 +288,11 @@ def recommendations(summary: dict[str, Any]) -> list[str]:
     if summary["avg_compression_vs_naive_pct"] > 50:
         recs.append(
             f"Live shaped payload is ~{summary['avg_compression_vs_naive_pct']:.0f}% smaller than full IDE history."
+        )
+    if summary.get("compaction_runs", 0) > 0 and summary.get("active_pins", 0) == 0:
+        recs.append(
+            "Compactions are running — use @synth-remember: in a message to pin "
+            "critical facts (bug fixes, migrations) so they survive every compaction."
         )
     if not recs:
         recs.append("Metrics look healthy — keep collecting for per-project breakdowns.")
@@ -311,6 +328,7 @@ def recent_table_rows(events: list[dict[str, Any]], *, limit: int = 40) -> list[
                 "saved_usd": cost.get("saved_usd"),
                 "bloat": syn.get("client_bloat_ratio"),
                 "compacted": rec.get("compaction_triggered"),
+                "pins": (rec.get("context") or {}).get("pinned_checkpoints", 0),
                 "latency_s": rec.get("latency_s"),
             }
         )

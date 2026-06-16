@@ -86,5 +86,22 @@ async def dashboard_stream(
     )
 
 
+@router.get("/api/checkpoints")
+async def checkpoint_list(_: None = Depends(verify_dashboard_access)) -> dict:
+    """Return live pinned checkpoints per active session."""
+    try:
+        from proxy_tool import _sessions
+    except ImportError:
+        return {"sessions": {}}
+    result: dict[str, list[dict]] = {}
+    for sid, state in _sessions.items():
+        if state.pinned_checkpoints:
+            result[sid] = [
+                {"text": c.text, "turn": c.turn, "ts": c.ts}
+                for c in state.pinned_checkpoints
+            ]
+    return {"sessions": result}
+
+
 def attach_dashboard(app) -> None:
     app.include_router(router)

@@ -15,6 +15,14 @@ MAX_BASH_BLOCK_CHARS = 400
 MAX_TOOL_RESULT_CHARS = 800
 MAX_TURN_BODY_CHARS = 12_000
 
+# All recognised @synth-remember aliases (case-insensitive prefix match)
+_PIN_MARKERS = (
+    "@synth-remember:",
+    "@remember:",
+    "@pin:",
+    "@must-remember:",
+)
+
 DREAMING_V4_RULES = """You are a code-aware context compaction engine (Dreaming v4).
 Merge the recent conversation turns into an updated architectural history ledger.
 
@@ -40,6 +48,31 @@ OUTPUT:
 - Dense bulleted ledger body only
 - Max ~2,000 tokens
 - No preamble, no markdown fences"""
+
+
+def extract_pins(text: str) -> tuple[list[str], str]:
+    """
+    Scan text for @synth-remember: (and aliases) lines.
+
+    Returns (pin_texts, text_with_pin_lines_removed).
+    Pin lines are stripped from the turn so they don't consume L3 space
+    and instead live exclusively in the pinned-checkpoints block (L2a).
+    """
+    pins: list[str] = []
+    kept: list[str] = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        matched = False
+        for marker in _PIN_MARKERS:
+            if stripped.lower().startswith(marker):
+                pin_text = stripped[len(marker):].strip()
+                if pin_text:
+                    pins.append(pin_text)
+                matched = True
+                break
+        if not matched:
+            kept.append(line)
+    return pins, "\n".join(kept)
 
 
 def _collapse_bash_blocks(text: str) -> str:
@@ -115,9 +148,29 @@ def format_turns_for_compaction(
     return "\n".join(lines)
 
 
-def build_compaction_prompt(ledger: str, turns_text: str) -> str:
+def build_compaction_prompt(
+    ledger: str,
+    turns_text: str,
+    *,
+    pinned: list[str] | None = None,
+) -> str:
+    """
+    Build the Haiku synthesis prompt.
+
+    pinned: list of already-pinned checkpoint texts (L2a). Haiku is told these
+    are preserved separately so it doesn't need to re-summarise them into the ledger.
+    """
+    pinned_section = ""
+    if pinned:
+        bullets = "\n".join(f"- {p}" for p in pinned)
+        pinned_section = (
+            "\nPINNED CHECKPOINTS (guaranteed preserved in L2a — "
+            "do NOT duplicate these in your ledger output):\n"
+            f"{bullets}\n\n"
+        )
     return (
         f"{DREAMING_V4_RULES}\n\n"
         f"CURRENT LEDGER:\n{ledger}\n\n"
+        f"{pinned_section}"
         f"TURNS TO COMPACT:\n{turns_text}"
     )
