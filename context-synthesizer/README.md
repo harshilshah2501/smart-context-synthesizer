@@ -11,6 +11,7 @@ Offline analysis and tuning toolkit for **smart context compaction**.
 | [../docs/guides/Usage.md](../docs/guides/Usage.md) | Per-mode setup (A / C / D) |
 | [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Start here** — one-time setup |
 | [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Team lead — drive + rollup |
+| [../docs/guides/DASHBOARD.md](../docs/guides/DASHBOARD.md) | **Live dashboard** — bifurcation & savings |
 | [../docs/reports/SYNTHESIZER_RND_REPORT.md](../docs/reports/SYNTHESIZER_RND_REPORT.md) | R&D record, roadmap |
 | [../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md](../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md) | meet-chavda corpus (reference) |
 | [../docs/reports/COMPACTION_PROOF_REPORT.md](../docs/reports/COMPACTION_PROOF_REPORT.md) | Turn-178 deep dive |

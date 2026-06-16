@@ -38,7 +38,8 @@ DEVELOPER (once, ~5 min)
 SMOKE TEST
 ----------
   systemctl --user status context-synthesizer-proxy
-  # then use Claude Code — logs: ~/.local/state/context-synthesizer/
+  open http://127.0.0.1:8080/dashboard   # or :8081 if PROXY_PORT set in .env
+  # then use Claude Code — live charts update per API call
 
 Optional weekly upload test:
   bash context-synthesizer/scripts/weekly_sync.sh

@@ -89,6 +89,10 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   echo "  Claude CLI forwards auth to the proxy; no separate API key needed at setup."
   echo "  Optional fallback key: context-synthesizer/.env → ANTHROPIC_API_KEY=..."
   echo "  Check proxy: systemctl --user status context-synthesizer-proxy"
+  PROXY_PORT_LINE="$(grep -E '^PROXY_PORT=' "$ENV_FILE" 2>/dev/null || true)"
+  PROXY_PORT="${PROXY_PORT_LINE#PROXY_PORT=}"
+  PROXY_PORT="${PROXY_PORT:-8080}"
+  echo "  Live dashboard: http://127.0.0.1:${PROXY_PORT}/dashboard"
 fi
 
 if [[ -n "$SYNC_DIR" ]]; then
@@ -129,7 +133,9 @@ echo ""
 echo "Smoke test:"
 if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   echo "  systemctl --user status context-synthesizer-proxy"
-  echo "  # then use Claude Code — logs: ~/.local/state/context-synthesizer/"
+  PROXY_PORT="$(grep -E '^PROXY_PORT=' "$REPO_ROOT/context-synthesizer/.env" 2>/dev/null | cut -d= -f2)"
+  PROXY_PORT="${PROXY_PORT:-8080}"
+  echo "  open http://127.0.0.1:${PROXY_PORT}/dashboard  # live bifurcation dashboard"
 fi
 if [[ "$INSTALL_CRON" -eq 1 ]]; then
   echo "  bash ${REPO_ROOT}/context-synthesizer/scripts/weekly_sync.sh"

@@ -6,10 +6,15 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+_live_lock = threading.Lock()
+_live_events: list[dict[str, Any]] = []
+_MAX_LIVE_EVENTS = int(os.environ.get("TELEMETRY_LIVE_BUFFER", "5000"))
 
 # Sonnet 4.6 defaults (override via env for other models in future)
 PRICE_UNCACHED = float(os.environ.get("PRICE_UNCACHED_INPUT", "3.00"))
@@ -80,6 +85,7 @@ class ContextSnapshot:
     prompt_chars: int = 0
     client_message_count: int = 0
     ignored_messages: int = 0
+    naive_client_chars: int = 0
     turn_number: int = 0
     lifetime_turn: int = 0
     turns_until_compaction: int = 0
@@ -123,6 +129,19 @@ class ContextSnapshot:
         # L1 + L2 + rolling turns + fresh user prompt
         return 2 + self.layer3_messages + 1
 
+    @property
+    def est_naive_tokens(self) -> int:
+        """IDE full transcript size (what Claude Code sent, char est.)."""
+        return estimate_tokens(self.naive_client_chars)
+
+    @property
+    def compression_vs_naive_pct(self) -> float:
+        naive = self.est_naive_tokens
+        shaped = self.est_payload_tokens
+        if naive <= 0:
+            return 0.0
+        return max(0.0, (1.0 - shaped / naive) * 100.0)
+
 
 @dataclass
 class SynthesisMetrics:
@@ -138,6 +157,9 @@ class SynthesisMetrics:
     est_uncached_vs_actual_delta: int = 0
     l1_cache_eligible_est: bool = False
     est_l3_l4_tokens: int = 0
+    est_naive_tokens: int = 0
+    est_shaped_tokens: int = 0
+    compression_vs_naive_pct: float = 0.0
 
     @classmethod
     def from_usage_and_context(cls, usage: UsageSnapshot, context: ContextSnapshot) -> SynthesisMetrics:
@@ -149,6 +171,8 @@ class SynthesisMetrics:
         opt_msgs = max(context.optimized_message_count, 1)
         bloat = context.client_message_count / opt_msgs if context.client_message_count else 0.0
         est_tail = context.est_layer3_tokens + context.est_prompt_tokens
+        shaped = context.est_payload_tokens
+        naive = context.est_naive_tokens
         return cls(
             total_input_tokens=total_in,
             uncached_tail_tokens=usage.input_tokens,
@@ -160,6 +184,9 @@ class SynthesisMetrics:
             est_uncached_vs_actual_delta=usage.input_tokens - est_tail,
             l1_cache_eligible_est=context.l1_cache_eligible_est,
             est_l3_l4_tokens=est_tail,
+            est_naive_tokens=naive,
+            est_shaped_tokens=shaped,
+            compression_vs_naive_pct=context.compression_vs_naive_pct,
         )
 
 
@@ -186,7 +213,7 @@ class TelemetryEvent:
     synthesis: SynthesisMetrics | None = None
     extra: dict[str, Any] = field(default_factory=dict)
 
-    def to_json(self) -> str:
+    def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "ts": self.ts,
             "source": self.source,
@@ -212,12 +239,17 @@ class TelemetryEvent:
                 "est_layer3_tokens": self.context.est_layer3_tokens,
                 "est_prompt_tokens": self.context.est_prompt_tokens,
                 "est_payload_tokens": self.context.est_payload_tokens,
+                "est_naive_tokens": self.context.est_naive_tokens,
+                "compression_vs_naive_pct": self.context.compression_vs_naive_pct,
                 "l1_cache_eligible_est": self.context.l1_cache_eligible_est,
                 "optimized_message_count": self.context.optimized_message_count,
             }
         if self.synthesis is not None:
             payload["synthesis"] = asdict(self.synthesis)
-        return json.dumps(payload, ensure_ascii=False)
+        return payload
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_dict(), ensure_ascii=False)
 
 
 def compute_costs(usage: UsageSnapshot) -> CostSnapshot:
@@ -247,11 +279,28 @@ def utc_now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def push_live_event(payload: dict[str, Any]) -> None:
+    with _live_lock:
+        _live_events.append(payload)
+        if len(_live_events) > _MAX_LIVE_EVENTS:
+            del _live_events[: len(_live_events) - _MAX_LIVE_EVENTS]
+
+
+def get_live_events(*, since_index: int = 0) -> tuple[list[dict[str, Any]], int]:
+    with _live_lock:
+        total = len(_live_events)
+        if since_index < 0:
+            since_index = 0
+        return list(_live_events[since_index:]), total
+
+
 def append_event(event: TelemetryEvent, log_path: Path | None = None) -> None:
+    payload = event.to_dict()
+    push_live_event(payload)
     path = log_path or TELEMETRY_LOG_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as fh:
-        fh.write(event.to_json() + "\n")
+        fh.write(json.dumps(payload, ensure_ascii=False) + "\n")
 
 
 def print_telemetry_report(
@@ -279,6 +328,11 @@ def print_telemetry_report(
         print(f"│ Uncached tail:      {synthesis.uncached_tail_pct:>6.1f}% of input")
         print(f"│ Cache read share:   {synthesis.cache_read_pct:>6.1f}% of input")
         print(f"│ Client bloat ratio: {synthesis.client_bloat_ratio:>6.1f}x msgs")
+        if synthesis.est_naive_tokens > 0:
+            print(
+                f"│ Shaped vs naive:    {synthesis.est_shaped_tokens:,} / "
+                f"{synthesis.est_naive_tokens:,} tok ({synthesis.compression_vs_naive_pct:.1f}% smaller)"
+            )
     if context is not None:
         print("├────────────────────────────────────────────────────────┤")
         print(f"│ Est. L1/L2/L3/L4:   {context.est_layer1_tokens:,} / "

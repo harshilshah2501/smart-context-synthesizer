@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Context Synthesizer — Live Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --amber: #d29922;
+      --red: #f85149;
+      --purple: #a371f7;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+    .badge {
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      border: 1px solid var(--border);
+    }
+    .badge.live { border-color: var(--green); color: var(--green); }
+    .badge.off { color: var(--muted); }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+    select, button {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font: inherit;
+    }
+    button { cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+    main { padding: 16px 20px 40px; max-width: 1400px; margin: 0 auto; }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .kpi .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .kpi .value { font-size: 1.35rem; font-weight: 600; margin-top: 4px; }
+    .kpi .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap.tall { height: 260px; }
+    ul.recs { margin: 0; padding-left: 18px; }
+    ul.recs li { margin-bottom: 6px; color: var(--amber); }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+    th, td {
+      text-align: left;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+    .table-scroll { max-height: 320px; overflow: auto; }
+    .yes { color: var(--green); }
+    .mono { font-variant-numeric: tabular-nums; }
+    footer { color: var(--muted); font-size: 11px; padding: 8px 20px; }
+    .legend-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Context Synthesizer</h1>
+    <span id="liveBadge" class="badge off">offline</span>
+    <div class="filters">
+      <select id="devFilter"><option value="">All developers</option></select>
+      <select id="sessionFilter"><option value="">All sessions</option></select>
+      <button type="button" id="refreshBtn">Refresh</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="kpis" id="kpis"></div>
+
+    <div class="legend-row">
+      <span><span class="dot" style="background:#58a6ff"></span>Billing: cache read / write / uncached</span>
+      <span><span class="dot" style="background:#3fb950"></span>Shape: L1–L4 payload layers</span>
+      <span><span class="dot" style="background:#a371f7"></span>Naive IDE history vs shaped payload</span>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Billing bifurcation (per turn)</h2>
+        <div class="chart-wrap"><canvas id="billingChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Four-layer payload (est. tokens)</h2>
+        <div class="chart-wrap"><canvas id="layersChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Naive IDE history vs shaped payload</h2>
+        <div class="chart-wrap"><canvas id="shapeChart"></canvas></div>
+      </div>
+      <div class="panel">
+        <h2>Cumulative cost — actual vs baseline</h2>
+        <div class="chart-wrap"><canvas id="costChart"></canvas></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Compaction &amp; tail trends</h2>
+      <div class="chart-wrap tall"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <h2>Recommendations</h2>
+        <ul class="recs" id="recs"></ul>
+      </div>
+      <div class="panel">
+        <h2>Compaction events</h2>
+        <div class="table-scroll">
+          <table id="compactionTable">
+            <thead><tr>
+              <th>Time</th><th>Session</th><th>Turns</th><th>Ledger Δ</th><th>Trigger</th><th>Cost</th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>Recent proxy requests</h2>
+      <div class="table-scroll">
+        <table id="recentTable">
+          <thead><tr>
+            <th>Turn</th><th>Cache R</th><th>Cache W</th><th>Uncached</th>
+            <th>L1</th><th>L2</th><th>L3</th><th>L4</th>
+            <th>Naive</th><th>Shaped</th><th>Compress%</th><th>Saved%</th><th>Bloat</th><th>Compact</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <footer id="footer">Loading…</footer>
+
+  <script>
+    const charts = {};
+    const fmt = (n, d = 0) => n == null ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+    const fmtUsd = (n) => n == null ? '—' : '$' + Number(n).toFixed(4);
+    const fmtPct = (n) => n == null ? '—' : Number(n).toFixed(1) + '%';
+
+    function chartDefaults() {
+      Chart.defaults.color = '#8b949e';
+      Chart.defaults.borderColor = '#30363d';
+      Chart.defaults.font.family = 'ui-monospace, monospace';
+    }
+
+    function ensureChart(id, config) {
+      const ctx = document.getElementById(id);
+      if (charts[id]) { charts[id].destroy(); }
+      charts[id] = new Chart(ctx, config);
+    }
+
+    function renderKpis(s) {
+      const items = [
+        { label: 'Proxy requests', value: fmt(s.proxy_requests), sub: fmt(s.total_events) + ' total events' },
+        { label: 'Compactions', value: fmt(s.compaction_runs), sub: fmtUsd(s.compaction_cost_usd) + ' Haiku' },
+        { label: 'Saved (session)', value: fmtUsd(s.saved_cost_usd), sub: 'avg ' + fmtPct(s.avg_savings_pct) },
+        { label: 'Compression vs naive', value: fmtPct(s.avg_compression_vs_naive_pct), sub: 'p90 ' + fmtPct(s.p90_compression_vs_naive_pct) },
+        { label: 'Cache read share', value: fmtPct(s.avg_cache_read_pct), sub: 'L1 eligible ' + fmtPct(s.l1_cache_eligible_pct) },
+        { label: 'Uncached tail', value: fmtPct(s.avg_uncached_tail_pct), sub: 'lower is better' },
+        { label: 'IDE bloat ratio', value: fmt(s.avg_bloat_ratio, 1) + '×', sub: 'msgs sent vs shaped' },
+        { label: 'Actual cost', value: fmtUsd(s.actual_cost_usd), sub: 'baseline ' + fmtUsd(s.baseline_cost_usd) },
+      ];
+      document.getElementById('kpis').innerHTML = items.map(i => `
+        <div class="kpi"><div class="label">${i.label}</div><div class="value">${i.value}</div><div class="sub">${i.sub}</div></div>
+      `).join('');
+    }
+
+    function renderCharts(series) {
+      const labels = series.labels || [];
+      ensureChart('billingChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Cache read', data: series.billing.cache_read, backgroundColor: '#58a6ff' },
+            { label: 'Cache write', data: series.billing.cache_write, backgroundColor: '#d29922' },
+            { label: 'Uncached', data: series.billing.uncached, backgroundColor: '#f85149' },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } },
+      });
+      ensureChart('layersChart', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'L1 rules', data: series.layers.l1, backgroundColor: '#388bfd' },
+            { label: 'L2 ledger', data: series.layers.l2, backgroundColor: '#3fb950' },
+            { label: 'L3 recent', data: series.layers.l3, backgroundColor: '#a371f7' },
+            { label: 'L4 prompt', data: series.layers.l4, backgroundColor: '#f0883e' },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } },
+      });
+      ensureChart('shapeChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Naive IDE est.', data: series.shape_compare.naive, borderColor: '#f85149', tension: 0.2 },
+            { label: 'Shaped payload est.', data: series.shape_compare.shaped, borderColor: '#3fb950', tension: 0.2 },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+      });
+      ensureChart('costChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Actual $', data: series.cumulative_cost.actual, borderColor: '#3fb950', tension: 0.2 },
+            { label: 'Baseline $', data: series.cumulative_cost.baseline, borderColor: '#f85149', borderDash: [4,4], tension: 0.2 },
+          ],
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+      });
+      ensureChart('trendChart', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Compression vs naive %', data: series.trends.compression_pct, borderColor: '#a371f7', yAxisID: 'y' },
+            { label: 'Uncached tail %', data: series.trends.uncached_tail_pct, borderColor: '#d29922', yAxisID: 'y1' },
+          ],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { position: 'left', title: { display: true, text: 'Compression %' } },
+            y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Uncached %' } },
+          },
+          plugins: { legend: { position: 'bottom' } },
+        },
+      });
+    }
+
+    function fillSelect(id, options, current) {
+      const el = document.getElementById(id);
+      const val = current || el.value;
+      const first = el.options[0].outerHTML;
+      el.innerHTML = first + options.map(o => `<option value="${o}">${o}</option>`).join('');
+      if (val && [...el.options].some(op => op.value === val)) el.value = val;
+    }
+
+    function renderRecs(recs) {
+      document.getElementById('recs').innerHTML = (recs || []).map(r => `<li>${r}</li>`).join('');
+    }
+
+    function renderCompactions(rows) {
+      const tb = document.querySelector('#compactionTable tbody');
+      tb.innerHTML = (rows || []).map(r => `<tr>
+        <td>${(r.ts || '').slice(11, 19)}</td>
+        <td>${(r.session_id || '').slice(0, 10)}</td>
+        <td class="mono">${fmt(r.turns_compacted)}</td>
+        <td class="mono">${fmt(r.ledger_delta)}</td>
+        <td>${r.trigger || ''}</td>
+        <td class="mono">${fmtUsd(r.cost_usd)}</td>
+      </tr>`).join('') || '<tr><td colspan="6">No compactions yet</td></tr>';
+    }
+
+    function renderRecent(rows) {
+      const tb = document.querySelector('#recentTable tbody');
+      tb.innerHTML = (rows || []).map(r => `<tr>
+        <td class="mono">${fmt(r.turn)}</td>
+        <td class="mono">${fmt(r.cache_read)}</td>
+        <td class="mono">${fmt(r.cache_write)}</td>
+        <td class="mono">${fmt(r.uncached)}</td>
+        <td class="mono">${fmt(r.l1)}</td>
+        <td class="mono">${fmt(r.l2)}</td>
+        <td class="mono">${fmt(r.l3)}</td>
+        <td class="mono">${fmt(r.l4)}</td>
+        <td class="mono">${fmt(r.naive_est)}</td>
+        <td class="mono">${fmt(r.shaped_est)}</td>
+        <td class="mono">${fmtPct(r.compression_pct)}</td>
+        <td class="mono">${fmtPct(r.savings_pct)}</td>
+        <td class="mono">${fmt(r.bloat, 1)}×</td>
+        <td>${r.compacted ? '<span class="yes">yes</span>' : ''}</td>
+      </tr>`).join('') || '<tr><td colspan="14">No proxy events — use Claude Code through the synthesizer proxy</td></tr>';
+    }
+
+    let refreshTimer = null;
+    function scheduleRefresh() {
+      clearTimeout(refreshTimer);
+      refreshTimer = setTimeout(loadData, 400);
+    }
+
+    async function loadData() {
+      const dev = document.getElementById('devFilter').value;
+      const session = document.getElementById('sessionFilter').value;
+      const qs = new URLSearchParams();
+      if (dev) qs.set('developer_id', dev);
+      if (session) qs.set('session_id', session);
+      const res = await fetch('/api/dashboard/data?' + qs.toString());
+      const data = await res.json();
+      renderKpis(data.summary);
+      renderCharts(data.series);
+      renderRecs(data.recommendations);
+      renderCompactions(data.compactions);
+      renderRecent(data.recent);
+      fillSelect('devFilter', data.filters.developers, dev);
+      fillSelect('sessionFilter', data.filters.sessions, session);
+      document.getElementById('footer').textContent =
+        `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events`;
+    }
+
+    function connectStream() {
+      const dev = document.getElementById('devFilter').value;
+      const session = document.getElementById('sessionFilter').value;
+      const qs = new URLSearchParams();
+      if (dev) qs.set('developer_id', dev);
+      if (session) qs.set('session_id', session);
+      const es = new EventSource('/api/dashboard/stream?' + qs.toString());
+      const badge = document.getElementById('liveBadge');
+      es.onopen = () => { badge.textContent = 'live'; badge.className = 'badge live'; };
+      es.onerror = () => { badge.textContent = 'reconnecting'; badge.className = 'badge off'; };
+      es.onmessage = () => scheduleRefresh();
+      es.addEventListener('ping', () => {});
+    }
+
+    document.getElementById('refreshBtn').addEventListener('click', loadData);
+    document.getElementById('devFilter').addEventListener('change', () => { loadData(); });
+    document.getElementById('sessionFilter').addEventListener('change', () => { loadData(); });
+
+    chartDefaults();
+    loadData().then(connectStream);
+  </script>
+</body>
+</html>

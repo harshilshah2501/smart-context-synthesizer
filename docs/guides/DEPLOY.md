@@ -218,6 +218,8 @@ cd /path/to/toolkit
 
 Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
+**Live dashboard:** `http://127.0.0.1:<PROXY_PORT>/dashboard` — billing bifurcation, L1–L4 layers, naive vs shaped, compactions. See [DASHBOARD.md](DASHBOARD.md).
+
 ---
 
 ## Script reference

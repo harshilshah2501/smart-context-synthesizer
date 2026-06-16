@@ -20,6 +20,7 @@
 | Async Anthropic client | **Shipped** | `AsyncAnthropic` |
 | Streaming (`stream: true` → SSE) | **Shipped** | `_handle_streaming()` |
 | Bifurcated telemetry (terminal + JSONL) | **Shipped** | `telemetry.py` — `record_telemetry()` |
+| Live web dashboard (`/dashboard`) | **Shipped** | `dashboard_routes.py` + `static/dashboard.html` |
 | Dreaming v4 compaction | **Shipped** | `compaction.py` + `dream_compact()` in `proxy_tool.py` |
 | Turn + token compaction triggers | **Shipped** | `MAX_TURNS_THRESHOLD`, `COMPACTION_TOKEN_THRESHOLD`, `MAX_LAYER3_TURNS` |
 | Haiku compaction model | **Shipped** | `claude-haiku-4-5-20251001` via `COMPACTION_MODEL` |

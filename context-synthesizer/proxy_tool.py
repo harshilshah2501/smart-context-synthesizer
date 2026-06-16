@@ -17,6 +17,7 @@ from anthropic import AsyncAnthropic
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from dashboard_routes import attach_dashboard
 from compaction import build_compaction_prompt, format_turns_for_compaction
 from models import DEFAULT_CHAT_MODEL, DEFAULT_COMPACTION_MODEL
 from telemetry import (
@@ -33,6 +34,7 @@ from telemetry import (
 )
 
 app = FastAPI(title="Context Synthesizer Proxy")
+attach_dashboard(app)
 
 DEFAULT_CLAUDE_MD_PATH = Path(__file__).resolve().parent / "Claude.md"
 CLAUDE_MD_PATH = Path(os.environ.get("CLAUDE_MD_PATH", str(DEFAULT_CLAUDE_MD_PATH)))
@@ -197,6 +199,7 @@ def build_context_snapshot(
     max_tokens: int,
 ) -> ContextSnapshot:
     layer3_chars = sum(_message_chars(turn) for turn in session.rolling_recent_turns)
+    naive_client_chars = sum(_message_chars(m) for m in incoming_messages)
     return ContextSnapshot(
         layer1_chars=len(CLAUDE_MD_CONTENT),
         ledger_chars=len(session.history_ledger) + len(LEDGER_PREFIX),
@@ -205,6 +208,7 @@ def build_context_snapshot(
         prompt_chars=len(user_prompt),
         client_message_count=len(incoming_messages),
         ignored_messages=max(0, len(incoming_messages) - 1),
+        naive_client_chars=naive_client_chars,
         turn_number=session.turn_counter + 1,
         lifetime_turn=session.lifetime_turns + 1,
         turns_until_compaction=max(0, MAX_TURNS_THRESHOLD - session.turn_counter - 1),
@@ -461,6 +465,9 @@ async def startup() -> None:
     )
     print(f"[PROXY] Telemetry log: {TELEMETRY_LOG_PATH}")
     print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback")
+    host = os.environ.get("PROXY_HOST", "127.0.0.1")
+    port = os.environ.get("PROXY_PORT", "8080")
+    print(f"[PROXY] Live dashboard: http://{host}:{port}/dashboard")
 
 
 @app.post("/v1/messages")
