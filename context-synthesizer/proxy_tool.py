@@ -633,6 +633,278 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "service": "context-synthesizer"}
 
 
+# ── OpenAI-compatible shim ────────────────────────────────────────────────────
+# Allows Cursor (and any OpenAI-compatible client) to use the proxy as a
+# custom model endpoint.  Format differences from the Anthropic API:
+#   • Endpoint:   /v1/chat/completions  (not /v1/messages)
+#   • System msg: inline role="system" message  (not top-level field)
+#   • SSE chunks: OpenAI delta format  (not Anthropic event types)
+#   • Response:   choices[0].message.content  (not content[0].text)
+# The proxy logic (session state, compaction, telemetry) is identical.
+
+
+def _normalize_oai_content(content: Any) -> str:
+    """OpenAI messages can carry content as a plain string or a list of parts."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        parts: list[str] = []
+        for part in content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                parts.append(part.get("text") or "")
+            elif isinstance(part, str):
+                parts.append(part)
+        return "\n".join(p for p in parts if p)
+    return str(content) if content else ""
+
+
+def _oai_body_to_anthropic(body: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    """
+    Convert an OpenAI chat-completions body into (user_prompt, extra_api_kwargs).
+
+    Extracts the last user message as the fresh prompt and promotes any
+    role='system' messages to the Anthropic top-level 'system' field.
+    """
+    messages: list[dict[str, Any]] = body.get("messages") or []
+
+    system_parts = [
+        _normalize_oai_content(m.get("content", ""))
+        for m in messages if m.get("role") == "system"
+    ]
+    system_text = "\n\n".join(p for p in system_parts if p)
+
+    user_prompt = ""
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            user_prompt = _normalize_oai_content(m.get("content", ""))
+            break
+
+    extra: dict[str, Any] = {}
+    if system_text:
+        extra["system"] = system_text
+    for key in ("temperature", "top_p"):
+        if key in body and body[key] is not None:
+            extra[key] = body[key]
+    stop = body.get("stop")
+    if stop is not None:
+        extra["stop_sequences"] = [stop] if isinstance(stop, str) else stop
+
+    return user_prompt, extra
+
+
+def _anthropic_to_oai_response(response: Any, model: str) -> dict[str, Any]:
+    text = extract_assistant_text(response.content)
+    usage = response.usage
+    stop_reason = getattr(response, "stop_reason", "end_turn") or "end_turn"
+    finish = "stop" if stop_reason in ("end_turn", "stop_sequence") else stop_reason
+    return {
+        "id": f"chatcmpl-synth-{int(time.time() * 1000)}",
+        "object": "chat.completion",
+        "created": int(time.time()),
+        "model": model,
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": text},
+                "finish_reason": finish,
+            }
+        ],
+        "usage": {
+            "prompt_tokens": int(getattr(usage, "input_tokens", 0)),
+            "completion_tokens": int(getattr(usage, "output_tokens", 0)),
+            "total_tokens": int(
+                getattr(usage, "input_tokens", 0) + getattr(usage, "output_tokens", 0)
+            ),
+        },
+    }
+
+
+async def _handle_streaming_oai(
+    *,
+    upstream: AsyncAnthropic,
+    api_kwargs: dict[str, Any],
+    session: SessionState,
+    session_id: str,
+    developer_id: str,
+    client_name: str,
+    user_prompt: str,
+    context_snapshot: "ContextSnapshot",
+    model: str,
+) -> StreamingResponse:
+    start_time = time.perf_counter()
+    chunk_id = f"chatcmpl-synth-{int(time.time() * 1000)}"
+    created = int(time.time())
+
+    def _chunk(delta: dict[str, Any], finish: str | None = None) -> str:
+        return (
+            "data: "
+            + json.dumps(
+                {
+                    "id": chunk_id,
+                    "object": "chat.completion.chunk",
+                    "created": created,
+                    "model": model,
+                    "choices": [{"index": 0, "delta": delta, "finish_reason": finish}],
+                },
+                ensure_ascii=False,
+            )
+            + "\n\n"
+        )
+
+    async def event_generator():
+        assistant_text = ""
+        usage = None
+        compaction = False
+
+        # Role header chunk (OpenAI convention)
+        yield _chunk({"role": "assistant", "content": ""})
+
+        try:
+            async with upstream.messages.stream(**api_kwargs) as stream:
+                async for text in stream.text_stream:
+                    assistant_text += text
+                    yield _chunk({"content": text})
+                final_message = await stream.get_final_message()
+                usage = final_message.usage
+        except Exception as exc:
+            yield (
+                "data: "
+                + json.dumps({"error": {"message": str(exc), "type": "proxy_error"}})
+                + "\n\n"
+            )
+            return
+
+        yield _chunk({}, "stop")
+        yield "data: [DONE]\n\n"
+
+        elapsed_time = time.perf_counter() - start_time
+        if assistant_text:
+            compaction = await record_exchange(
+                session, user_prompt, assistant_text, session_id, developer_id=developer_id
+            )
+        if usage:
+            record_telemetry(
+                usage=usage,
+                elapsed_time=elapsed_time,
+                session_id=session_id,
+                developer_id=developer_id,
+                model=model,
+                context=context_snapshot,
+                compaction_triggered=compaction,
+                client=client_name,
+            )
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "Connection": "keep-alive"},
+    )
+
+
+@app.get("/v1/models")
+async def list_models() -> dict[str, Any]:
+    """OpenAI-compatible model list — Cursor uses this to populate the model picker."""
+    from models import AVAILABLE_MODELS, DEFAULT_CHAT_MODEL
+    data = [
+        {
+            "id": m,
+            "object": "model",
+            "created": 1_700_000_000,
+            "owned_by": "anthropic",
+        }
+        for m in AVAILABLE_MODELS
+    ]
+    return {"object": "list", "data": data}
+
+
+@app.post("/v1/chat/completions")
+async def proxy_chat_completions(request: Request):
+    """OpenAI-compatible chat completions — for Cursor and other OpenAI-format clients."""
+    body = await request.json()
+    messages: list[dict[str, Any]] = body.get("messages") or []
+    if not messages:
+        raise HTTPException(status_code=400, detail="No messages provided")
+
+    session_id = resolve_session_id(request)
+    developer_id = resolve_developer_id(request)
+    client_name = detect_client(request)
+    api_key = resolve_api_key(request)
+    if not api_key:
+        raise HTTPException(
+            status_code=401,
+            detail=(
+                "Missing API key. In Cursor Settings → Models → your custom model, "
+                "set the API key to your Anthropic key."
+            ),
+        )
+
+    user_prompt, extra_kwargs = _oai_body_to_anthropic(body)
+    if not user_prompt.strip():
+        raise HTTPException(status_code=400, detail="Latest user message is empty")
+
+    session = await get_session(session_id)
+    async with session.lock:
+        session.api_key = api_key
+
+    async with session.lock:
+        optimized_messages = build_optimized_messages(session, user_prompt)
+
+    model = body.get("model", DEFAULT_MODEL)
+    max_tokens = int(body.get("max_tokens") or 8192)
+    api_kwargs: dict[str, Any] = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": optimized_messages,
+        **extra_kwargs,
+    }
+
+    stream_requested = bool(body.get("stream"))
+    context_snapshot = build_context_snapshot(
+        session,
+        user_prompt,
+        messages,
+        stream=stream_requested,
+        max_tokens=max_tokens,
+    )
+    upstream = anthropic_client(api_key)
+
+    if stream_requested:
+        return await _handle_streaming_oai(
+            upstream=upstream,
+            api_kwargs=api_kwargs,
+            session=session,
+            session_id=session_id,
+            developer_id=developer_id,
+            client_name=client_name,
+            user_prompt=user_prompt,
+            context_snapshot=context_snapshot,
+            model=model,
+        )
+
+    start_time = time.perf_counter()
+    try:
+        response = await upstream.messages.create(**api_kwargs)
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Anthropic API error: {exc}") from exc
+    elapsed_time = time.perf_counter() - start_time
+
+    assistant_text = extract_assistant_text(response.content)
+    compaction = await record_exchange(
+        session, user_prompt, assistant_text, session_id, developer_id=developer_id
+    )
+    record_telemetry(
+        usage=response.usage,
+        elapsed_time=elapsed_time,
+        session_id=session_id,
+        developer_id=developer_id,
+        model=model,
+        context=context_snapshot,
+        compaction_triggered=compaction,
+        client=client_name,
+    )
+    return JSONResponse(content=_anthropic_to_oai_response(response, model))
+
+
 @app.post("/v1/messages")
 async def proxy_messages(request: Request):
     body = await request.json()
