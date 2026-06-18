@@ -153,6 +153,13 @@
   </header>
 
   <main>
+    <div id="noDataBanner" style="display:none; background:var(--panel); border:1px solid var(--amber); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--amber); font-size:12px; line-height:1.7;">
+      <strong>No proxy requests recorded yet.</strong><br>
+      The proxy is running — make sure Claude Code is routing through it:<br>
+      <code style="color:var(--text)">cat ~/.claude/settings.json | grep ANTHROPIC_BASE_URL</code><br>
+      If missing, run: <code style="color:var(--text)">bash context-synthesizer/scripts/configure_claude_proxy.sh</code><br>
+      Then open a project in Claude Code and start a conversation. Charts will populate automatically.
+    </div>
     <div class="kpis" id="kpis"></div>
 
     <div class="legend-row">
@@ -411,6 +418,10 @@
     }
 
     let refreshTimer = null;
+    let activeEs = null;
+    let heartbeatTimer = null;
+    let lastLoadedAt = 0;
+    const HEARTBEAT_MS = 30_000;
     const DASHBOARD_TOKEN = new URLSearchParams(location.search).get('token') || '';
 
     function withAuth(qs) {
@@ -429,7 +440,14 @@
       refreshTimer = setTimeout(loadData, 400);
     }
 
+    function showNoData(proxyRequests) {
+      const banner = document.getElementById('noDataBanner');
+      if (!banner) return;
+      banner.style.display = proxyRequests === 0 ? '' : 'none';
+    }
+
     async function loadData() {
+      lastLoadedAt = Date.now();
       const dev = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
@@ -450,34 +468,57 @@
         renderRecent(data.recent);
         fillSelect('devFilter', data.filters.developers, dev);
         fillSelect('sessionFilter', data.filters.sessions, session);
+        const age = new Date().toLocaleTimeString();
         document.getElementById('footer').textContent =
-          `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events`;
+          `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events · updated ${age}`;
+        showNoData(data.summary.proxy_requests || 0);
         loadCheckpoints();
       } catch (err) {
         showError(`Failed to load dashboard: ${err.message || err}`);
       }
     }
 
+    function startHeartbeat() {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(() => {
+        // Only poll if the SSE isn't keeping us fresh (EventSource.OPEN = 1)
+        const sseLive = activeEs && activeEs.readyState === EventSource.OPEN;
+        const stale = Date.now() - lastLoadedAt > HEARTBEAT_MS - 2000;
+        if (!sseLive || stale) loadData();
+      }, HEARTBEAT_MS);
+    }
+
     function connectStream() {
+      // Close any existing EventSource before opening a new one
+      if (activeEs) { activeEs.close(); activeEs = null; }
       const dev = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
       if (dev) qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       const es = new EventSource('/api/dashboard/stream?' + qs.toString());
+      activeEs = es;
       const badge = document.getElementById('liveBadge');
-      es.onopen = () => { badge.textContent = 'live'; badge.className = 'badge live'; };
-      es.onerror = () => { badge.textContent = 'reconnecting'; badge.className = 'badge off'; };
+      es.onopen = () => {
+        badge.textContent = 'live';
+        badge.className = 'badge live';
+        // Refresh data on every reconnect so charts aren't stale after a drop
+        scheduleRefresh();
+      };
+      es.onerror = () => {
+        badge.textContent = 'reconnecting';
+        badge.className = 'badge off';
+      };
       es.onmessage = () => scheduleRefresh();
       es.addEventListener('ping', () => {});
     }
 
     document.getElementById('refreshBtn').addEventListener('click', loadData);
-    document.getElementById('devFilter').addEventListener('change', () => { loadData(); });
-    document.getElementById('sessionFilter').addEventListener('change', () => { loadData(); });
+    document.getElementById('devFilter').addEventListener('change', () => { loadData(); connectStream(); });
+    document.getElementById('sessionFilter').addEventListener('change', () => { loadData(); connectStream(); });
 
     chartDefaults();
-    loadData().then(connectStream);
+    loadData().then(() => { connectStream(); startHeartbeat(); });
   </script>
 </body>
 </html>
