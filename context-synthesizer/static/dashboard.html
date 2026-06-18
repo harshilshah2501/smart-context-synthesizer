@@ -417,13 +417,16 @@
       } catch (_) {}
     }
 
-    let refreshTimer = null;
-    let activeEs = null;
-    let heartbeatTimer = null;
-    let lastLoadedAt = 0;
-    const HEARTBEAT_MS = 30_000;
+    // ── State ────────────────────────────────────────────────────────────────
+    let refreshTimer    = null;   // debounce handle for scheduleRefresh
+    let activeEs        = null;   // the one live EventSource (or null)
+    let heartbeatTimer  = null;   // setInterval handle
+    let lastLoadedAt    = 0;      // epoch ms of last successful loadData()
+    let loadInFlight    = false;  // prevent concurrent loadData() calls
+    const HEARTBEAT_MS  = 30_000;
     const DASHBOARD_TOKEN = new URLSearchParams(location.search).get('token') || '';
 
+    // ── Helpers ──────────────────────────────────────────────────────────────
     function withAuth(qs) {
       if (DASHBOARD_TOKEN) qs.set('token', DASHBOARD_TOKEN);
       return qs;
@@ -435,23 +438,27 @@
       document.getElementById('footer').textContent = msg;
     }
 
+    function showNoData(proxyRequests) {
+      const banner = document.getElementById('noDataBanner');
+      if (banner) banner.style.display = proxyRequests === 0 ? '' : 'none';
+    }
+
+    // Debounce: coalesces rapid-fire triggers into one loadData() after 400 ms.
     function scheduleRefresh() {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(loadData, 400);
     }
 
-    function showNoData(proxyRequests) {
-      const banner = document.getElementById('noDataBanner');
-      if (!banner) return;
-      banner.style.display = proxyRequests === 0 ? '' : 'none';
-    }
-
+    // ── Data loading ─────────────────────────────────────────────────────────
     async function loadData() {
+      // Guard: skip if a fetch is already in flight to avoid double-renders.
+      if (loadInFlight) return;
+      loadInFlight = true;
       lastLoadedAt = Date.now();
-      const dev = document.getElementById('devFilter').value;
+      const dev     = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
-      if (dev) qs.set('developer_id', dev);
+      if (dev)     qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       try {
         const res = await fetch('/api/dashboard/data?' + qs.toString());
@@ -475,52 +482,91 @@
         loadCheckpoints();
       } catch (err) {
         showError(`Failed to load dashboard: ${err.message || err}`);
+      } finally {
+        loadInFlight = false;
       }
     }
 
-    function startHeartbeat() {
-      clearInterval(heartbeatTimer);
-      heartbeatTimer = setInterval(() => {
-        // Fire when SSE is down (CLOSED=2 or CONNECTING=0 for >heartbeat duration)
-        // OR when data is simply stale (SSE alive but no messages arriving).
-        const sseLive = activeEs && activeEs.readyState === EventSource.OPEN;
-        const stale = Date.now() - lastLoadedAt > HEARTBEAT_MS;
-        if (!sseLive || stale) {
-          loadData();
-        }
-      }, HEARTBEAT_MS);
+    // ── SSE stream ───────────────────────────────────────────────────────────
+    function closeStream() {
+      if (!activeEs) return;
+      const dead = activeEs;
+      activeEs = null;
+      // Null out ALL handlers BEFORE close() so that any queued microtask
+      // callbacks on the dead reference are neutered and cannot call
+      // scheduleRefresh() or update the badge.
+      dead.onopen    = null;
+      dead.onerror   = null;
+      dead.onmessage = null;
+      dead.close();
     }
 
     function connectStream() {
-      // Close any existing EventSource before opening a new one
-      if (activeEs) { activeEs.close(); activeEs = null; }
-      const dev = document.getElementById('devFilter').value;
+      closeStream();
+      const dev     = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
-      if (dev) qs.set('developer_id', dev);
+      if (dev)     qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       const es = new EventSource('/api/dashboard/stream?' + qs.toString());
       activeEs = es;
       const badge = document.getElementById('liveBadge');
+
       es.onopen = () => {
+        // Stale-reference guard: ignore if this ES was already replaced.
+        if (activeEs !== es) return;
         badge.textContent = 'live';
-        badge.className = 'badge live';
-        // Don't call scheduleRefresh() here — the SSE reconnects frequently
-        // through the Windows→WSL NAT (~every 30s). Firing loadData() on every
-        // onopen would cause rapid-fire polling. The 30s heartbeat covers freshness.
+        badge.className   = 'badge live';
+        // Do NOT call scheduleRefresh() here.
+        // The Windows→WSL NAT drops SSE every ~30 s; calling loadData() on
+        // every onopen would flood the server.  The heartbeat handles freshness.
       };
+
       es.onerror = () => {
+        if (activeEs !== es) return;
         badge.textContent = 'reconnecting';
-        badge.className = 'badge off';
+        badge.className   = 'badge off';
       };
-      es.onmessage = () => scheduleRefresh();
+
+      es.onmessage = () => {
+        // Only act on messages from the current (non-stale) stream.
+        if (activeEs !== es) return;
+        scheduleRefresh();
+      };
+
+      // Suppress the default "message" event for our explicit ping frames.
       es.addEventListener('ping', () => {});
     }
 
-    document.getElementById('refreshBtn').addEventListener('click', loadData);
-    document.getElementById('devFilter').addEventListener('change', () => { loadData(); connectStream(); });
-    document.getElementById('sessionFilter').addEventListener('change', () => { loadData(); connectStream(); });
+    // ── Heartbeat ────────────────────────────────────────────────────────────
+    // Fires every 30 s.  Calls loadData() when:
+    //   • the SSE is not OPEN (dropped / reconnecting)  — keeps data fresh while offline
+    //   • data is stale (SSE alive but no proxy events arriving)  — idle-session refresh
+    function startHeartbeat() {
+      clearInterval(heartbeatTimer);
+      heartbeatTimer = setInterval(() => {
+        const sseLive = activeEs && activeEs.readyState === EventSource.OPEN;
+        const stale   = Date.now() - lastLoadedAt > HEARTBEAT_MS;
+        if (!sseLive || stale) loadData();
+      }, HEARTBEAT_MS);
+    }
 
+    // ── Event wiring ─────────────────────────────────────────────────────────
+    document.getElementById('refreshBtn').addEventListener('click', () => {
+      clearTimeout(refreshTimer);
+      loadData();
+    });
+    // Filter changes: reload data AND reconnect SSE with new filter params.
+    document.getElementById('devFilter').addEventListener('change', () => {
+      loadData();
+      connectStream();
+    });
+    document.getElementById('sessionFilter').addEventListener('change', () => {
+      loadData();
+      connectStream();
+    });
+
+    // ── Boot ─────────────────────────────────────────────────────────────────
     chartDefaults();
     loadData().then(() => { connectStream(); startHeartbeat(); });
   </script>
