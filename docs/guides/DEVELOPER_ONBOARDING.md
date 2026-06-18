@@ -167,9 +167,16 @@ systemctl --user status context-synthesizer-proxy
 bash context-synthesizer/scripts/check_proxy_ready.sh
 bash context-synthesizer/scripts/open_dashboard.sh
 # Windows browser: use the WSL IP URL printed above (or --open)
+bash context-synthesizer/scripts/verify_claude_routing.sh   # why proxy_requests is 0
 ```
 
 Use Claude Code in a project — charts should update per API call. Badge top-left should show **live**.
+
+**WSL + Claude Code on Windows (common):** setup configures **two** `settings.json` files when you run `configure_claude_proxy.sh`:
+- WSL `~/.claude/settings.json` → `http://127.0.0.1:8080` (Claude CLI inside WSL)
+- Windows `%USERPROFILE%\.claude\settings.json` → `http://<WSL_IP>:8080` (Claude Code Windows app)
+
+After re-running configure, **restart Claude Code on Windows**. If the dashboard shows `proxy_requests: 0` but health checks pass, run `verify_claude_routing.sh`.
 
 If the service won't start:
 

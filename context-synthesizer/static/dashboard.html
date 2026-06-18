@@ -161,10 +161,12 @@
     </div>
     <div id="noDataBanner" style="display:none; background:var(--panel); border:1px solid var(--amber); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--amber); font-size:12px; line-height:1.7;">
       <strong>No proxy requests recorded yet.</strong><br>
-      The proxy is running — make sure Claude Code is routing through it:<br>
-      <code style="color:var(--text)">cat ~/.claude/settings.json | grep ANTHROPIC_BASE_URL</code><br>
-      If missing, run: <code style="color:var(--text)">bash context-synthesizer/scripts/configure_claude_proxy.sh</code><br>
-      Then open a project in Claude Code and start a conversation. Charts will populate automatically.
+      The proxy is running but no API calls have been logged. Common causes:<br>
+      <strong>WSL + Claude Code on Windows:</strong> Windows must use the <strong>WSL IP</strong>, not <code>127.0.0.1</code>. Run:<br>
+      <code style="color:var(--text)">bash context-synthesizer/scripts/configure_claude_proxy.sh</code><br>
+      then <strong>restart Claude Code on Windows</strong> and send one message.<br>
+      <strong>Claude Code inside WSL:</strong> <code style="color:var(--text)">grep ANTHROPIC_BASE_URL ~/.claude/settings.json</code> → should be <code>http://127.0.0.1:8080</code><br>
+      Full check: <code style="color:var(--text)">bash context-synthesizer/scripts/verify_claude_routing.sh</code>
     </div>
     <div class="kpis" id="kpis"></div>
 

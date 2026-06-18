@@ -37,29 +37,22 @@ from telemetry import (
 )
 
 def _check_claude_settings() -> None:
-    """Warn at startup if Claude Code isn't wired to this proxy.
-
-    Reads ~/.claude/settings.json (or CLAUDE_SETTINGS_PATH) and checks whether
-    ANTHROPIC_BASE_URL points at localhost. Emits a prominent warning if not —
-    this is the most common reason the proxy is running but no traffic arrives.
-    """
+    """Warn at startup if Claude Code isn't wired to this proxy."""
+    port = os.environ.get("PROXY_PORT", "8080")
     settings_path = Path(
         os.environ.get("CLAUDE_SETTINGS_PATH", str(Path.home() / ".claude" / "settings.json"))
     )
-    if not settings_path.is_file():
-        print(
-            "[PROXY] ⚠ ~/.claude/settings.json not found — run configure_claude_proxy.sh "
-            "or re-run setup_developer.sh to wire Claude Code to this proxy.",
-            file=sys.stderr,
-            flush=True,
-        )
-        return
-    try:
-        data = json.loads(settings_path.read_text(encoding="utf-8"))
-    except Exception:
-        return
-    base_url = (data.get("env") or {}).get("ANTHROPIC_BASE_URL") or ""
-    port = os.environ.get("PROXY_PORT", "8080")
+
+    def _read_base_url(path: Path) -> str:
+        if not path.is_file():
+            return ""
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            return (data.get("env") or {}).get("ANTHROPIC_BASE_URL") or ""
+        except Exception:
+            return ""
+
+    base_url = _read_base_url(settings_path)
     if not base_url:
         print(
             f"[PROXY] ⚠ ANTHROPIC_BASE_URL not set in {settings_path}\n"
@@ -76,7 +69,31 @@ def _check_claude_settings() -> None:
             flush=True,
         )
     else:
-        print(f"[PROXY] Claude Code → proxy: {base_url}", flush=True)
+        print(f"[PROXY] Claude Code (WSL) → proxy: {base_url}", flush=True)
+
+    # WSL: Windows Claude Code app needs WSL IP, not 127.0.0.1
+    wsl_marker = Path("/proc/version")
+    if wsl_marker.is_file() and "microsoft" in wsl_marker.read_text(encoding="utf-8", errors="ignore").lower():
+        win_settings = os.environ.get("CLAUDE_WINDOWS_SETTINGS_PATH", "")
+        if not win_settings:
+            for mount in Path("/mnt/c/Users").iterdir() if Path("/mnt/c/Users").is_dir() else []:
+                candidate = mount / ".claude" / "settings.json"
+                if candidate.is_file():
+                    win_settings = str(candidate)
+                    break
+        if win_settings:
+            win_url = _read_base_url(Path(win_settings))
+            if win_url and "127.0.0.1" in win_url and f":{port}" in win_url:
+                print(
+                    f"[PROXY] ⚠ Windows Claude settings ({win_settings}) use 127.0.0.1 — "
+                    "Windows localhost is NOT the WSL proxy.\n"
+                    "  Run: bash context-synthesizer/scripts/configure_claude_proxy.sh\n"
+                    "  Then restart Claude Code on Windows.",
+                    file=sys.stderr,
+                    flush=True,
+                )
+            elif win_url:
+                print(f"[PROXY] Claude Code (Windows) → proxy: {win_url}", flush=True)
 
 
 @asynccontextmanager
