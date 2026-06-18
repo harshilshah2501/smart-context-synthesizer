@@ -153,6 +153,12 @@
   </header>
 
   <main>
+    <div id="authErrorBanner" style="display:none; background:var(--panel); border:1px solid var(--red); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--red); font-size:12px; line-height:1.7;">
+      <strong>Dashboard token rejected (401).</strong><br>
+      Your browser URL has an old <code>?token=</code> — this happens after proxy restart or re-running setup.<br>
+      In WSL, run: <code style="color:var(--text)">bash context-synthesizer/scripts/open_dashboard.sh</code><br>
+      Open the <strong>new</strong> URL in Windows Chrome (WSL IP + fresh token). Do not reuse a bookmarked dashboard link.
+    </div>
     <div id="noDataBanner" style="display:none; background:var(--panel); border:1px solid var(--amber); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--amber); font-size:12px; line-height:1.7;">
       <strong>No proxy requests recorded yet.</strong><br>
       The proxy is running — make sure Claude Code is routing through it:<br>
@@ -432,6 +438,22 @@
       return qs;
     }
 
+    function showAuthError() {
+      const auth = document.getElementById('authErrorBanner');
+      const noData = document.getElementById('noDataBanner');
+      if (auth) auth.style.display = '';
+      if (noData) noData.style.display = 'none';
+      document.getElementById('liveBadge').textContent = 'unauthorized';
+      document.getElementById('liveBadge').className = 'badge off';
+    }
+
+    function clearBanners() {
+      const auth = document.getElementById('authErrorBanner');
+      const noData = document.getElementById('noDataBanner');
+      if (auth) auth.style.display = 'none';
+      if (noData) noData.style.display = 'none';
+    }
+
     function showError(msg) {
       document.getElementById('liveBadge').textContent = 'error';
       document.getElementById('liveBadge').className = 'badge off';
@@ -439,6 +461,8 @@
     }
 
     function showNoData(proxyRequests) {
+      const auth = document.getElementById('authErrorBanner');
+      if (auth && auth.style.display !== 'none') return; // auth error takes precedence
       const banner = document.getElementById('noDataBanner');
       if (banner) banner.style.display = proxyRequests === 0 ? '' : 'none';
     }
@@ -464,9 +488,17 @@
         const res = await fetch('/api/dashboard/data?' + qs.toString());
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
+          if (res.status === 401) {
+            showAuthError();
+            document.getElementById('footer').textContent =
+              err.detail || 'Invalid dashboard token — run open_dashboard.sh for a fresh URL.';
+            closeStream(); // stop retrying SSE with stale token
+            return;
+          }
           showError(`Dashboard API ${res.status}: ${err.detail || res.statusText}. Run open_dashboard.sh for the token URL.`);
           return;
         }
+        clearBanners();
         const data = await res.json();
         renderKpis(data.summary);
         renderCharts(data.series);
