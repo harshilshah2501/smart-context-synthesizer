@@ -8,7 +8,9 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import sys
 import time
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -34,7 +36,100 @@ from telemetry import (
     utc_now_iso,
 )
 
-app = FastAPI(title="Context Synthesizer Proxy")
+def _check_claude_settings() -> None:
+    """Warn at startup if Claude Code isn't wired to this proxy.
+
+    Reads ~/.claude/settings.json (or CLAUDE_SETTINGS_PATH) and checks whether
+    ANTHROPIC_BASE_URL points at localhost. Emits a prominent warning if not —
+    this is the most common reason the proxy is running but no traffic arrives.
+    """
+    settings_path = Path(
+        os.environ.get("CLAUDE_SETTINGS_PATH", str(Path.home() / ".claude" / "settings.json"))
+    )
+    if not settings_path.is_file():
+        print(
+            "[PROXY] ⚠ ~/.claude/settings.json not found — run configure_claude_proxy.sh "
+            "or re-run setup_developer.sh to wire Claude Code to this proxy.",
+            file=sys.stderr,
+            flush=True,
+        )
+        return
+    try:
+        data = json.loads(settings_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    base_url = (data.get("env") or {}).get("ANTHROPIC_BASE_URL") or ""
+    port = os.environ.get("PROXY_PORT", "8080")
+    if not base_url:
+        print(
+            f"[PROXY] ⚠ ANTHROPIC_BASE_URL not set in {settings_path}\n"
+            f"  Run: bash context-synthesizer/scripts/configure_claude_proxy.sh\n"
+            f"  Expected: http://127.0.0.1:{port}",
+            file=sys.stderr,
+            flush=True,
+        )
+    elif f":{port}" not in base_url and "127.0.0.1" not in base_url and "localhost" not in base_url:
+        print(
+            f"[PROXY] ⚠ ANTHROPIC_BASE_URL in {settings_path} is '{base_url}' — "
+            f"does not point at this proxy (expected http://127.0.0.1:{port}).",
+            file=sys.stderr,
+            flush=True,
+        )
+    else:
+        print(f"[PROXY] Claude Code → proxy: {base_url}", flush=True)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global CLAUDE_MD_CONTENT
+    CLAUDE_MD_CONTENT = load_claude_md()
+    from dashboard_auth import dashboard_localhost_only, dashboard_token
+    from telemetry import TELEMETRY_LOG_PATH
+
+    l1_est = estimate_tokens(len(CLAUDE_MD_CONTENT))
+    print(
+        f"[PROXY] Loaded Claude.md from {CLAUDE_MD_PATH} "
+        f"({len(CLAUDE_MD_CONTENT):,} chars, ~{l1_est:,} tok est.)",
+        flush=True,
+    )
+    if l1_est < MIN_CACHE_TOKENS:
+        print(
+            f"[PROXY] ⚠ Layer 1 below {MIN_CACHE_TOKENS:,} token cache minimum. "
+            "Run build_production_claude_md.py and set CLAUDE_MD_PATH.",
+            flush=True,
+        )
+    print(f"[PROXY] Chat model: {DEFAULT_MODEL} | Compaction model: {COMPACTION_MODEL}", flush=True)
+    print(
+        f"[PROXY] Compaction: every {MAX_TURNS_THRESHOLD} turns | "
+        f"Layer3 cap {MAX_LAYER3_TURNS} turns | "
+        f"token threshold {COMPACTION_TOKEN_THRESHOLD:,} (0=off)",
+        flush=True,
+    )
+    print(f"[PROXY] Checkpoints: max {MAX_CHECKPOINTS} pins per session (@synth-remember:)", flush=True)
+    print(f"[PROXY] Telemetry log: {TELEMETRY_LOG_PATH}", flush=True)
+    print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback", flush=True)
+    host = os.environ.get("PROXY_HOST", "127.0.0.1")
+    port = os.environ.get("PROXY_PORT", "8080")
+    dash_url = f"http://{host}:{port}/dashboard"
+    if dashboard_token():
+        dash_url += "?token=<DASHBOARD_TOKEN>"
+    print(f"[PROXY] Live dashboard: {dash_url}", flush=True)
+    if host == "0.0.0.0" and not dashboard_token() and not dashboard_localhost_only():
+        print(
+            "[PROXY] ⚠ PROXY_HOST=0.0.0.0 without DASHBOARD_TOKEN — "
+            "dashboard is reachable on your LAN. Set DASHBOARD_TOKEN in .env or re-run setup.",
+            flush=True,
+        )
+    if dashboard_localhost_only():
+        print("[PROXY] Dashboard: localhost-only (DASHBOARD_LOCALHOST_ONLY=1)", flush=True)
+    elif dashboard_token():
+        print("[PROXY] Dashboard: token required (DASHBOARD_TOKEN set)", flush=True)
+    _check_claude_settings()
+    yield
+    # no cleanup needed
+
+
+app = FastAPI(title="Context Synthesizer Proxy", lifespan=lifespan)
 attach_dashboard(app)
 
 DEFAULT_CLAUDE_MD_PATH = Path(__file__).resolve().parent / "Claude.md"
@@ -536,46 +631,6 @@ def api_kwargs_from_body(body: dict[str, Any], messages: list[dict[str, Any]]) -
 async def health() -> dict[str, str]:
     """Liveness probe — does not write telemetry."""
     return {"status": "ok", "service": "context-synthesizer"}
-
-
-@app.on_event("startup")
-async def startup() -> None:
-    global CLAUDE_MD_CONTENT
-    CLAUDE_MD_CONTENT = load_claude_md()
-    from dashboard_auth import dashboard_localhost_only, dashboard_token
-    from telemetry import TELEMETRY_LOG_PATH
-
-    l1_est = estimate_tokens(len(CLAUDE_MD_CONTENT))
-    print(f"[PROXY] Loaded Claude.md from {CLAUDE_MD_PATH} ({len(CLAUDE_MD_CONTENT):,} chars, ~{l1_est:,} tok est.)")
-    if l1_est < MIN_CACHE_TOKENS:
-        print(
-            f"[PROXY] ⚠ Layer 1 below {MIN_CACHE_TOKENS:,} token cache minimum. "
-            "Run build_production_claude_md.py and set CLAUDE_MD_PATH."
-        )
-    print(f"[PROXY] Chat model: {DEFAULT_MODEL} | Compaction model: {COMPACTION_MODEL}")
-    print(
-        f"[PROXY] Compaction: every {MAX_TURNS_THRESHOLD} turns | "
-        f"Layer3 cap {MAX_LAYER3_TURNS} turns | "
-        f"token threshold {COMPACTION_TOKEN_THRESHOLD:,} (0=off)"
-    )
-    print(f"[PROXY] Checkpoints: max {MAX_CHECKPOINTS} pins per session (@synth-remember:)")
-    print(f"[PROXY] Telemetry log: {TELEMETRY_LOG_PATH}")
-    print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback")
-    host = os.environ.get("PROXY_HOST", "127.0.0.1")
-    port = os.environ.get("PROXY_PORT", "8080")
-    dash_url = f"http://{host}:{port}/dashboard"
-    if dashboard_token():
-        dash_url += "?token=<DASHBOARD_TOKEN>"
-    print(f"[PROXY] Live dashboard: {dash_url}")
-    if host == "0.0.0.0" and not dashboard_token() and not dashboard_localhost_only():
-        print(
-            "[PROXY] ⚠ PROXY_HOST=0.0.0.0 without DASHBOARD_TOKEN — "
-            "dashboard is reachable on your LAN. Set DASHBOARD_TOKEN in .env or re-run setup."
-        )
-    if dashboard_localhost_only():
-        print("[PROXY] Dashboard: localhost-only (DASHBOARD_LOCALHOST_ONLY=1)")
-    elif dashboard_token():
-        print("[PROXY] Dashboard: token required (DASHBOARD_TOKEN set)")
 
 
 @app.post("/v1/messages")

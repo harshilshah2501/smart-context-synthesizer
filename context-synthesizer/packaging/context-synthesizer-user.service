@@ -9,6 +9,7 @@ Environment=TELEMETRY_LOG_PATH=%h/.local/share/context-synthesizer/stats/telemet
 Environment=CLAUDE_MD_PATH=/etc/context-synthesizer/Claude.md
 Environment=PROXY_HOST=127.0.0.1
 Environment=PROXY_PORT=8080
+Environment=PYTHONUNBUFFERED=1
 WorkingDirectory=/usr/lib/context-synthesizer
 ExecStart=/usr/lib/context-synthesizer/.venv/bin/python /usr/lib/context-synthesizer/proxy_tool.py
 Restart=on-failure

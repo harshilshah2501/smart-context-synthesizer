@@ -38,6 +38,9 @@ Wants=network-online.target
 Type=simple
 WorkingDirectory=${REPO_ROOT}/context-synthesizer
 EnvironmentFile=-${ENV_FILE}
+# Flush Python print() immediately so startup logs appear in journalctl
+# without waiting for the first incoming request.
+Environment=PYTHONUNBUFFERED=1
 ExecStart=${RUN_PROXY}
 Restart=on-failure
 RestartSec=5

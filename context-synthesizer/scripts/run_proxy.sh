@@ -27,4 +27,6 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 cd "${REPO_ROOT}/context-synthesizer"
-exec "$PY" "$PROXY_PY"
+# PYTHONUNBUFFERED=1 ensures print() flushes immediately to the systemd journal
+# instead of buffering until the first request arrives (which can be minutes later).
+exec env PYTHONUNBUFFERED=1 "$PY" "$PROXY_PY"
