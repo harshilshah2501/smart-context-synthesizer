@@ -481,10 +481,13 @@
     function startHeartbeat() {
       clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(() => {
-        // Only poll if the SSE isn't keeping us fresh (EventSource.OPEN = 1)
+        // Fire when SSE is down (CLOSED=2 or CONNECTING=0 for >heartbeat duration)
+        // OR when data is simply stale (SSE alive but no messages arriving).
         const sseLive = activeEs && activeEs.readyState === EventSource.OPEN;
-        const stale = Date.now() - lastLoadedAt > HEARTBEAT_MS - 2000;
-        if (!sseLive || stale) loadData();
+        const stale = Date.now() - lastLoadedAt > HEARTBEAT_MS;
+        if (!sseLive || stale) {
+          loadData();
+        }
       }, HEARTBEAT_MS);
     }
 
@@ -502,8 +505,9 @@
       es.onopen = () => {
         badge.textContent = 'live';
         badge.className = 'badge live';
-        // Refresh data on every reconnect so charts aren't stale after a drop
-        scheduleRefresh();
+        // Don't call scheduleRefresh() here — the SSE reconnects frequently
+        // through the Windows→WSL NAT (~every 30s). Firing loadData() on every
+        // onopen would cause rapid-fire polling. The 30s heartbeat covers freshness.
       };
       es.onerror = () => {
         badge.textContent = 'reconnecting';
