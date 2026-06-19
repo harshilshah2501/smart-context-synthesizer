@@ -193,6 +193,13 @@ If the service won't start:
 journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
 ```
 
+**`ModuleNotFoundError: anyio._backends`** (broken venv):
+
+```bash
+bash context-synthesizer/scripts/repair_venv.sh
+systemctl --user restart context-synthesizer-proxy
+```
+
 **Port conflict (Tabby on 8080):**
 
 ```bash

@@ -19,6 +19,14 @@ if [[ ! -x "$PY" ]]; then
   exit 1
 fi
 
+# Catch broken anyio installs before uvicorn crashes with a long traceback in journal.
+if ! "$PY" -c "import anyio._backends._asyncio" 2>/dev/null; then
+  echo "context-synthesizer-proxy: broken Python deps (anyio._backends missing)" >&2
+  echo "  Fix: bash ${REPO_ROOT}/context-synthesizer/scripts/repair_venv.sh" >&2
+  echo "  Then: systemctl --user restart context-synthesizer-proxy" >&2
+  exit 1
+fi
+
 if [[ -f "$ENV_FILE" ]]; then
   set -a
   # shellcheck disable=SC1090

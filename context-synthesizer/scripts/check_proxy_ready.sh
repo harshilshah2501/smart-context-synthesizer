@@ -34,7 +34,12 @@ if [[ ! -x "$PY" ]]; then
 fi
 
 if ! "$PY" -c "import fastapi, uvicorn, anthropic" 2>/dev/null; then
-  say "missing proxy dependencies — run: bash $REPO_ROOT/context-synthesizer/scripts/setup.sh"
+  say "missing proxy dependencies — run: bash $REPO_ROOT/context-synthesizer/scripts/repair_venv.sh"
+  exit 1
+fi
+
+if ! "$PY" -c "import anyio._backends._asyncio" 2>/dev/null; then
+  say "broken anyio install (anyio._backends) — run: bash $REPO_ROOT/context-synthesizer/scripts/repair_venv.sh"
   exit 1
 fi
 
