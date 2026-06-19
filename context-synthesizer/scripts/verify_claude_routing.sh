@@ -104,11 +104,62 @@ if [[ "$IS_WSL" -eq 1 ]]; then
   fi
 fi
 
+read_vscode_base_url() {
+  local path="$1"
+  if [[ ! -f "$path" ]]; then
+    echo "(file missing)"
+    return
+  fi
+  python3 -c "
+import json, sys
+p = sys.argv[1]
+try:
+    d = json.loads(open(p).read())
+    for item in d.get('claudeCode.environmentVariables') or []:
+        if isinstance(item, dict) and (item.get('name') or item.get('key')) == 'ANTHROPIC_BASE_URL':
+            print(item.get('value') or '(empty)')
+            break
+    else:
+        print('(not set in claudeCode.environmentVariables)')
+except Exception as e:
+    print(f'(parse error: {e})')
+" "$path" 2>/dev/null || echo "(unreadable)"
+}
+
+echo ""
+echo "VS Code Claude Code extension (claudeCode.environmentVariables):"
+VSCODE_CHECKED=0
+if [[ -n "${WIN_USER:-}" && -f "/mnt/c/Users/${WIN_USER}/AppData/Roaming/Code/User/settings.json" ]]; then
+  VSCODE_PATH="/mnt/c/Users/${WIN_USER}/AppData/Roaming/Code/User/settings.json"
+  VSCODE_URL="$(read_vscode_base_url "$VSCODE_PATH")"
+  echo "  Windows VS Code:  $VSCODE_URL"
+  VSCODE_CHECKED=1
+  if [[ -n "$WSL_IP" && "$VSCODE_URL" == *"${WSL_IP}:${PORT}"* ]]; then
+    ok "VS Code extension wired to WSL proxy"
+  elif [[ "$VSCODE_URL" == *"127.0.0.1:${PORT}"* ]]; then
+    fail "VS Code uses 127.0.0.1 — Windows localhost, not WSL proxy"
+    echo "    Fix: bash context-synthesizer/scripts/configure_claude_proxy.sh && restart VS Code"
+  elif [[ "$VSCODE_URL" == "(not set"* ]] || [[ "$VSCODE_URL" == "(file missing)" ]]; then
+    fail "VS Code extension NOT configured — this is required for Claude in VS Code"
+    echo "    The extension ignores ~/.claude/settings.json"
+    echo "    Fix: bash context-synthesizer/scripts/configure_claude_proxy.sh"
+  fi
+fi
+if [[ -f "$HOME/.config/Code/User/settings.json" ]]; then
+  VSCODE_LINUX_URL="$(read_vscode_base_url "$HOME/.config/Code/User/settings.json")"
+  echo "  Linux VS Code:    $VSCODE_LINUX_URL"
+  VSCODE_CHECKED=1
+fi
+if [[ "$VSCODE_CHECKED" -eq 0 ]]; then
+  warn "No VS Code settings.json found — if using Claude Code in VS Code, run configure_claude_proxy.sh"
+fi
+
 echo ""
 echo "Recent proxy traffic (journal):"
 if command -v journalctl >/dev/null 2>&1; then
-  MSG_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -c 'POST /v1/messages' || true)"
-  CHAT_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -c 'POST /v1/chat/completions' || true)"
+  MSG_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -cE 'POST /v1/messages|→ POST /v1/messages' || true)"
+  CHAT_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -cE 'POST /v1/chat/completions|→ POST /v1/chat/completions' || true)"
+  REJECTED="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -c 'rejected: no API key' || true)"
   if [[ "$MSG_COUNT" -gt 0 ]]; then
     ok "Claude Code traffic: ${MSG_COUNT} POST /v1/messages in last 24h"
   elif [[ "$CHAT_COUNT" -gt 0 ]]; then
@@ -116,13 +167,15 @@ if command -v journalctl >/dev/null 2>&1; then
   else
     fail "No API traffic in last 24h — only health/dashboard hits"
     echo ""
-    echo "  Most common fix (WSL + Claude Code on Windows):"
+    echo "  Claude Code in VS Code: extension needs claudeCode.environmentVariables"
     echo "    bash context-synthesizer/scripts/configure_claude_proxy.sh"
-    echo "    Restart Claude Code on Windows, send one chat message."
+    echo "    Restart VS Code, send one message."
     echo ""
-    echo "  If you use Claude Code inside WSL only:"
-    echo "    grep ANTHROPIC_BASE_URL ~/.claude/settings.json"
-    echo "    Restart the claude session, send one message."
+    echo "  Live trace while testing:"
+    echo "    journalctl --user -u context-synthesizer-proxy -f | grep -E '\\[ACCESS\\]|\\[PROXY\\]'"
+  fi
+  if [[ "$REJECTED" -gt 0 ]]; then
+    warn "${REJECTED} requests reached proxy but were rejected (no API key) — check auth in VS Code env"
   fi
 else
   warn "journalctl not available"

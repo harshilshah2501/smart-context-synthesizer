@@ -141,6 +141,8 @@ async def lifespan(app: FastAPI):
         print("[PROXY] Dashboard: localhost-only (DASHBOARD_LOCALHOST_ONLY=1)", flush=True)
     elif dashboard_token():
         print("[PROXY] Dashboard: token required (DASHBOARD_TOKEN set)", flush=True)
+    log_mode = os.environ.get("PROXY_ACCESS_LOG", "api")
+    print(f"[PROXY] Access log: {log_mode} (set PROXY_ACCESS_LOG=all for full trace)", flush=True)
     _check_claude_settings()
     yield
     # no cleanup needed
@@ -148,6 +150,59 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Context Synthesizer Proxy", lifespan=lifespan)
 attach_dashboard(app)
+
+
+def _access_log_enabled() -> bool:
+    return os.environ.get("PROXY_ACCESS_LOG", "api").strip().lower() not in ("0", "false", "off")
+
+
+def _access_log_worthy(method: str, path: str, status: int) -> bool:
+    mode = os.environ.get("PROXY_ACCESS_LOG", "api").strip().lower()
+    if mode in ("0", "false", "off"):
+        return False
+    if mode == "all":
+        return True
+    # "api" — log API traffic and errors; skip dashboard/health polling noise
+    if path.startswith("/v1/"):
+        return True
+    if method in ("POST", "PUT", "PATCH", "DELETE"):
+        return True
+    if status >= 400:
+        return True
+    return False
+
+
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    if request.client and request.client.host:
+        return request.client.host
+    return "?"
+
+
+def _ua_short(request: Request, limit: int = 80) -> str:
+    ua = (request.headers.get("user-agent") or "-").replace("\n", " ")
+    return ua[:limit] + ("…" if len(ua) > limit else "")
+
+
+@app.middleware("http")
+async def access_log_middleware(request: Request, call_next):
+    if not _access_log_enabled():
+        return await call_next(request)
+    start = time.perf_counter()
+    response = await call_next(request)
+    elapsed_ms = (time.perf_counter() - start) * 1000
+    path = request.url.path
+    method = request.method
+    status = response.status_code
+    if _access_log_worthy(method, path, status):
+        print(
+            f"[ACCESS] {method} {path} {status} {elapsed_ms:.0f}ms "
+            f"client={_client_ip(request)} ua={_ua_short(request)}",
+            flush=True,
+        )
+    return response
 
 DEFAULT_CLAUDE_MD_PATH = Path(__file__).resolve().parent / "Claude.md"
 CLAUDE_MD_PATH = Path(os.environ.get("CLAUDE_MD_PATH", str(DEFAULT_CLAUDE_MD_PATH)))
@@ -387,11 +442,26 @@ def resolve_developer_id(request: Request) -> str:
 
 def detect_client(request: Request) -> str:
     ua = (request.headers.get("user-agent") or "").lower()
+    if "vscode" in ua or "visual studio code" in ua:
+        return "vscode"
+    if "cursor" in ua:
+        return "cursor"
     if "jetbrains" in ua:
         return "jetbrains"
     if "claude" in ua or "anthropic" in ua:
         return "claude-cli"
     return request.headers.get("x-client", "unknown")
+
+
+def _log_incoming_api(request: Request, path: str, *, extra: str = "") -> None:
+    if not _access_log_enabled():
+        return
+    suffix = f" {extra}" if extra else ""
+    print(
+        f"[PROXY] → {request.method} {path} client={_client_ip(request)} "
+        f"ua={_ua_short(request)}{suffix}",
+        flush=True,
+    )
 
 
 def record_telemetry(
@@ -837,6 +907,7 @@ async def list_models() -> dict[str, Any]:
 @app.post("/v1/chat/completions")
 async def proxy_chat_completions(request: Request):
     """OpenAI-compatible chat completions — for Cursor and other OpenAI-format clients."""
+    _log_incoming_api(request, "/v1/chat/completions")
     body = await request.json()
     messages: list[dict[str, Any]] = body.get("messages") or []
     if not messages:
@@ -847,6 +918,11 @@ async def proxy_chat_completions(request: Request):
     client_name = detect_client(request)
     api_key = resolve_api_key(request)
     if not api_key:
+        print(
+            f"[PROXY] ✗ POST /v1/chat/completions rejected: no API key "
+            f"client={_client_ip(request)}",
+            flush=True,
+        )
         raise HTTPException(
             status_code=401,
             detail=(
@@ -924,6 +1000,7 @@ async def proxy_chat_completions(request: Request):
 
 @app.post("/v1/messages")
 async def proxy_messages(request: Request):
+    _log_incoming_api(request, "/v1/messages")
     body = await request.json()
     incoming_messages = body.get("messages", [])
     if not incoming_messages:
@@ -934,6 +1011,12 @@ async def proxy_messages(request: Request):
     client_name = detect_client(request)
     api_key = resolve_api_key(request)
     if not api_key:
+        print(
+            f"[PROXY] ✗ POST /v1/messages rejected: no API key "
+            f"client={_client_ip(request)} — VS Code needs claudeCode.environmentVariables "
+            f"or ~/.claude/settings.json",
+            flush=True,
+        )
         raise HTTPException(
             status_code=401,
             detail=(

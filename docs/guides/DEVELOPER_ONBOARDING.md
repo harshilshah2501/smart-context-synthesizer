@@ -172,11 +172,20 @@ bash context-synthesizer/scripts/verify_claude_routing.sh   # why proxy_requests
 
 Use Claude Code in a project — charts should update per API call. Badge top-left should show **live**.
 
-**WSL + Claude Code on Windows (common):** setup configures **two** `settings.json` files when you run `configure_claude_proxy.sh`:
+**WSL + Claude Code on Windows (common):** setup configures **three** places when you run `configure_claude_proxy.sh`:
 - WSL `~/.claude/settings.json` → `http://127.0.0.1:8080` (Claude CLI inside WSL)
-- Windows `%USERPROFILE%\.claude\settings.json` → `http://<WSL_IP>:8080` (Claude Code Windows app)
+- Windows `%USERPROFILE%\.claude\settings.json` → `http://<WSL_IP>:8080` (Claude desktop app)
+- **VS Code** `%APPDATA%\Code\User\settings.json` → `claudeCode.environmentVariables` with `ANTHROPIC_BASE_URL`
+  — **required for Claude Code in VS Code**; the extension does **not** read `~/.claude/settings.json`
 
-After re-running configure, **restart Claude Code on Windows**. If the dashboard shows `proxy_requests: 0` but health checks pass, run `verify_claude_routing.sh`.
+After re-running configure, **restart VS Code** (or Claude Code panel). If the dashboard shows `proxy_requests: 0` but health checks pass:
+
+```bash
+bash context-synthesizer/scripts/verify_claude_routing.sh
+journalctl --user -u context-synthesizer-proxy -f | grep -E '\[ACCESS\]|\[PROXY\]'
+```
+
+Send one chat message in VS Code — you should see `[PROXY] → POST /v1/messages` in the journal. Cursor uses a different endpoint (`/v1/chat/completions`); that working does **not** prove VS Code is wired.
 
 If the service won't start:
 
