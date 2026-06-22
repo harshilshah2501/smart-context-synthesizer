@@ -19,7 +19,7 @@ Offline R&D toolkit for **smart context compaction** — study long IDE sessions
 └── context-synthesizer/
     ├── *.py                  ← import pipeline, compaction, gateway
     ├── scripts/
-    ├── packaging/            ← deprecated .deb (legacy)
+    ├── packaging/            ← tarball build + run-setup.sh (SharePoint rollout)
     └── stats/                ← local corpora (gitignored)
 ```
 

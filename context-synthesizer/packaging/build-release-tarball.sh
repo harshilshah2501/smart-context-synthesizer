@@ -11,11 +11,19 @@ STAGE="${OUT}/${NAME}"
 rm -rf "$STAGE"
 mkdir -p "$STAGE"
 
+ENV_FILE="$ROOT/context-synthesizer/.env"
+if [[ -f "$ENV_FILE" ]] && grep -qE '^ANTHROPIC_API_KEY=.' "$ENV_FILE" 2>/dev/null; then
+  echo "ERROR: $ENV_FILE contains ANTHROPIC_API_KEY — remove it before building." >&2
+  echo "  Max/Pro rollout: no team API key in the package." >&2
+  exit 1
+fi
+
 # Toolkit + docs + installer (no git, venv, stats, secrets)
 rsync -a \
   --exclude='.git' \
   --exclude='.venv' \
   --exclude='**/__pycache__' \
+  --exclude='**/.env' \
   --exclude='context-synthesizer/stats' \
   --exclude='context-synthesizer/packaging/build' \
   --exclude='context-synthesizer/*.zip' \

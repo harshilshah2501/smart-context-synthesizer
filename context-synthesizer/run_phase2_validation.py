@@ -7,7 +7,7 @@ checks success criteria from SYNTHESIZER_RND_REPORT.md §16.
 
 Usage:
     .venv/bin/python context-synthesizer/run_phase2_validation.py \\
-        --cli-root context-synthesizer/stats/dev-backup/.claude/projects \\
+        --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \\
         --developer meet-chavda
 
     .venv/bin/python context-synthesizer/run_phase2_validation.py \\
@@ -342,7 +342,7 @@ def main() -> int:
     parser.add_argument(
         "--cli-root",
         type=Path,
-        default=ROOT / "stats" / "dev-backup" / ".claude" / "projects",
+        default=ROOT / "stats" / "backups" / "meet-chavda" / ".claude" / "projects",
     )
     parser.add_argument("--cursor-project", default="m-coder")
     parser.add_argument("--developer", default="meet-chavda")

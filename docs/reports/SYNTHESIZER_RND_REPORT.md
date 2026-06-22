@@ -223,7 +223,7 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 ## 7. Developer Corpus: meet-chavda
 
 **Source:** `context-synthesizer/claude-folder-backup.zip`  
-**Extracted to:** `stats/dev-backup/.claude/projects/`  
+**Extracted to:** `stats/backups/meet-chavda/.claude/projects/`  
 **Developer:** meet-chavda  
 
 ### Corpus summary
@@ -620,7 +620,7 @@ Ordered workstream after this report:
 | Path                                  | Contents                        |
 | ------------------------------------- | ------------------------------- |
 | `claude-folder-backup.zip`            | meet-chavda backup (source)     |
-| `stats/dev-backup/`                   | Extracted `~/.claude/projects/` |
+| `stats/backups/meet-chavda/`                   | Extracted `~/.claude/projects/` |
 | `stats/meet-chavda_corpus.jsonl`      | 32-session corpus               |
 | `stats/meet-chavda_hot_ac4ecef7.json` | Hot session export              |
 
@@ -633,7 +633,7 @@ Ordered workstream after this report:
 # Mode D — Claude Max corpus
 .venv/bin/python context-synthesizer/import_claude_sessions.py --developer meet-chavda --min-turns 25
 .venv/bin/python context-synthesizer/analyze_hot_session.py --source claude --largest
-.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/dev-backup/.claude/projects
+.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/backups/meet-chavda/.claude/projects
 
 # Cursor corpus
 .venv/bin/python context-synthesizer/import_cursor_sessions.py --project m-coder --min-turns 25

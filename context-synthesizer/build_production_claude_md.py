@@ -32,10 +32,10 @@ DEFAULT_OUTPUT = ROOT / "Claude.production.md"
 DEFAULT_SOURCES = [
     ROOT / "Claude.md",
     ROOT / "README.md",
-    ROOT / "SYNTHESIZER_RND_REPORT.md",
-    ROOT / "BENCHMARK_ANALYSIS.md",
-    ROOT / "Usage.md",
-    REPO_ROOT / "context_os_technical_report.md",
+    REPO_ROOT / "docs" / "reports" / "SYNTHESIZER_RND_REPORT.md",
+    REPO_ROOT / "docs" / "reports" / "BENCHMARK_ANALYSIS.md",
+    REPO_ROOT / "docs" / "guides" / "Usage.md",
+    REPO_ROOT / "docs" / "context_os_technical_report.md",
 ]
 
 
