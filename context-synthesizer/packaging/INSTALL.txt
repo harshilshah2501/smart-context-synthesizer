@@ -1,73 +1,77 @@
-Context Synthesizer — direct install package
-=============================================
+Context Synthesizer — Motadata team package
+==========================================
 
-No git. No GitHub. No rclone. No separate API key at setup (Claude Code Max/Pro login forwards auth).
+No git. No API key. Claude Max/Pro login forwards auth to the local proxy.
 
-TEAM LEAD (once)
-----------------
-1. Build: bash context-synthesizer/packaging/build-release-tarball.sh
-2. Upload to SharePoint (extracted folder recommended, or .tar.gz)
-3. Edit team.conf → set SYNC_DIR to your synced OneDrive weekly folder
-   (ENABLE_PROXY=1 and ENABLE_WEEKLY_CRON=1 are on by default)
-4. Share the SharePoint link; tell team to click Sync in OneDrive
+TEAM LEAD — publish (once per release, from dev machine with OneDrive sync)
+--------------------------------------------------------------------------
+1. Edit packaging/share.conf only if your OneDrive path changes (default is set).
 
-UBUNTU / WSL
-------------
-  sudo apt install -y python3 python3-venv   # if needed
-  Same command: bash run-setup.sh firstname.lastname
+2. From the repo:
+     bash packaging/publish-to-sharepoint.sh
 
-  WSL — enable systemd once (/etc/wsl.conf → [boot] systemd=true, then wsl --shutdown)
-  WSL + Windows browser: bash context-synthesizer/scripts/open_dashboard.sh
-        (WSL IP + ?token=... — not 127.0.0.1 in Chrome)
+   This builds the toolkit and copies to:
+     C:\Users\Harshil Shah\OneDrive - Motadata\Context-Synthesizer\
+       context-synthesizer-toolkit-latest/    ← always current
+       context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
 
-DEVELOPER (once, ~5 min)
-------------------------
-1. Get the package:
-     Windows — SharePoint link → Sync (OneDrive desktop app)
-     Ubuntu  — OneDrive Linux client sync, OR download .tar.gz from SharePoint and extract
-2. Open terminal in the package folder, e.g.:
-     .../ContextSynthesizer/context-synthesizer-toolkit-2026.06.16/
-3. Run (use your Azure email local-part as id):
+   OneDrive syncs to SharePoint automatically. No install.sh edits per release.
 
-     bash run-setup.sh firstname.lastname
+UBUNTU 22.04 — developer install (~2 min)
+-----------------------------------------
+Prereqs:
+  sudo apt install -y python3 python3-venv curl
+  claude auth login
+  loginctl enable-linger $USER
 
-   Example:
-     bash run-setup.sh harshil.shah
+Get the toolkit (pick one):
 
-4. Done. Live compaction + dashboard run in the background.
+  A) OneDrive / SharePoint sync (recommended — no extract)
+     Sync the Context-Synthesizer folder, then:
+       cd context-synthesizer-toolkit-latest
+
+  B) Download the dated archive from SharePoint
+       tar -xzf context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
+       cd context-synthesizer-toolkit-YYYY.MM.DD
+
+Install:
+  bash run-setup.sh firstname.lastname
+
+Example:
+  bash run-setup.sh harshil.shah
+
+Verify:
+  csynth doctor
+  csynth dashboard
+
+Toggle proxy later (no reinstall):
+  csynth proxy on
+  csynth proxy off
+
+Use Claude Code normally. Dashboard updates live per API call.
 
 SMOKE TEST
 ----------
-  systemctl --user status context-synthesizer-proxy
-  bash context-synthesizer/scripts/check_proxy_ready.sh
-  bash context-synthesizer/scripts/open_dashboard.sh
-  bash context-synthesizer/scripts/open_dashboard.sh --open   # WSL → Windows browser
-  # WSL: URLs include ?token=... — use open_dashboard.sh output, do not bookmark bare /dashboard
-  # use Claude Code — dashboard charts update per API call
+  csynth status
+  csynth doctor
+  csynth dashboard
 
-Optional weekly upload test:
-  bash context-synthesizer/scripts/weekly_sync.sh
+TROUBLESHOOTING
+---------------
+Proxy / API errors:
+  csynth restart
+  grep ANTHROPIC_BASE_URL ~/.claude/settings.json   # http://127.0.0.1:8080
+
+Port 8080 busy:
+  Setup auto-picks 8081. Re-run configure_claude_proxy.sh if you change port.
+
+Disable synthesizer:
+  csynth proxy off
+
+  (Re-enable: csynth proxy on)
 
 WHAT YOU GET
 ------------
-PRIMARY — Live compaction (default ON, ENABLE_PROXY=1):
-- Claude Code routes through local proxy (systemd user service)
-- Dreaming v4 compacts history during long sessions (~90-99% smaller shaped context)
-- Use Claude Code while logged in to Max/Pro — CLI forwards auth; no extra API key at setup
-
-LIVE DASHBOARD — bash context-synthesizer/scripts/open_dashboard.sh:
-- Billing bifurcation: cache read / cache write / uncached tokens per turn
-- Four-layer payload: L1 rules, L2 ledger, L3 recent, L4 prompt
-- Naive IDE history vs shaped context (where compaction saves size)
-- Cumulative $ saved, compaction timeline, tuning recommendations
-- WSL: open WSL IP URL in Windows browser (see docs/guides/DASHBOARD.md)
-- WSL: DASHBOARD_TOKEN auto-set in context-synthesizer/.env — open via open_dashboard.sh only
-
-OPTIONAL — Weekly SharePoint reports (ENABLE_WEEKLY_CRON=1 in team.conf):
-- Automatic summary.md + JSONL every Monday for team rollup
-
-SUPPORT
--------
-  docs/guides/DEVELOPER_ONBOARDING.md  — install & smoke test
-  docs/guides/DASHBOARD.md             — live metrics UI (incl. WSL + token)
-  docs/guides/DEPLOY.md                — team lead rollup
+- Live compaction proxy (Dreaming v4) — default ON
+- Live dashboard — Before/After cost + token billing bifurcation
+- csynth CLI — status, dashboard, doctor, restart

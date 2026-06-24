@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# One-time developer setup: venv + config + live proxy (primary) + optional weekly cron + drive upload.
+# One-time developer setup: venv + live proxy + Claude Code wiring.
 #
 # Usage:
-#   curl -fsSL <install.sh-url> | bash -s -- --developer YOU --rclone-remote 'gdrive:...' --enable-proxy --install-cron
-#   bash install.sh --developer YOU ...   (same — install.sh delegates here)
+#   bash run-setup.sh firstname.lastname
+#   bash install.sh firstname.lastname
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,10 +12,7 @@ CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/context-synthesizer"
 CONFIG_FILE="$CONFIG_DIR/developer.env"
 
 DEVELOPER=""
-RCLONE_REMOTE=""
-SYNC_DIR=""
 ENABLE_PROXY=0
-INSTALL_CRON=0
 EXPORT_MODE="d"
 CURSOR_PROJECT=""
 API_KEY=""
@@ -23,35 +20,35 @@ INSTALL_DIR=""
 REPO_ROOT=""
 
 usage() {
-  sed -n '2,8p' "$0" | sed 's/^# \{0,1\}//'
-  echo "  --install-dir PATH   Toolkit root (default: repo root or ~/.local/share/context-synthesizer)"
+  sed -n '2,6p' "$0" | sed 's/^# \{0,1\}//'
+  echo "  --install-dir PATH   Toolkit root (default: package root)"
   exit "${1:-0}"
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --developer) DEVELOPER="$2"; shift 2 ;;
-    --rclone-remote) RCLONE_REMOTE="$2"; shift 2 ;;
-    --sync-dir) SYNC_DIR="$2"; shift 2 ;;
     --enable-proxy) ENABLE_PROXY=1; shift ;;
-    --install-cron) INSTALL_CRON=1; shift ;;
     --export-mode) EXPORT_MODE="$2"; shift 2 ;;
     --cursor-project) CURSOR_PROJECT="$2"; shift 2 ;;
     --api-key) API_KEY="$2"; shift 2 ;;
     --install-dir) INSTALL_DIR="$2"; shift 2 ;;
     -h|--help) usage 0 ;;
-    *) echo "Unknown option: $1" >&2; usage 1 ;;
+    *)
+      if [[ -z "$DEVELOPER" && "$1" != -* ]]; then
+        DEVELOPER="$1"
+        shift
+      else
+        echo "Unknown option: $1" >&2
+        usage 1
+      fi
+      ;;
   esac
 done
 
 if [[ -z "$DEVELOPER" ]]; then
-  echo "Required: --developer YOUR_ID (e.g. azure email local-part: firstname.lastname)" >&2
+  echo "Required: firstname.lastname (e.g. harshil.shah)" >&2
   usage 1
-fi
-
-if [[ "$INSTALL_CRON" -eq 1 ]] && [[ -z "$RCLONE_REMOTE" ]] && [[ -z "$SYNC_DIR" ]]; then
-  echo "Weekly cron needs an upload target: --sync-dir (OneDrive) or --rclone-remote" >&2
-  exit 1
 fi
 
 REPO_ROOT="${INSTALL_DIR:-$_DEFAULT_ROOT}"
@@ -66,14 +63,10 @@ check_systemd_user() {
     echo "" >&2
     echo "ERROR: systemd user session is not available." >&2
     if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
-      echo "  WSL: add to /etc/wsl.conf:" >&2
-      echo "    [boot]" >&2
-      echo "    systemd=true" >&2
-      echo "  Then run 'wsl --shutdown' from Windows PowerShell and reopen WSL." >&2
+      echo "  WSL: [boot] systemd=true in /etc/wsl.conf, then wsl --shutdown" >&2
     else
-      echo "  Linux: run 'loginctl enable-linger \$USER' and ensure a user session is active." >&2
+      echo "  Ubuntu: loginctl enable-linger \$USER" >&2
     fi
-    echo "  Or re-run without --enable-proxy for offline-only setup." >&2
     exit 1
   fi
 }
@@ -87,11 +80,7 @@ mkdir -p "$CONFIG_DIR"
   printf 'TELEMETRY_DEVELOPER_ID=%q\n' "$DEVELOPER"
   printf 'REPO_ROOT=%q\n' "$REPO_ROOT"
   printf 'EXPORT_MODE=%q\n' "$EXPORT_MODE"
-  printf 'RCLONE_REMOTE=%q\n' "$RCLONE_REMOTE"
-  printf 'SYNC_DIR=%q\n' "$SYNC_DIR"
   printf 'ENABLE_PROXY=%q\n' "$ENABLE_PROXY"
-  echo "CRON_HOUR=9"
-  echo "CRON_DOW=1"
   [[ -n "$CURSOR_PROJECT" ]] && printf 'CURSOR_PROJECT=%q\n' "$CURSOR_PROJECT"
 } >"$CONFIG_FILE"
 chmod 600 "$CONFIG_FILE"
@@ -104,71 +93,72 @@ if [[ "$ENABLE_PROXY" -eq 1 ]]; then
     grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null || echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
     chmod 600 "$ENV_FILE" 2>/dev/null || true
   fi
-  # WSL: bind all interfaces so Windows browser can reach dashboard via WSL IP
+  _port_free() {
+    local p="$1"
+    "$REPO_ROOT/.venv/bin/python" -c "
+import socket, sys
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+try:
+    s.bind(('127.0.0.1', int(sys.argv[1])))
+except OSError:
+    sys.exit(1)
+finally:
+    s.close()
+" "$p" 2>/dev/null
+  }
+  _current_port() {
+    if [[ -f "$ENV_FILE" ]]; then
+      grep -E '^PROXY_PORT=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2
+    fi
+  }
+  PROXY_PORT="$(_current_port)"
+  PROXY_PORT="${PROXY_PORT:-8080}"
+  if ! _port_free "$PROXY_PORT"; then
+    if [[ "$PROXY_PORT" == "8080" ]] && _port_free 8081; then
+      if grep -q '^PROXY_PORT=' "$ENV_FILE" 2>/dev/null; then
+        sed -i 's/^PROXY_PORT=.*/PROXY_PORT=8081/' "$ENV_FILE"
+      else
+        echo 'PROXY_PORT=8081' >>"$ENV_FILE"
+      fi
+      PROXY_PORT=8081
+      echo "Port 8080 busy → PROXY_PORT=8081"
+    else
+      echo "WARNING: port $PROXY_PORT in use — set PROXY_PORT in $ENV_FILE" >&2
+    fi
+  fi
   if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
     if ! grep -q '^PROXY_HOST=' "$ENV_FILE" 2>/dev/null; then
       echo 'PROXY_HOST=0.0.0.0' >>"$ENV_FILE"
-      echo "WSL detected → PROXY_HOST=0.0.0.0 (Windows browser uses WSL IP, not 127.0.0.1)"
     fi
     if ! grep -q '^DASHBOARD_TOKEN=' "$ENV_FILE" 2>/dev/null; then
       DASH_TOKEN="$(openssl rand -hex 16 2>/dev/null || tr -dc 'a-f0-9' </dev/urandom | head -c 32)"
       echo "DASHBOARD_TOKEN=${DASH_TOKEN}" >>"$ENV_FILE"
-      echo "WSL detected → DASHBOARD_TOKEN set (use open_dashboard.sh for authenticated URL)"
     fi
   fi
   bash "$SCRIPT_DIR/configure_claude_proxy.sh"
   bash "$SCRIPT_DIR/install_proxy_service.sh"
   echo ""
-  echo "Live compaction: ON — use Claude Code normally (logged in to Max/Pro)."
-  echo "  Claude CLI forwards auth to the proxy; no separate API key needed at setup."
-  echo "  Optional fallback key: context-synthesizer/.env → ANTHROPIC_API_KEY=..."
-  echo "  Check proxy: systemctl --user status context-synthesizer-proxy"
-  echo "  Dashboard: bash context-synthesizer/scripts/open_dashboard.sh"
-fi
-
-if [[ -n "$SYNC_DIR" ]]; then
-  mkdir -p "$SYNC_DIR"
-  echo "Weekly files copy → $SYNC_DIR (OneDrive syncs to SharePoint)"
-elif [[ -n "$RCLONE_REMOTE" ]]; then
-  if ! command -v rclone >/dev/null 2>&1; then
-    echo ""
-    echo "Install rclone for auto-upload: https://rclone.org/install/"
-    echo "Or re-run with --sync-dir for OneDrive folder instead."
-  fi
-fi
-
-if [[ "$INSTALL_CRON" -eq 1 ]]; then
-  bash "$SCRIPT_DIR/install_weekly_cron.sh"
-  echo "Weekly auto-export + upload scheduled (Mondays 09:00)."
+  echo "Live compaction: ON — use Claude Code (Max/Pro login, no API key)."
 fi
 
 echo ""
 echo "=== Setup complete ==="
 echo "Developer ID: $DEVELOPER"
-if [[ "$ENABLE_PROXY" -eq 1 ]]; then
-  echo "  Live compaction: ON (proxy user service)"
-else
-  echo "  Live compaction: OFF (add --enable-proxy to activate)"
-fi
-if [[ -n "$SYNC_DIR" ]]; then
-  echo "  OneDrive sync: $SYNC_DIR"
-elif [[ -n "$RCLONE_REMOTE" ]]; then
-  echo "  Shared drive:  $RCLONE_REMOTE"
-fi
-if [[ "$INSTALL_CRON" -eq 1 ]]; then
-  echo "  Weekly cron:   ON"
-else
-  echo "  Weekly cron:   OFF (add --install-cron or run weekly_sync.sh manually)"
-fi
+echo "  Live compaction: $([[ "$ENABLE_PROXY" -eq 1 ]] && echo ON || echo OFF)"
 echo ""
-echo "Smoke test:"
+echo "  csynth status | csynth dashboard | csynth doctor"
+echo "  csynth proxy on | csynth proxy off"
+echo ""
 if [[ "$ENABLE_PROXY" -eq 1 ]]; then
+  echo "Smoke test:"
   echo "  systemctl --user status context-synthesizer-proxy"
-  PROXY_PORT="$(grep -E '^PROXY_PORT=' "$REPO_ROOT/context-synthesizer/.env" 2>/dev/null | cut -d= -f2)"
-  PROXY_PORT="${PROXY_PORT:-8080}"
-  echo "  open http://127.0.0.1:${PROXY_PORT}/dashboard  # live bifurcation dashboard"
-fi
-if [[ "$INSTALL_CRON" -eq 1 ]]; then
-  echo "  bash ${REPO_ROOT}/context-synthesizer/scripts/weekly_sync.sh"
 fi
 echo "Install location: ${REPO_ROOT}"
+
+BIN_DIR="${HOME}/.local/bin"
+mkdir -p "$BIN_DIR"
+install -m 755 "$SCRIPT_DIR/csynth" "$BIN_DIR/csynth"
+if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
+  echo ""
+  echo "Add to PATH (once): export PATH=\"\$HOME/.local/bin:\$PATH\""
+fi

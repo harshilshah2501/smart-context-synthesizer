@@ -26,6 +26,19 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from dashboard_routes import attach_dashboard
 from compaction import build_compaction_prompt, extract_pins, format_turns_for_compaction
 from models import DEFAULT_CHAT_MODEL, DEFAULT_COMPACTION_MODEL
+from proxy_message_bridge import (
+    build_upstream_messages,
+    find_last_user_message,
+    incoming_ends_with_user,
+    message_char_estimate,
+    normalize_content_with_tools,
+    passthrough_api_kwargs,
+    prepare_incoming_messages,
+    request_uses_beta,
+    resolve_messages_api,
+    serialize_assistant_content,
+    user_message_has_content,
+)
 from telemetry import (
     ContextSnapshot,
     MIN_CACHE_TOKENS,
@@ -126,6 +139,7 @@ async def lifespan(app: FastAPI):
         flush=True,
     )
     print(f"[PROXY] Checkpoints: max {MAX_CHECKPOINTS} pins per session (@synth-remember:)", flush=True)
+    print("[PROXY] Tool-faithful mode: tools/tool_choice forwarded; tool_use/result preserved in recent tail", flush=True)
     print(f"[PROXY] Telemetry log: {TELEMETRY_LOG_PATH}", flush=True)
     print("[PROXY] Auth: Claude CLI BYOK (x-api-key per request) or ANTHROPIC_API_KEY env fallback", flush=True)
     host = os.environ.get("PROXY_HOST", "127.0.0.1")
@@ -491,6 +505,9 @@ def resolve_api_key(request: Request) -> str | None:
 
 
 def anthropic_client(api_key: str) -> AsyncAnthropic:
+    # Claude Max/Pro OAuth tokens (sk-ant-oat*) must use Bearer auth, not X-Api-Key.
+    if api_key.startswith("sk-ant-oat") or api_key.startswith("sk-ant-ort"):
+        return AsyncAnthropic(auth_token=api_key)
     return AsyncAnthropic(api_key=api_key)
 
 
@@ -500,7 +517,26 @@ def build_upstream(api_key: str | None) -> "AsyncAnthropic | CopilotBackend":
         return CopilotBackend(COPILOT_TOKEN)
     if not api_key:
         raise ValueError("No API key available for upstream LLM call")
-    return AsyncAnthropic(api_key=api_key)
+    return anthropic_client(api_key)
+
+
+# Anthropic Python SDK rejects non-streaming calls when max_tokens implies >10 min.
+_ANTHROPIC_NONSTREAMING_MAX_TOKENS = 21_333
+
+
+async def upstream_messages_create(
+    upstream: "AsyncAnthropic | CopilotBackend",
+    *,
+    use_beta: bool = False,
+    **api_kwargs: Any,
+) -> Any:
+    """Upstream messages.create, using streaming when the Anthropic SDK requires it."""
+    api = resolve_messages_api(upstream, use_beta)
+    max_tokens = int(api_kwargs.get("max_tokens") or 0)
+    if max_tokens > _ANTHROPIC_NONSTREAMING_MAX_TOKENS:
+        async with api.stream(**api_kwargs) as stream:
+            return await stream.get_final_message()
+    return await api.create(**api_kwargs)
 
 
 def load_claude_md(path: Path = CLAUDE_MD_PATH) -> str:
@@ -509,26 +545,6 @@ def load_claude_md(path: Path = CLAUDE_MD_PATH) -> str:
             f"Claude.md not found at {path}. Set CLAUDE_MD_PATH or create the file."
         )
     return path.read_text(encoding="utf-8")
-
-
-def normalize_content(content: Any) -> str:
-    """JetBrains may send plain strings or Anthropic-style content block arrays."""
-    if isinstance(content, str):
-        return content
-    if isinstance(content, list):
-        parts: list[str] = []
-        for block in content:
-            if isinstance(block, dict):
-                if block.get("type") == "text":
-                    parts.append(block.get("text") or "")
-                elif "text" in block:
-                    parts.append(str(block["text"]))
-            elif isinstance(block, str):
-                parts.append(block)
-        return "\n".join(p for p in parts if p)
-    if content is None:
-        return ""
-    return str(content)
 
 
 def extract_assistant_text(content_blocks: Any) -> str:
@@ -593,26 +609,44 @@ def build_layer2_message(ledger: str) -> dict[str, Any]:
     }
 
 
-def build_optimized_messages(session: SessionState, user_prompt: str) -> list[dict[str, Any]]:
-    """
-    Assemble the index-aligned payload:
-      [0] L1  Claude.md (static, cached)
-      [1] L2a Checkpoints (append-only, cached)  — only present when pins exist
-      [*] L2b Ledger (mutable, cached)
-      [*] L3  Rolling recent turns
-      [-1] L4 Fresh user prompt
-    """
-    messages: list[dict[str, Any]] = [build_layer1_message()]
+def normalize_content(content: Any) -> str:
+    """Extract text for compaction/telemetry; includes tool block summaries."""
+    return normalize_content_with_tools(content)
+
+
+def build_compressed_prefix(session: SessionState) -> list[dict[str, Any]]:
+    """L1 + optional L2a + L2b — cached compaction layers."""
+    prefix: list[dict[str, Any]] = [build_layer1_message()]
     if session.pinned_checkpoints:
-        messages.append(build_layer2a_message(session.pinned_checkpoints))
-    messages.append(build_layer2_message(session.history_ledger))
+        prefix.append(build_layer2a_message(session.pinned_checkpoints))
+    prefix.append(build_layer2_message(session.history_ledger))
+    return prefix
+
+
+def assemble_upstream_messages(
+    session: SessionState,
+    incoming_messages: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Tool-faithful hybrid: compact prefix + recent/tool tail + current user turn."""
+    prepared = prepare_incoming_messages(incoming_messages)
+    return build_upstream_messages(
+        incoming=prepared,
+        compressed_prefix=build_compressed_prefix(session),
+        rolling_fallback=session.rolling_recent_turns,
+        max_recent_messages=MAX_LAYER3_TURNS * 2,
+    )
+
+
+def build_optimized_messages(session: SessionState, user_prompt: str) -> list[dict[str, Any]]:
+    """Legacy helper — prefer assemble_upstream_messages with full incoming."""
+    messages: list[dict[str, Any]] = build_compressed_prefix(session)
     messages.extend(session.rolling_recent_turns)
     messages.append({"role": "user", "content": user_prompt})
     return messages
 
 
 def _message_chars(msg: dict[str, Any]) -> int:
-    return len(normalize_content(msg.get("content", "")))
+    return message_char_estimate(msg)
 
 
 def _est_history_tokens(session: SessionState) -> int:
@@ -827,7 +861,8 @@ async def dream_compact(
         turns_text = format_turns_for_compaction(turns_snapshot, normalize_content)
         pin_texts = [c.text for c in pins_snapshot]
         prompt = build_compaction_prompt(ledger_snapshot, turns_text, pinned=pin_texts)
-        response = await build_upstream(key).messages.create(
+        response = await upstream_messages_create(
+            build_upstream(key),
             model=COMPACTION_MODEL,
             max_tokens=4096,
             messages=[{"role": "user", "content": prompt}],
@@ -901,34 +936,43 @@ async def maybe_trigger_compaction(
 
 async def record_exchange(
     session: SessionState,
-    user_prompt: str,
-    assistant_text: str,
+    user_message: dict[str, Any] | None,
+    assistant_content: Any,
     session_id: str,
     *,
     developer_id: str,
+    record_user_turn: bool = True,
 ) -> bool:
     async with session.lock:
-        # Extract @synth-remember: pins before adding to L3.
-        # Pinned lines are removed from the stored turn so they live exclusively
-        # in L2a and are not subject to Dreaming summarisation.
-        pins, clean_prompt = extract_pins(user_prompt)
-        if pins:
-            now = utc_now_iso()
-            for pin_text in pins:
-                session.pinned_checkpoints.append(
-                    Checkpoint(text=pin_text, turn=session.lifetime_turns + 1, ts=now)
-                )
-            # LRU eviction: keep the most recent MAX_CHECKPOINTS pins
-            if len(session.pinned_checkpoints) > MAX_CHECKPOINTS:
-                session.pinned_checkpoints = session.pinned_checkpoints[-MAX_CHECKPOINTS:]
-            print(
-                f"[CHECKPOINT] +{len(pins)} pin(s) for {session_id} "
-                f"(total={len(session.pinned_checkpoints)}): {pins}"
-            )
+        if record_user_turn and user_message is not None:
+            raw_user_content = user_message.get("content")
+            if isinstance(raw_user_content, str):
+                pins, clean_prompt = extract_pins(raw_user_content)
+                if pins:
+                    now = utc_now_iso()
+                    for pin_text in pins:
+                        session.pinned_checkpoints.append(
+                            Checkpoint(text=pin_text, turn=session.lifetime_turns + 1, ts=now)
+                        )
+                    if len(session.pinned_checkpoints) > MAX_CHECKPOINTS:
+                        session.pinned_checkpoints = session.pinned_checkpoints[-MAX_CHECKPOINTS:]
+                    print(
+                        f"[CHECKPOINT] +{len(pins)} pin(s) for {session_id} "
+                        f"(total={len(session.pinned_checkpoints)}): {pins}"
+                    )
+                stored_user: dict[str, Any] = {
+                    "role": "user",
+                    "content": clean_prompt.strip() or raw_user_content,
+                }
+            else:
+                stored_user = {"role": "user", "content": raw_user_content}
+            session.rolling_recent_turns.append(stored_user)
 
-        stored_prompt = clean_prompt.strip() or user_prompt
-        session.rolling_recent_turns.append({"role": "user", "content": stored_prompt})
-        session.rolling_recent_turns.append({"role": "assistant", "content": assistant_text})
+        stored_assistant: dict[str, Any] = {
+            "role": "assistant",
+            "content": serialize_assistant_content(assistant_content),
+        }
+        session.rolling_recent_turns.append(stored_assistant)
         _trim_layer3(session)
         session.turn_counter += 1
         session.lifetime_turns += 1
@@ -943,15 +987,15 @@ def resolve_session_id(request: Request) -> str:
     return "default"
 
 
-def api_kwargs_from_body(body: dict[str, Any], messages: list[dict[str, Any]]) -> dict[str, Any]:
-    kwargs: dict[str, Any] = {
-        "model": body.get("model", DEFAULT_MODEL),
-        "max_tokens": body.get("max_tokens", 8192),
-        "messages": messages,
-    }
-    for key in ("temperature", "top_p", "top_k", "stop_sequences", "metadata", "system"):
-        if key in body and body[key] is not None:
-            kwargs[key] = body[key]
+def api_kwargs_from_body(
+    body: dict[str, Any],
+    messages: list[dict[str, Any]],
+    *,
+    use_beta: bool = False,
+) -> dict[str, Any]:
+    kwargs = passthrough_api_kwargs(body, messages, use_beta=use_beta)
+    if not kwargs.get("model"):
+        kwargs["model"] = DEFAULT_MODEL
     return kwargs
 
 
@@ -1055,7 +1099,7 @@ async def _handle_streaming_oai(
     session_id: str,
     developer_id: str,
     client_name: str,
-    user_prompt: str,
+    last_user_message: dict[str, Any],
     context_snapshot: "ContextSnapshot",
     model: str,
 ) -> StreamingResponse:
@@ -1082,6 +1126,7 @@ async def _handle_streaming_oai(
     async def event_generator():
         assistant_text = ""
         usage = None
+        final_content: Any = None
         compaction = False
 
         # Role header chunk (OpenAI convention)
@@ -1094,6 +1139,7 @@ async def _handle_streaming_oai(
                     yield _chunk({"content": text})
                 final_message = await stream.get_final_message()
                 usage = final_message.usage
+                final_content = final_message.content
         except Exception as exc:
             yield (
                 "data: "
@@ -1106,9 +1152,13 @@ async def _handle_streaming_oai(
         yield "data: [DONE]\n\n"
 
         elapsed_time = time.perf_counter() - start_time
-        if assistant_text:
+        if assistant_text or final_content:
             compaction = await record_exchange(
-                session, user_prompt, assistant_text, session_id, developer_id=developer_id
+                session,
+                last_user_message,
+                final_content if final_content is not None else assistant_text,
+                session_id,
+                developer_id=developer_id,
             )
         if usage:
             record_telemetry(
@@ -1175,6 +1225,10 @@ async def proxy_chat_completions(request: Request):
     user_prompt, extra_kwargs = _oai_body_to_anthropic(body)
     if not user_prompt.strip():
         raise HTTPException(status_code=400, detail="Latest user message is empty")
+    last_user_message = messages[-1] if messages[-1].get("role") == "user" else {
+        "role": "user",
+        "content": user_prompt,
+    }
 
     session = await get_session(session_id)
     async with session.lock:
@@ -1185,12 +1239,11 @@ async def proxy_chat_completions(request: Request):
 
     model = body.get("model", DEFAULT_MODEL)
     max_tokens = int(body.get("max_tokens") or 8192)
-    api_kwargs: dict[str, Any] = {
-        "model": model,
-        "max_tokens": max_tokens,
-        "messages": optimized_messages,
-        **extra_kwargs,
-    }
+    api_kwargs: dict[str, Any] = passthrough_api_kwargs(
+        {**body, "model": model, "max_tokens": max_tokens},
+        optimized_messages,
+    )
+    api_kwargs.update(extra_kwargs)
 
     stream_requested = bool(body.get("stream"))
     context_snapshot = build_context_snapshot(
@@ -1210,21 +1263,25 @@ async def proxy_chat_completions(request: Request):
             session_id=session_id,
             developer_id=developer_id,
             client_name=client_name,
-            user_prompt=user_prompt,
+            last_user_message=last_user_message,
             context_snapshot=context_snapshot,
             model=model,
         )
 
     start_time = time.perf_counter()
     try:
-        response = await upstream.messages.create(**api_kwargs)
+        response = await upstream_messages_create(upstream, **api_kwargs)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Anthropic API error: {exc}") from exc
     elapsed_time = time.perf_counter() - start_time
 
     assistant_text = extract_assistant_text(response.content)
     compaction = await record_exchange(
-        session, user_prompt, assistant_text, session_id, developer_id=developer_id
+        session,
+        last_user_message,
+        response.content,
+        session_id,
+        developer_id=developer_id,
     )
     record_telemetry(
         usage=response.usage,
@@ -1269,16 +1326,29 @@ async def proxy_messages(request: Request):
     session = await get_session(session_id)
     async with session.lock:
         session.api_key = api_key
-    user_prompt = normalize_content(incoming_messages[-1].get("content"))
-    if not user_prompt.strip():
-        raise HTTPException(status_code=400, detail="Latest user message is empty")
+
+    last_user = find_last_user_message(incoming_messages)
+    if last_user is None:
+        raise HTTPException(status_code=400, detail="No user message in request")
+
+    prepared = prepare_incoming_messages(incoming_messages)
+    if incoming_ends_with_user(prepared):
+        if not user_message_has_content(last_user):
+            raise HTTPException(status_code=400, detail="Latest user message is empty")
+    user_prompt = normalize_content(last_user.get("content"))
+
+    # For session recording after the model responds
+    record_user_message = last_user
+    record_user_turn = incoming_ends_with_user(prepared)
+
+    use_beta = request_uses_beta(request, body)
 
     async with session.lock:
-        optimized_messages = build_optimized_messages(session, user_prompt)
+        upstream_messages = assemble_upstream_messages(session, incoming_messages)
 
     upstream = build_upstream(api_key)
 
-    api_kwargs = api_kwargs_from_body(body, optimized_messages)
+    api_kwargs = api_kwargs_from_body(body, upstream_messages, use_beta=use_beta)
     stream_requested = bool(body.get("stream"))
     context_snapshot = build_context_snapshot(
         session,
@@ -1296,20 +1366,28 @@ async def proxy_messages(request: Request):
             session_id=session_id,
             developer_id=developer_id,
             client_name=client_name,
-            user_prompt=user_prompt,
+            last_user_message=record_user_message,
             context_snapshot=context_snapshot,
+            use_beta=use_beta,
+            record_user_turn=record_user_turn,
         )
 
     start_time = time.perf_counter()
     try:
-        response = await upstream.messages.create(**api_kwargs)
+        response = await upstream_messages_create(upstream, use_beta=use_beta, **api_kwargs)
     except Exception as exc:
+        print(f"[PROXY] ✗ upstream error: {exc!r}", flush=True)
         raise HTTPException(status_code=502, detail=f"Anthropic API error: {exc}") from exc
     elapsed_time = time.perf_counter() - start_time
 
     assistant_text = extract_assistant_text(response.content)
     compaction = await record_exchange(
-        session, user_prompt, assistant_text, session_id, developer_id=developer_id
+        session,
+        record_user_message,
+        response.content,
+        session_id,
+        developer_id=developer_id,
+        record_user_turn=record_user_turn,
     )
     record_telemetry(
         usage=response.usage,
@@ -1333,16 +1411,20 @@ async def _handle_streaming(
     session_id: str,
     developer_id: str,
     client_name: str,
-    user_prompt: str,
+    last_user_message: dict[str, Any],
     context_snapshot: ContextSnapshot,
+    use_beta: bool = False,
+    record_user_turn: bool = True,
 ) -> StreamingResponse:
     start_time = time.perf_counter()
+    api = resolve_messages_api(upstream, use_beta)
 
     async def event_generator():
         assistant_text = ""
+        final_content: Any = None
         usage = None
         try:
-            async with upstream.messages.stream(**api_kwargs) as stream:
+            async with api.stream(**api_kwargs) as stream:
                 async for event in stream:
                     payload = event.model_dump() if hasattr(event, "model_dump") else dict(event)
                     event_type = payload.get("type", "unknown")
@@ -1350,17 +1432,24 @@ async def _handle_streaming(
 
                 final_message = await stream.get_final_message()
                 assistant_text = extract_assistant_text(final_message.content)
+                final_content = final_message.content
                 usage = final_message.usage
         except Exception as exc:
+            print(f"[PROXY] ✗ stream error: {exc!r}", flush=True)
             error_payload = {"type": "error", "error": {"type": "proxy_error", "message": str(exc)}}
             yield f"event: error\ndata: {json.dumps(error_payload)}\n\n"
             return
 
         elapsed_time = time.perf_counter() - start_time
         compaction = False
-        if assistant_text:
+        if assistant_text or final_content:
             compaction = await record_exchange(
-                session, user_prompt, assistant_text, session_id, developer_id=developer_id
+                session,
+                last_user_message,
+                final_content if final_content is not None else assistant_text,
+                session_id,
+                developer_id=developer_id,
+                record_user_turn=record_user_turn,
             )
         if usage:
             record_telemetry(

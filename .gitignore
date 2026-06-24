@@ -25,3 +25,6 @@ stats/
 
 # Deprecated packaging build output
 context-synthesizer/packaging/build/
+
+# Windows ADS metadata
+**/*:Zone.Identifier

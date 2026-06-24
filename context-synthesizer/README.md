@@ -36,17 +36,30 @@ All modes are **offline** — no API key, no proxy.
 
 ## Quick start (developers)
 
-**Motadata / SharePoint package:** `bash run-setup.sh firstname.lastname` — **live compaction on by default** (`ENABLE_PROXY=1` in `team.conf`).
+**Motadata / SharePoint:** download `context-synthesizer-toolkit-latest` from the synced folder, then:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
-  --developer YOUR_HANDLE \
-  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
+cd context-synthesizer-toolkit-latest
+bash run-setup.sh firstname.lastname
+csynth doctor && csynth dashboard
 ```
 
-Installs to `~/.local/share/context-synthesizer` — no git clone. Proxy uses Claude Code session auth (Max/Pro); no separate API key at setup.
+Live compaction proxy is on by default (`ENABLE_PROXY=1`). Claude Max/Pro login only — no API key.
+
+Toggle without reinstall:
+
+```bash
+csynth proxy off   # direct Anthropic API
+csynth proxy on    # route through synthesizer again
+```
+
+**Team lead — publish a release** (from dev machine with OneDrive sync):
+
+```bash
+bash packaging/publish-to-sharepoint.sh
+```
+
+Copies to `OneDrive - Motadata/Context-Synthesizer/` — no `install.sh` edits per release.
 
 R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 

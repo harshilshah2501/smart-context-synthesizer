@@ -148,6 +148,50 @@ def aggregate_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         1 for r in proxy if (r.get("context") or {}).get("l1_cache_eligible_est")
     )
 
+    total_cache_read = 0
+    total_cache_write = 0
+    total_uncached = 0
+    total_output = 0
+    for rec in proxy:
+        usage = rec.get("usage") or {}
+        total_cache_read += int(usage.get("cache_read_input_tokens") or 0)
+        total_cache_write += int(usage.get("cache_creation_input_tokens") or 0)
+        total_uncached += int(usage.get("input_tokens") or 0)
+        total_output += int(usage.get("output_tokens") or 0)
+
+    # Payload size is per-turn (IDE history vs shaped) — use latest turn, not a sum.
+    latest_naive_tokens = 0
+    latest_shaped_tokens = 0
+    latest_compression_pct = 0.0
+    latest_turn_number = 0
+    peak_naive_tokens = 0
+    if proxy:
+        last = proxy[-1]
+        last_syn = last.get("synthesis") or {}
+        last_ctx = last.get("context") or {}
+        latest_naive_tokens = int(
+            last_syn.get("est_naive_tokens") or last_ctx.get("est_naive_tokens") or 0
+        )
+        latest_shaped_tokens = int(
+            last_syn.get("est_shaped_tokens") or last_ctx.get("est_payload_tokens") or 0
+        )
+        latest_compression_pct = float(
+            last_syn.get("compression_vs_naive_pct") or last_ctx.get("compression_vs_naive_pct") or 0
+        )
+        latest_turn_number = int(
+            last.get("turn_number") or last_ctx.get("turn_number") or 0
+        )
+        for rec in proxy:
+            ctx = rec.get("context") or {}
+            syn = rec.get("synthesis") or {}
+            naive = int(syn.get("est_naive_tokens") or ctx.get("est_naive_tokens") or 0)
+            peak_naive_tokens = max(peak_naive_tokens, naive)
+
+    total_input_billed = total_cache_read + total_cache_write + total_uncached
+    cost_savings_pct = (
+        round((saved_cost / baseline_cost) * 100, 1) if baseline_cost > 0 else 0.0
+    )
+
     # Active pins: take the value from the most recent proxy event
     active_pins = 0
     for rec in reversed(proxy):
@@ -172,6 +216,17 @@ def aggregate_summary(events: list[dict[str, Any]]) -> dict[str, Any]:
         "p90_compression_vs_naive_pct": round(_pctile(compression_pcts, 0.9), 1),
         "l1_cache_eligible_pct": round(l1_eligible / len(proxy) * 100, 1) if proxy else 0.0,
         "active_pins": active_pins,
+        "latest_naive_tokens": latest_naive_tokens,
+        "latest_shaped_tokens": latest_shaped_tokens,
+        "latest_compression_pct": round(latest_compression_pct, 1),
+        "latest_turn_number": latest_turn_number,
+        "peak_naive_tokens": peak_naive_tokens,
+        "total_cache_read": total_cache_read,
+        "total_cache_write": total_cache_write,
+        "total_uncached": total_uncached,
+        "total_output": total_output,
+        "total_input_billed": total_input_billed,
+        "cost_savings_pct": cost_savings_pct,
     }
 
 

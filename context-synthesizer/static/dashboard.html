@@ -21,25 +21,25 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
       background: var(--bg);
       color: var(--text);
-      font-size: 13px;
-      line-height: 1.45;
+      font-size: 14px;
+      line-height: 1.5;
     }
     header {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
       gap: 12px;
-      padding: 16px 20px;
+      padding: 14px 20px;
       border-bottom: 1px solid var(--border);
       background: var(--panel);
       position: sticky;
       top: 0;
       z-index: 10;
     }
-    header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+    header h1 { margin: 0; font-size: 1rem; font-weight: 600; }
     .badge {
       padding: 2px 8px;
       border-radius: 12px;
@@ -56,89 +56,177 @@
       border-radius: 6px;
       padding: 6px 10px;
       font: inherit;
+      font-size: 13px;
     }
     button { cursor: pointer; }
     button:hover { border-color: var(--accent); }
-    main { padding: 16px 20px 40px; max-width: 1400px; margin: 0 auto; }
-    .kpis {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-      gap: 10px;
+    main { padding: 20px; max-width: 1100px; margin: 0 auto 40px; }
+    .banner {
+      background: var(--panel);
+      border-radius: 8px;
+      padding: 14px 18px;
       margin-bottom: 16px;
+      font-size: 13px;
+      line-height: 1.6;
     }
-    .kpi {
+    .banner.warn { border: 1px solid var(--amber); color: var(--amber); }
+    .banner.err { border: 1px solid var(--red); color: var(--red); }
+
+    /* Before / After hero */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0;
+      margin-bottom: 20px;
+      align-items: stretch;
+    }
+    @media (max-width: 720px) {
+      .compare { grid-template-columns: 1fr; }
+      .compare-mid { order: -1; padding: 8px 0 !important; }
+    }
+    .compare-card {
       background: var(--panel);
       border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 20px;
     }
-    .kpi .label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
-    .kpi .value { font-size: 1.35rem; font-weight: 600; margin-top: 4px; }
-    .kpi .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+    .compare-card.before { border-color: #484f58; }
+    .compare-card.after { border-color: var(--green); }
+    .compare-card h2 {
+      margin: 0 0 16px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+    }
+    .compare-card.before h2 { color: var(--red); }
+    .compare-card.after h2 { color: var(--green); }
+    .metric { margin-bottom: 14px; }
+    .metric:last-child { margin-bottom: 0; }
+    .metric .label { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .metric .value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      font-family: ui-monospace, monospace;
+    }
+    .metric .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .cache-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .cache-pill {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-family: ui-monospace, monospace;
+    }
+    .cache-pill.read { border-color: #388bfd; color: #58a6ff; }
+    .cache-pill.write { border-color: var(--amber); color: var(--amber); }
+    .cache-pill.uncached { border-color: var(--red); color: var(--red); }
+    .compare-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 0 16px;
+      text-align: center;
+      min-width: 120px;
+    }
+    .savings-badge {
+      background: rgba(63, 185, 80, 0.12);
+      border: 1px solid var(--green);
+      color: var(--green);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .savings-badge .big { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+
+    .meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .meta-row span strong { color: var(--text); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 18px;
+      margin-bottom: 16px;
+    }
+    .panel h2 {
+      margin: 0 0 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .panel h2 span { color: var(--muted); font-weight: 400; }
+    .chart-wrap { position: relative; height: 260px; }
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .dot { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+
+    details.panel {
+      padding: 0;
+    }
+    details.panel summary {
+      padding: 14px 18px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--muted);
+      list-style: none;
+    }
+    details.panel summary::-webkit-details-marker { display: none; }
+    details.panel summary::before { content: '▸ '; }
+    details.panel[open] summary::before { content: '▾ '; }
+    details.panel .details-body { padding: 0 18px 18px; border-top: 1px solid var(--border); }
     .grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-top: 12px;
     }
-    @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
-    .panel {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 12px;
-    }
-    .panel h2 {
-      margin: 0 0 10px;
-      font-size: 0.85rem;
-      color: var(--muted);
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .chart-wrap { position: relative; height: 220px; }
-    .chart-wrap.tall { height: 260px; }
+    @media (max-width: 720px) { .grid-2 { grid-template-columns: 1fr; } }
+    .chart-wrap.sm { height: 200px; }
+
     ul.recs { margin: 0; padding-left: 18px; }
-    ul.recs li { margin-bottom: 6px; color: var(--amber); }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 11px;
-    }
-    th, td {
-      text-align: left;
-      padding: 6px 8px;
-      border-bottom: 1px solid var(--border);
-    }
-    th { color: var(--muted); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
-    .table-scroll { max-height: 320px; overflow: auto; }
+    ul.recs li { margin-bottom: 6px; color: var(--amber); font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: ui-monospace, monospace; }
+    th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    .table-scroll { max-height: 280px; overflow: auto; }
     .yes { color: var(--green); }
-    .pin { color: var(--purple); font-size: 10px; }
-    .mono { font-variant-numeric: tabular-nums; }
-    footer { color: var(--muted); font-size: 11px; padding: 8px 20px; }
-    .legend-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 10px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+    .pin { color: var(--purple); }
+    footer { color: var(--muted); font-size: 11px; padding: 8px 20px; text-align: center; }
     .checkpoint-list { list-style: none; margin: 0; padding: 0; }
     .checkpoint-list li {
-      padding: 6px 0;
+      padding: 8px 0;
       border-bottom: 1px solid var(--border);
       display: flex;
       gap: 10px;
-      align-items: baseline;
+      font-size: 13px;
     }
-    .checkpoint-list li:last-child { border-bottom: none; }
-    .checkpoint-list .turn { color: var(--purple); font-size: 10px; flex-shrink: 0; }
-    .checkpoint-list .text { color: var(--text); word-break: break-word; }
-    .checkpoint-list .session { color: var(--muted); font-size: 10px; flex-shrink: 0; }
-    #noCheckpoints { color: var(--muted); font-size: 12px; }
+    #noCheckpoints { color: var(--muted); font-size: 13px; margin: 0; }
   </style>
 </head>
 <body>
@@ -153,93 +241,79 @@
   </header>
 
   <main>
-    <div id="authErrorBanner" style="display:none; background:var(--panel); border:1px solid var(--red); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--red); font-size:12px; line-height:1.7;">
-      <strong>Dashboard token rejected (401).</strong><br>
-      Your browser URL has an old <code>?token=</code> — this happens after proxy restart or re-running setup.<br>
-      In WSL, run: <code style="color:var(--text)">bash context-synthesizer/scripts/open_dashboard.sh</code><br>
-      Open the <strong>new</strong> URL in Windows Chrome (WSL IP + fresh token). Do not reuse a bookmarked dashboard link.
+    <div id="authErrorBanner" class="banner err" style="display:none">
+      <strong>Dashboard token rejected (401).</strong> Run <code>csynth dashboard</code> or
+      <code>bash context-synthesizer/scripts/open_dashboard.sh</code> for a fresh URL.
     </div>
-    <div id="noDataBanner" style="display:none; background:var(--panel); border:1px solid var(--amber); border-radius:8px; padding:14px 18px; margin-bottom:14px; color:var(--amber); font-size:12px; line-height:1.7;">
-      <strong>No proxy requests recorded yet.</strong><br>
-      The proxy is running but no API calls have been logged. Common causes:<br>
-      <strong>WSL + Claude Code on Windows:</strong> Windows must use the <strong>WSL IP</strong>, not <code>127.0.0.1</code>. Run:<br>
-      <code style="color:var(--text)">bash context-synthesizer/scripts/configure_claude_proxy.sh</code><br>
-      then <strong>restart Claude Code on Windows</strong> and send one message.<br>
-      <strong>Claude Code inside WSL:</strong> <code style="color:var(--text)">grep ANTHROPIC_BASE_URL ~/.claude/settings.json</code> → should be <code>http://127.0.0.1:8080</code><br>
-      Full check: <code style="color:var(--text)">bash context-synthesizer/scripts/verify_claude_routing.sh</code>
-    </div>
-    <div class="kpis" id="kpis"></div>
-
-    <div class="legend-row">
-      <span><span class="dot" style="background:#58a6ff"></span>Billing: cache read / write / uncached</span>
-      <span><span class="dot" style="background:#3fb950"></span>Shape: L1–L4 payload layers</span>
-      <span><span class="dot" style="background:#a371f7"></span>Naive IDE history vs shaped payload</span>
+    <div id="noDataBanner" class="banner warn" style="display:none">
+      <strong>No proxy requests yet.</strong> Use Claude Code through the synthesizer proxy
+      (<code>ANTHROPIC_BASE_URL</code> → local proxy). Run <code>csynth doctor</code> to verify routing.
     </div>
 
-    <div class="grid-2">
-      <div class="panel">
-        <h2>Billing bifurcation (per turn)</h2>
-        <div class="chart-wrap"><canvas id="billingChart"></canvas></div>
-      </div>
-      <div class="panel">
-        <h2>Four-layer payload (est. tokens)</h2>
-        <div class="chart-wrap"><canvas id="layersChart"></canvas></div>
-      </div>
-    </div>
-
-    <div class="grid-2">
-      <div class="panel">
-        <h2>Naive IDE history vs shaped payload</h2>
-        <div class="chart-wrap"><canvas id="shapeChart"></canvas></div>
-      </div>
-      <div class="panel">
-        <h2>Cumulative cost — actual vs baseline</h2>
-        <div class="chart-wrap"><canvas id="costChart"></canvas></div>
-      </div>
-    </div>
+    <div id="compareHero" class="compare"></div>
+    <div id="metaRow" class="meta-row"></div>
 
     <div class="panel">
-      <h2>Compaction &amp; tail trends</h2>
-      <div class="chart-wrap tall"><canvas id="trendChart"></canvas></div>
+      <h2>Token billing <span>— cache read / write / uncached per turn</span></h2>
+      <div class="chart-legend">
+        <span><span class="dot" style="background:#58a6ff"></span>Cache read (cheapest)</span>
+        <span><span class="dot" style="background:#d29922"></span>Cache write</span>
+        <span><span class="dot" style="background:#f85149"></span>Uncached (most expensive)</span>
+      </div>
+      <div class="chart-wrap"><canvas id="billingChart"></canvas></div>
     </div>
 
-    <div class="grid-2">
-      <div class="panel">
-        <h2>Recommendations</h2>
-        <ul class="recs" id="recs"></ul>
-      </div>
-      <div class="panel">
-        <h2>Compaction events</h2>
-        <div class="table-scroll">
-          <table id="compactionTable">
-            <thead><tr>
-              <th>Time</th><th>Session</th><th>Turns</th><th>Ledger Δ</th><th>Pins</th><th>Trigger</th><th>Cost</th>
-            </tr></thead>
-            <tbody></tbody>
-          </table>
+    <details class="panel">
+      <summary>More detail — layers, trends, compactions</summary>
+      <div class="details-body">
+        <div class="grid-2">
+          <div>
+            <h2 style="font-size:12px;color:var(--muted);margin:12px 0 8px">Payload layers (est. tokens)</h2>
+            <div class="chart-wrap sm"><canvas id="layersChart"></canvas></div>
+          </div>
+          <div>
+            <h2 style="font-size:12px;color:var(--muted);margin:12px 0 8px">Cumulative cost</h2>
+            <div class="chart-wrap sm"><canvas id="costChart"></canvas></div>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <h2 style="font-size:12px;color:var(--muted);margin:0 0 8px">Compaction &amp; tail trends</h2>
+          <div class="chart-wrap sm"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="grid-2" style="margin-top:16px">
+          <div>
+            <h2 style="font-size:12px;color:var(--muted);margin:0 0 8px">Recommendations</h2>
+            <ul class="recs" id="recs"></ul>
+          </div>
+          <div>
+            <h2 style="font-size:12px;color:var(--muted);margin:0 0 8px">Compaction events</h2>
+            <div class="table-scroll">
+              <table id="compactionTable">
+                <thead><tr><th>Time</th><th>Turns</th><th>Trigger</th><th>Cost</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <h2 style="font-size:12px;color:var(--muted);margin:0 0 8px">Pinned checkpoints</h2>
+          <p id="noCheckpoints">No pins — use <code>@synth-remember: fact</code> in a message.</p>
+          <ul class="checkpoint-list" id="checkpointList" style="display:none"></ul>
+        </div>
+        <div style="margin-top:16px">
+          <h2 style="font-size:12px;color:var(--muted);margin:0 0 8px">Recent turns</h2>
+          <div class="table-scroll">
+            <table id="recentTable">
+              <thead><tr>
+                <th>Turn</th><th>Cache R</th><th>Cache W</th><th>Uncached</th>
+                <th>Naive est.</th><th>Shaped est.</th><th>Saved</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div class="panel">
-      <h2>Active pinned checkpoints</h2>
-      <p id="noCheckpoints">No active pins — use <code>@synth-remember: &lt;fact&gt;</code> in a message to pin context across compactions.</p>
-      <ul class="checkpoint-list" id="checkpointList" style="display:none"></ul>
-    </div>
-
-    <div class="panel">
-      <h2>Recent proxy requests</h2>
-      <div class="table-scroll">
-        <table id="recentTable">
-          <thead><tr>
-            <th>Turn</th><th>Cache R</th><th>Cache W</th><th>Uncached</th>
-            <th>L1</th><th>L2a</th><th>L2b</th><th>L3</th><th>L4</th>
-            <th>Naive</th><th>Shaped</th><th>Compress%</th><th>Saved%</th><th>Bloat</th><th>Compact</th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+    </details>
   </main>
 
   <footer id="footer">Loading…</footer>
@@ -253,30 +327,79 @@
     function chartDefaults() {
       Chart.defaults.color = '#8b949e';
       Chart.defaults.borderColor = '#30363d';
-      Chart.defaults.font.family = 'ui-monospace, monospace';
+      Chart.defaults.font.family = 'ui-sans-serif, system-ui, sans-serif';
     }
 
     function ensureChart(id, config) {
       const ctx = document.getElementById(id);
-      if (charts[id]) { charts[id].destroy(); }
+      if (!ctx) return;
+      if (charts[id]) charts[id].destroy();
       charts[id] = new Chart(ctx, config);
     }
 
-    function renderKpis(s) {
-      const items = [
-        { label: 'Proxy requests', value: fmt(s.proxy_requests), sub: fmt(s.total_events) + ' total events' },
-        { label: 'Compactions', value: fmt(s.compaction_runs), sub: fmtUsd(s.compaction_cost_usd) + ' Haiku' },
-        { label: 'Active pins', value: fmt(s.active_pins ?? 0), sub: '@synth-remember: facts' },
-        { label: 'Saved (session)', value: fmtUsd(s.saved_cost_usd), sub: 'avg ' + fmtPct(s.avg_savings_pct) },
-        { label: 'Compression vs naive', value: fmtPct(s.avg_compression_vs_naive_pct), sub: 'p90 ' + fmtPct(s.p90_compression_vs_naive_pct) },
-        { label: 'Cache read share', value: fmtPct(s.avg_cache_read_pct), sub: 'L1 eligible ' + fmtPct(s.l1_cache_eligible_pct) },
-        { label: 'Uncached tail', value: fmtPct(s.avg_uncached_tail_pct), sub: 'lower is better' },
-        { label: 'IDE bloat ratio', value: fmt(s.avg_bloat_ratio, 1) + '×', sub: 'msgs sent vs shaped' },
-        { label: 'Actual cost', value: fmtUsd(s.actual_cost_usd), sub: 'baseline ' + fmtUsd(s.baseline_cost_usd) },
-      ];
-      document.getElementById('kpis').innerHTML = items.map(i => `
-        <div class="kpi"><div class="label">${i.label}</div><div class="value">${i.value}</div><div class="sub">${i.sub}</div></div>
-      `).join('');
+    function renderCompare(s) {
+      const saved = s.saved_cost_usd || 0;
+      const costPct = s.cost_savings_pct || 0;
+      const payloadPct = s.avg_compression_vs_naive_pct || 0;
+      const requests = s.proxy_requests || 0;
+      const turn = s.latest_turn_number || '?';
+      const latestCompress = s.latest_compression_pct || 0;
+
+      document.getElementById('compareHero').innerHTML = `
+        <div class="compare-card before">
+          <h2>Before — naive IDE history</h2>
+          <div class="metric">
+            <div class="label">Estimated cost (no synthesizer)</div>
+            <div class="value">${fmtUsd(s.baseline_cost_usd)}</div>
+            <div class="sub">${fmt(requests)} turns · billed as mostly uncached</div>
+          </div>
+          <div class="metric">
+            <div class="label">Payload size (latest turn)</div>
+            <div class="value">${fmt(s.latest_naive_tokens)}</div>
+            <div class="sub">Turn ${turn} · full IDE history Claude Code would send</div>
+          </div>
+          <div class="metric">
+            <div class="label">Session peak</div>
+            <div class="sub">IDE history grew to ~${fmt(s.peak_naive_tokens)} tokens</div>
+          </div>
+        </div>
+        <div class="compare-mid">
+          <div class="savings-badge">
+            <span class="big">${fmtUsd(saved)}</span>
+            ${fmtPct(costPct)} cost saved<br>
+            ${fmtPct(payloadPct)} smaller payload
+          </div>
+        </div>
+        <div class="compare-card after">
+          <h2>After — shaped + cached</h2>
+          <div class="metric">
+            <div class="label">Actual cost (with synthesizer)</div>
+            <div class="value">${fmtUsd(s.actual_cost_usd)}</div>
+            <div class="sub">Compaction overhead ${fmtUsd(s.compaction_cost_usd)}</div>
+          </div>
+          <div class="metric">
+            <div class="label">Payload size (latest turn)</div>
+            <div class="value">${fmt(s.latest_shaped_tokens)}</div>
+            <div class="sub">Turn ${turn} · ${fmtPct(latestCompress)} smaller than naive on this turn</div>
+          </div>
+          <div class="metric">
+            <div class="label">Billed input (session total)</div>
+            <div class="cache-row">
+              <span class="cache-pill read">read ${fmt(s.total_cache_read)}</span>
+              <span class="cache-pill write">write ${fmt(s.total_cache_write)}</span>
+              <span class="cache-pill uncached">uncached ${fmt(s.total_uncached)}</span>
+            </div>
+            <div class="sub">${fmt(s.total_input_billed)} input tokens billed · ${fmtPct(s.avg_cache_read_pct)} cache read</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('metaRow').innerHTML = `
+        <span><strong>${fmt(requests)}</strong> proxy requests</span>
+        <span><strong>${fmt(s.compaction_runs)}</strong> compactions</span>
+        <span><strong>${fmt(s.active_pins ?? 0)}</strong> active pins</span>
+        <span>Uncached tail <strong>${fmtPct(s.avg_uncached_tail_pct)}</strong> avg</span>
+      `;
     }
 
     function renderCharts(series) {
@@ -291,7 +414,12 @@
             { label: 'Uncached', data: series.billing.uncached, backgroundColor: '#f85149' },
           ],
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true, title: { display: true, text: 'tokens' } } },
+          plugins: { legend: { display: false } },
+        },
       });
       ensureChart('layersChart', {
         type: 'bar',
@@ -305,26 +433,15 @@
             { label: 'L4 prompt', data: series.layers.l4, backgroundColor: '#f0883e' },
           ],
         },
-        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom' } } },
-      });
-      ensureChart('shapeChart', {
-        type: 'line',
-        data: {
-          labels,
-          datasets: [
-            { label: 'Naive IDE est.', data: series.shape_compare.naive, borderColor: '#f85149', tension: 0.2 },
-            { label: 'Shaped payload est.', data: series.shape_compare.shaped, borderColor: '#3fb950', tension: 0.2 },
-          ],
-        },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } }, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10 } } } },
       });
       ensureChart('costChart', {
         type: 'line',
         data: {
           labels,
           datasets: [
-            { label: 'Actual $', data: series.cumulative_cost.actual, borderColor: '#3fb950', tension: 0.2 },
-            { label: 'Baseline $', data: series.cumulative_cost.baseline, borderColor: '#f85149', borderDash: [4,4], tension: 0.2 },
+            { label: 'Actual', data: series.cumulative_cost.actual, borderColor: '#3fb950', tension: 0.2 },
+            { label: 'Baseline', data: series.cumulative_cost.baseline, borderColor: '#f85149', borderDash: [4,4], tension: 0.2 },
           ],
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
@@ -334,15 +451,15 @@
         data: {
           labels,
           datasets: [
-            { label: 'Compression vs naive %', data: series.trends.compression_pct, borderColor: '#a371f7', yAxisID: 'y' },
-            { label: 'Uncached tail %', data: series.trends.uncached_tail_pct, borderColor: '#d29922', yAxisID: 'y1' },
+            { label: 'Compression %', data: series.trends.compression_pct, borderColor: '#a371f7', yAxisID: 'y' },
+            { label: 'Uncached %', data: series.trends.uncached_tail_pct, borderColor: '#d29922', yAxisID: 'y1' },
           ],
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
-            y: { position: 'left', title: { display: true, text: 'Compression %' } },
-            y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Uncached %' } },
+            y: { position: 'left' },
+            y1: { position: 'right', grid: { drawOnChartArea: false } },
           },
           plugins: { legend: { position: 'bottom' } },
         },
@@ -365,34 +482,23 @@
       const tb = document.querySelector('#compactionTable tbody');
       tb.innerHTML = (rows || []).map(r => `<tr>
         <td>${(r.ts || '').slice(11, 19)}</td>
-        <td>${(r.session_id || '').slice(0, 10)}</td>
-        <td class="mono">${fmt(r.turns_compacted)}</td>
-        <td class="mono">${fmt(r.ledger_delta)}</td>
-        <td class="mono">${r.pins_active > 0 ? `<span class="pin">📌 ${r.pins_active}</span>` : '—'}</td>
+        <td>${fmt(r.turns_compacted)}</td>
         <td>${r.trigger || ''}</td>
-        <td class="mono">${fmtUsd(r.cost_usd)}</td>
-      </tr>`).join('') || '<tr><td colspan="7">No compactions yet</td></tr>';
+        <td>${fmtUsd(r.cost_usd)}</td>
+      </tr>`).join('') || '<tr><td colspan="4">None yet</td></tr>';
     }
 
     function renderRecent(rows) {
       const tb = document.querySelector('#recentTable tbody');
       tb.innerHTML = (rows || []).map(r => `<tr>
-        <td class="mono">${fmt(r.turn)}</td>
-        <td class="mono">${fmt(r.cache_read)}</td>
-        <td class="mono">${fmt(r.cache_write)}</td>
-        <td class="mono">${fmt(r.uncached)}</td>
-        <td class="mono">${fmt(r.l1)}</td>
-        <td class="mono">${r.pins > 0 ? `<span class="pin">📌${r.pins}</span>` : '—'}</td>
-        <td class="mono">${fmt(r.l2)}</td>
-        <td class="mono">${fmt(r.l3)}</td>
-        <td class="mono">${fmt(r.l4)}</td>
-        <td class="mono">${fmt(r.naive_est)}</td>
-        <td class="mono">${fmt(r.shaped_est)}</td>
-        <td class="mono">${fmtPct(r.compression_pct)}</td>
-        <td class="mono">${fmtPct(r.savings_pct)}</td>
-        <td class="mono">${fmt(r.bloat, 1)}×</td>
-        <td>${r.compacted ? '<span class="yes">yes</span>' : ''}</td>
-      </tr>`).join('') || '<tr><td colspan="15">No proxy events — use Claude Code through the synthesizer proxy</td></tr>';
+        <td>${fmt(r.turn)}</td>
+        <td>${fmt(r.cache_read)}</td>
+        <td>${fmt(r.cache_write)}</td>
+        <td>${fmt(r.uncached)}</td>
+        <td>${fmt(r.naive_est)}</td>
+        <td>${fmt(r.shaped_est)}</td>
+        <td>${fmtPct(r.savings_pct)}</td>
+      </tr>`).join('') || '<tr><td colspan="7">No events yet</td></tr>';
     }
 
     async function loadCheckpoints() {
@@ -401,14 +507,11 @@
         const res = await fetch('/api/checkpoints?' + qs.toString());
         if (!res.ok) return;
         const data = await res.json();
-        const sessions = data.sessions || {};
         const list = document.getElementById('checkpointList');
         const none = document.getElementById('noCheckpoints');
         const all = [];
-        for (const [sid, pins] of Object.entries(sessions)) {
-          for (const p of pins) {
-            all.push({ sid, ...p });
-          }
+        for (const [sid, pins] of Object.entries(data.sessions || {})) {
+          for (const p of pins) all.push({ sid, ...p });
         }
         if (all.length === 0) {
           list.style.display = 'none';
@@ -416,44 +519,30 @@
         } else {
           none.style.display = 'none';
           list.style.display = '';
-          list.innerHTML = all.map(p => `<li>
-            <span class="turn">T${p.turn}</span>
-            <span class="text">${p.text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</span>
-            <span class="session">${(p.sid || '').slice(0, 10)}</span>
-          </li>`).join('');
+          list.innerHTML = all.map(p => `<li><strong>T${p.turn}</strong> ${p.text.replace(/</g,'&lt;')}</li>`).join('');
         }
       } catch (_) {}
     }
 
-    // ── State ────────────────────────────────────────────────────────────────
-    let refreshTimer    = null;   // debounce handle for scheduleRefresh
-    let activeEs        = null;   // the one live EventSource (or null)
-    let heartbeatTimer  = null;   // setInterval handle
-    let lastLoadedAt    = 0;      // epoch ms of last successful loadData()
-    let loadInFlight    = false;  // prevent concurrent loadData() calls
-    const HEARTBEAT_MS  = 30_000;
+    let refreshTimer = null, activeEs = null, heartbeatTimer = null, lastLoadedAt = 0, loadInFlight = false;
+    const HEARTBEAT_MS = 30_000;
     const DASHBOARD_TOKEN = new URLSearchParams(location.search).get('token') || '';
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
     function withAuth(qs) {
       if (DASHBOARD_TOKEN) qs.set('token', DASHBOARD_TOKEN);
       return qs;
     }
 
     function showAuthError() {
-      const auth = document.getElementById('authErrorBanner');
-      const noData = document.getElementById('noDataBanner');
-      if (auth) auth.style.display = '';
-      if (noData) noData.style.display = 'none';
+      document.getElementById('authErrorBanner').style.display = '';
+      document.getElementById('noDataBanner').style.display = 'none';
       document.getElementById('liveBadge').textContent = 'unauthorized';
       document.getElementById('liveBadge').className = 'badge off';
     }
 
     function clearBanners() {
-      const auth = document.getElementById('authErrorBanner');
-      const noData = document.getElementById('noDataBanner');
-      if (auth) auth.style.display = 'none';
-      if (noData) noData.style.display = 'none';
+      document.getElementById('authErrorBanner').style.display = 'none';
+      document.getElementById('noDataBanner').style.display = 'none';
     }
 
     function showError(msg) {
@@ -462,145 +551,89 @@
       document.getElementById('footer').textContent = msg;
     }
 
-    function showNoData(proxyRequests) {
-      const auth = document.getElementById('authErrorBanner');
-      if (auth && auth.style.display !== 'none') return; // auth error takes precedence
-      const banner = document.getElementById('noDataBanner');
-      if (banner) banner.style.display = proxyRequests === 0 ? '' : 'none';
+    function showNoData(n) {
+      if (document.getElementById('authErrorBanner').style.display !== 'none') return;
+      document.getElementById('noDataBanner').style.display = n === 0 ? '' : 'none';
     }
 
-    // Debounce: coalesces rapid-fire triggers into one loadData() after 400 ms.
     function scheduleRefresh() {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(loadData, 400);
     }
 
-    // ── Data loading ─────────────────────────────────────────────────────────
     async function loadData() {
-      // Guard: skip if a fetch is already in flight to avoid double-renders.
       if (loadInFlight) return;
       loadInFlight = true;
       lastLoadedAt = Date.now();
-      const dev     = document.getElementById('devFilter').value;
+      const dev = document.getElementById('devFilter').value;
       const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
-      if (dev)     qs.set('developer_id', dev);
+      if (dev) qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       try {
         const res = await fetch('/api/dashboard/data?' + qs.toString());
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          if (res.status === 401) {
-            showAuthError();
-            document.getElementById('footer').textContent =
-              err.detail || 'Invalid dashboard token — run open_dashboard.sh for a fresh URL.';
-            closeStream(); // stop retrying SSE with stale token
-            return;
-          }
-          showError(`Dashboard API ${res.status}: ${err.detail || res.statusText}. Run open_dashboard.sh for the token URL.`);
+          if (res.status === 401) { showAuthError(); closeStream(); return; }
+          showError(`API ${res.status}: ${err.detail || res.statusText}`);
           return;
         }
         clearBanners();
         const data = await res.json();
-        renderKpis(data.summary);
+        renderCompare(data.summary);
         renderCharts(data.series);
         renderRecs(data.recommendations);
         renderCompactions(data.compactions);
         renderRecent(data.recent);
         fillSelect('devFilter', data.filters.developers, dev);
         fillSelect('sessionFilter', data.filters.sessions, session);
-        const age = new Date().toLocaleTimeString();
         document.getElementById('footer').textContent =
-          `Log: ${data.telemetry_log} · live buffer: ${data.live_buffer_total} events · updated ${age}`;
+          `Updated ${new Date().toLocaleTimeString()} · ${data.summary.proxy_requests || 0} requests`;
         showNoData(data.summary.proxy_requests || 0);
         loadCheckpoints();
       } catch (err) {
-        showError(`Failed to load dashboard: ${err.message || err}`);
+        showError(String(err.message || err));
       } finally {
         loadInFlight = false;
       }
     }
 
-    // ── SSE stream ───────────────────────────────────────────────────────────
     function closeStream() {
       if (!activeEs) return;
       const dead = activeEs;
       activeEs = null;
-      // Null out ALL handlers BEFORE close() so that any queued microtask
-      // callbacks on the dead reference are neutered and cannot call
-      // scheduleRefresh() or update the badge.
-      dead.onopen    = null;
-      dead.onerror   = null;
-      dead.onmessage = null;
+      dead.onopen = dead.onerror = dead.onmessage = null;
       dead.close();
     }
 
     function connectStream() {
       closeStream();
-      const dev     = document.getElementById('devFilter').value;
-      const session = document.getElementById('sessionFilter').value;
       const qs = withAuth(new URLSearchParams());
-      if (dev)     qs.set('developer_id', dev);
+      const dev = document.getElementById('devFilter').value;
+      const session = document.getElementById('sessionFilter').value;
+      if (dev) qs.set('developer_id', dev);
       if (session) qs.set('session_id', session);
       const es = new EventSource('/api/dashboard/stream?' + qs.toString());
       activeEs = es;
       const badge = document.getElementById('liveBadge');
-
-      es.onopen = () => {
-        // Stale-reference guard: ignore if this ES was already replaced.
-        if (activeEs !== es) return;
-        badge.textContent = 'live';
-        badge.className   = 'badge live';
-        // Do NOT call scheduleRefresh() here.
-        // The Windows→WSL NAT drops SSE every ~30 s; calling loadData() on
-        // every onopen would flood the server.  The heartbeat handles freshness.
-      };
-
-      es.onerror = () => {
-        if (activeEs !== es) return;
-        badge.textContent = 'reconnecting';
-        badge.className   = 'badge off';
-      };
-
-      es.onmessage = () => {
-        // Only act on messages from the current (non-stale) stream.
-        if (activeEs !== es) return;
-        scheduleRefresh();
-      };
-
-      // Suppress the default "message" event for our explicit ping frames.
+      es.onopen = () => { if (activeEs === es) { badge.textContent = 'live'; badge.className = 'badge live'; } };
+      es.onerror = () => { if (activeEs === es) { badge.textContent = 'reconnecting'; badge.className = 'badge off'; } };
+      es.onmessage = () => { if (activeEs === es) scheduleRefresh(); };
       es.addEventListener('ping', () => {});
     }
 
-    // ── Heartbeat ────────────────────────────────────────────────────────────
-    // Fires every 30 s.  Calls loadData() when:
-    //   • the SSE is not OPEN (dropped / reconnecting)  — keeps data fresh while offline
-    //   • data is stale (SSE alive but no proxy events arriving)  — idle-session refresh
     function startHeartbeat() {
       clearInterval(heartbeatTimer);
       heartbeatTimer = setInterval(() => {
         const sseLive = activeEs && activeEs.readyState === EventSource.OPEN;
-        const stale   = Date.now() - lastLoadedAt > HEARTBEAT_MS;
-        if (!sseLive || stale) loadData();
+        if (!sseLive || Date.now() - lastLoadedAt > HEARTBEAT_MS) loadData();
       }, HEARTBEAT_MS);
     }
 
-    // ── Event wiring ─────────────────────────────────────────────────────────
-    document.getElementById('refreshBtn').addEventListener('click', () => {
-      clearTimeout(refreshTimer);
-      loadData();
-    });
-    // Filter changes: reload data AND reconnect SSE with new filter params.
-    document.getElementById('devFilter').addEventListener('change', () => {
-      loadData();
-      connectStream();
-    });
-    document.getElementById('sessionFilter').addEventListener('change', () => {
-      loadData();
-      connectStream();
-    });
+    document.getElementById('refreshBtn').addEventListener('click', () => { clearTimeout(refreshTimer); loadData(); });
+    document.getElementById('devFilter').addEventListener('change', () => { loadData(); connectStream(); });
+    document.getElementById('sessionFilter').addEventListener('change', () => { loadData(); connectStream(); });
 
-    // ── Boot ─────────────────────────────────────────────────────────────────
     chartDefaults();
     loadData().then(() => { connectStream(); startHeartbeat(); });
   </script>

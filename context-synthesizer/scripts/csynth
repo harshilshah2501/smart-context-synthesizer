@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+# Context Synthesizer CLI — status, dashboard, doctor (post-install).
+set -euo pipefail
+
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/context-synthesizer"
+CONFIG_FILE="$CONFIG_DIR/developer.env"
+REPO_ROOT="${SYNTH_REPO_ROOT:-$HOME/.local/share/context-synthesizer}"
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+  REPO_ROOT="${REPO_ROOT:-$HOME/.local/share/context-synthesizer}"
+fi
+
+SCRIPTS="$REPO_ROOT/context-synthesizer/scripts"
+ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
+
+usage() {
+  cat <<EOF
+csynth — Context Synthesizer
+
+  csynth status        Proxy service + Claude routing
+  csynth proxy on      Route Claude Code through synthesizer (start service)
+  csynth proxy off     Direct Anthropic API (stop service)
+  csynth proxy         Same as: csynth proxy status
+  csynth dashboard     Print / open live dashboard URL
+  csynth doctor        Full routing + proxy preflight
+  csynth logs          Tail proxy journal
+  csynth restart       Restart proxy user service
+
+Install: cd context-synthesizer-toolkit-latest && bash run-setup.sh firstname.lastname
+EOF
+  exit "${1:-0}"
+}
+
+proxy_status() {
+  local routing="off"
+  local service="stopped"
+  local settings="${CLAUDE_SETTINGS_PATH:-$HOME/.claude/settings.json}"
+
+  if systemctl --user is-active --quiet context-synthesizer-proxy 2>/dev/null; then
+    service="running"
+  fi
+  if [[ -f "$settings" ]] && python3 -c "
+import json, sys
+d = json.load(open(sys.argv[1]))
+url = (d.get('env') or {}).get('ANTHROPIC_BASE_URL', '')
+sys.exit(0 if url.startswith('http') else 1)
+" "$settings" 2>/dev/null; then
+    routing="on"
+  fi
+
+  echo "Proxy service:  $service"
+  echo "Claude routing: $routing"
+  if [[ -f "$CONFIG_FILE" ]]; then
+    echo "Config flag:    ENABLE_PROXY=${ENABLE_PROXY:-?}"
+  fi
+}
+
+cmd="${1:-status}"
+shift || true
+
+case "$cmd" in
+  status)
+    systemctl --user status context-synthesizer-proxy --no-pager 2>&1 || true
+    echo ""
+    if [[ -x "$SCRIPTS/verify_claude_routing.sh" ]]; then
+      bash "$SCRIPTS/verify_claude_routing.sh" 2>&1 | head -20
+    fi
+    ;;
+  proxy)
+    sub="${1:-status}"
+    shift || true
+    case "$sub" in
+      on|enable)
+        exec bash "$SCRIPTS/set_proxy_enabled.sh" on
+        ;;
+      off|disable)
+        exec bash "$SCRIPTS/set_proxy_enabled.sh" off
+        ;;
+      status|"")
+        proxy_status
+        ;;
+      *)
+        echo "Unknown proxy command: $sub (use: on, off, status)" >&2
+        usage 1
+        ;;
+    esac
+    ;;
+  dashboard)
+    exec bash "$SCRIPTS/open_dashboard.sh" "$@"
+    ;;
+  doctor)
+    exec bash "$SCRIPTS/verify_claude_routing.sh"
+    ;;
+  logs)
+    exec journalctl --user -u context-synthesizer-proxy -f
+    ;;
+  restart)
+    systemctl --user restart context-synthesizer-proxy
+    systemctl --user status context-synthesizer-proxy --no-pager
+    ;;
+  -h|--help|help) usage 0 ;;
+  *) echo "Unknown command: $cmd" >&2; usage 1 ;;
+esac
