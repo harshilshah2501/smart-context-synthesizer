@@ -23,7 +23,5 @@ load_developer_config() {
     echo "TELEMETRY_DEVELOPER_ID not set in $CONFIG_FILE" >&2
     return 1
   fi
-  EXPORT_MODE="${EXPORT_MODE:-d}"
-  RCLONE_REMOTE="${RCLONE_REMOTE:-}"
   ENABLE_PROXY="${ENABLE_PROXY:-0}"
 }

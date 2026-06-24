@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a distributable tarball for SharePoint / one-shot install.sh.
+# Build a distributable tarball for one-shot install (no git required).
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -30,7 +30,6 @@ rsync -a \
   "$REPO_ROOT/install.sh" \
   "$REPO_ROOT/packaging/run-setup.sh" \
   "$REPO_ROOT/packaging/INSTALL.txt" \
-  "$REPO_ROOT/packaging/team.conf.example" \
   "$STAGE/"
 [[ -d "$REPO_ROOT/docs" ]] && rsync -a "$REPO_ROOT/docs" "$STAGE/"
 if [[ ! -d "$STAGE/docs" && -d "$REPO_ROOT/../docs" ]]; then
@@ -52,18 +51,7 @@ rsync -a \
   --exclude='install.sh' \
   --exclude='packaging/run-setup.sh' \
   --exclude='packaging/INSTALL.txt' \
-  --exclude='packaging/team.conf.example' \
   "$REPO_ROOT/" "$STAGE/context-synthesizer/"
-
-cat >"$STAGE/team.conf" <<'EOF'
-# Team lead: bash packaging/publish-to-sharepoint.sh (not used by developers)
-ENABLE_PROXY=1
-EXTRA_SETUP_ARGS=()
-EOF
-
-install -m 644 "$REPO_ROOT/packaging/share.conf" "$STAGE/packaging/share.conf" 2>/dev/null || \
-  mkdir -p "$STAGE/packaging" && cp "$REPO_ROOT/packaging/share.conf" "$STAGE/packaging/"
-install -m 755 "$REPO_ROOT/packaging/publish-to-sharepoint.sh" "$STAGE/packaging/" 2>/dev/null || true
 
 mkdir -p "$OUT"
 TARBALL="${OUT}/${NAME}.tar.gz"
@@ -72,8 +60,6 @@ ln -sfn "$(basename "$TARBALL")" "${OUT}/context-synthesizer-toolkit-latest.tar.
 
 echo "Built: $TARBALL"
 echo ""
-echo "Team lead — publish to SharePoint (OneDrive sync):"
-echo "  bash packaging/publish-to-sharepoint.sh"
-echo ""
-echo "Developer (Ubuntu) — after downloading/syncing from SharePoint:"
-echo '  cd context-synthesizer-toolkit-latest && bash run-setup.sh firstname.lastname'
+echo "Users:"
+echo '  tar -xzf context-synthesizer-toolkit-*.tar.gz'
+echo '  cd context-synthesizer-toolkit-* && bash run-setup.sh firstname.lastname'

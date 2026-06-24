@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # Context Synthesizer — one-shot installer (no git, no manual config).
 #
-# Team lead: bash packaging/publish-to-sharepoint.sh  (→ OneDrive → SharePoint)
 # Developer:
-#   cd context-synthesizer-toolkit-latest
-#   bash run-setup.sh firstname.lastname
+#   cd context-synthesizer
+#   bash install.sh firstname.lastname
 #
 # Max/Pro subscription only — no API key.
 set -euo pipefail

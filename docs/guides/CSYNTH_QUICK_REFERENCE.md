@@ -12,14 +12,13 @@ export PATH="$HOME/.local/bin:$PATH"
 
 ## Install & reinstall
 
-### First install (SharePoint / OneDrive package)
+### First install (from git)
 
 ```bash
-cd context-synthesizer-toolkit-latest
-bash run-setup.sh firstname.lastname
+git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+cd smart-context-synthesizer/context-synthesizer
+bash install.sh firstname.lastname
 ```
-
-Example: `bash run-setup.sh harshil.shah` (use your Azure email local-part).
 
 ### First install (from tarball)
 

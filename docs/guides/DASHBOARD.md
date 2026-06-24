@@ -105,4 +105,4 @@ bash context-synthesizer/scripts/open_dashboard.sh --open
 
 **Alternative:** use a dedicated port on WSL only (e.g. `PROXY_PORT=8081`) and always browse via `http://<WSL_IP>:8081/dashboard`.
 
-See also [COST_SAVINGS.md](COST_SAVINGS.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DEPLOY.md](DEPLOY.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)
+See also [COST_SAVINGS.md](COST_SAVINGS.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)

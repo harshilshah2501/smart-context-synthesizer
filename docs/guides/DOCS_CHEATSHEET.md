@@ -1,139 +1,78 @@
 # Documentation cheatsheet
 
-One-page map: **which doc to open**, **which command to run**, **who it's for**.
+One-page map: **which doc to open**, **which command to run**.
 
 ---
 
-## Start here (by role)
+## Start here
 
-| I am… | Read first | Then |
-|-------|------------|------|
-| **Developer** | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) |
-| **Team lead** | [DEPLOY.md](DEPLOY.md) | [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) · [DASHBOARD.md](DASHBOARD.md) |
-| **R&D / architect** | [context_os_technical_report.md](../context_os_technical_report.md) | [SYNTHESIZER_RND_REPORT.md](../reports/SYNTHESIZER_RND_REPORT.md) |
-| **Offline analysis only** | [Usage.md](Usage.md) | [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) |
+| I want to… | Read first | Then |
+|------------|------------|------|
+| **Install & use the proxy** | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) |
+| **Understand cost metrics** | [COST_SAVINGS.md](COST_SAVINGS.md) | [DASHBOARD.md](DASHBOARD.md) |
+| **Test with Cursor** | [CURSOR_TEST.md](CURSOR_TEST.md) | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) |
+| **Ship a tarball** | [RELEASE.md](RELEASE.md) | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) |
+| **Architecture deep dive** | [context_os_technical_report.md](../context_os_technical_report.md) | — |
 
 ---
 
 ## Guides — quick pick
 
-| Doc | One line | Audience |
-|-----|----------|----------|
-| [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | Install from SharePoint, WSL notes, smoke test | Developer |
-| [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) | `csynth` — install, reinstall, proxy on/off, logs | Developer |
-| [DEPLOY.md](DEPLOY.md) | Build tarball + `publish-to-sharepoint.sh` | Team lead |
-| [DASHBOARD.md](DASHBOARD.md) | Live cost/token dashboard, WSL browser URLs | Everyone |
-| [COST_SAVINGS.md](COST_SAVINGS.md) | Why **cost** drops when **payload** looks flat | Everyone |
-| [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) | Copy-paste Slack/email rollout | Team lead |
-| [Usage.md](Usage.md) | Offline modes A / C / D (no proxy) | Analyst |
-| [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) | Mode A corpus import details | Analyst |
-| [FETCH_BUNDLE.md](FETCH_BUNDLE.md) | Dev machine rsync from build server | Dev sync |
-| [CURSOR_TEST.md](CURSOR_TEST.md) | Cursor IDE + OpenAI shim testing | Cursor users |
-
----
-
-## Reports — quick pick
-
 | Doc | One line |
 |-----|----------|
-| [SYNTHESIZER_RND_REPORT.md](../reports/SYNTHESIZER_RND_REPORT.md) | Full R&D record + roadmap |
-| [COMPACTION_PROOF_REPORT.md](../reports/COMPACTION_PROOF_REPORT.md) | Turn-178 compaction deep dive |
-| [CORPUS_COMPARATIVE_ANALYSIS.md](../reports/CORPUS_COMPARATIVE_ANALYSIS.md) | Three-developer corpus comparison |
-| [BENCHMARK_ANALYSIS.md](../reports/BENCHMARK_ANALYSIS.md) | Internal proxy benchmark |
-| [DEVELOPER_A_CORPUS_REPORT.md](../reports/DEVELOPER_A_CORPUS_REPORT.md) | developer-a (32 sessions) |
-| [DEVELOPER_B_CORPUS_REPORT.md](../reports/DEVELOPER_B_CORPUS_REPORT.md) | developer-b corpus |
-| [DEVELOPER_C_CORPUS_REPORT.md](../reports/DEVELOPER_C_CORPUS_REPORT.md) | developer-c UI session (120 turns) |
+| [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | Install from git or tarball, WSL notes, smoke test |
+| [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) | `csynth` — install, reinstall, proxy on/off, logs |
+| [DASHBOARD.md](DASHBOARD.md) | Live cost/token dashboard, WSL browser URLs |
+| [COST_SAVINGS.md](COST_SAVINGS.md) | Why **cost** drops when **payload** looks flat |
+| [CURSOR_TEST.md](CURSOR_TEST.md) | Cursor IDE + OpenAI shim testing |
+| [RELEASE.md](RELEASE.md) | Build `context-synthesizer-toolkit-*.tar.gz` |
 
 ---
 
 ## Command cheatsheet
 
-### Developer — install & daily use
+### Install & daily use
 
 ```bash
-# Install (from synced SharePoint folder)
-cd context-synthesizer-toolkit-latest
+# From git (public branch)
+git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+cd smart-context-synthesizer/context-synthesizer
+bash install.sh firstname.lastname
+
+# From tarball
+tar -xzf context-synthesizer-toolkit-*.tar.gz
+cd context-synthesizer-toolkit-*
 bash run-setup.sh firstname.lastname
 
-# Reinstall / upgrade after team lead publishes
+# Reinstall / upgrade
 bash install.sh firstname.lastname --reinstall
 
 # Proxy
-csynth proxy on          # route Claude Code through synthesizer
-csynth proxy off         # direct Anthropic API
-csynth restart           # after errors or updates
+csynth proxy on
+csynth proxy off
+csynth restart
 
 # Status & debug
-csynth status            # service + routing
-csynth doctor            # full preflight
-csynth dashboard         # live metrics URL
-csynth logs              # tail proxy journal
+csynth status
+csynth doctor
+csynth dashboard
+csynth logs
 ```
 
-### Team lead — publish release
+### Build release tarball
 
 ```bash
 cd context-synthesizer
-# Edit packaging/share.conf once (OneDrive paths)
-bash packaging/publish-to-sharepoint.sh
-```
-
-Manual build only:
-
-```bash
 bash packaging/build-release-tarball.sh
-# → packaging/build/context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
-```
-
-### Optional — weekly rollup
-
-```bash
-bash context-synthesizer/scripts/pull_from_drive.sh "$HOME/shared-drive/ContextSynthesizer/weekly"
-bash context-synthesizer/scripts/team_rollup.sh
 ```
 
 ---
 
-## Common questions → doc
+## FAQ
 
-| Question | Open |
-|----------|------|
-| How do I install on Ubuntu 22.04? | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) |
-| How do I turn the proxy off temporarily? | [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) |
-| Dashboard empty or 401? | [DASHBOARD.md](DASHBOARD.md) → Troubleshooting |
-| Why is cost down but payload size similar? | [COST_SAVINGS.md](COST_SAVINGS.md) |
-| How do I publish to SharePoint? | [DEPLOY.md](DEPLOY.md) |
-| What do dashboard KPIs mean? | [DASHBOARD.md](DASHBOARD.md) · [COST_SAVINGS.md](COST_SAVINGS.md) |
-| How does L1/L2/L3 compaction work? | [context_os_technical_report.md](../context_os_technical_report.md) |
-| Offline corpus import (no proxy)? | [Usage.md](Usage.md) |
-| Message for the team? | [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) |
-
----
-
-## File locations (installed)
-
-| Path | What |
-|------|------|
-| `~/.local/share/context-synthesizer/` | Installed toolkit + venv |
-| `~/.local/bin/csynth` | CLI |
-| `~/.config/context-synthesizer/developer.env` | Developer ID, proxy flag |
-| `~/.claude/settings.json` | `ANTHROPIC_BASE_URL` when proxy on |
-| `context-synthesizer/stats/telemetry.jsonl` | Persistent dashboard log |
-
----
-
-## SharePoint layout (after publish)
-
-```text
-YourSharedDrive/Context-Synthesizer/
-  context-synthesizer-toolkit-latest/     ← developers cd here
-  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
-  context-synthesizer-toolkit-latest.tar.gz
-  INSTALL.txt
-```
-
----
-
-## Doc tree (full index)
-
-See [../README.md](../README.md) for the complete table of guides, reports, and architecture docs.
+| Question | Answer |
+|----------|--------|
+| Do I need an API key? | No — Claude Code Max/Pro forwards auth |
+| Where is telemetry stored? | `context-synthesizer/stats/` (gitignored, local only) |
+| Proxy not receiving traffic? | `csynth doctor` · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) § smoke test |
+| Dashboard empty in Windows browser? | Use WSL IP from `open_dashboard.sh`, not `127.0.0.1` |

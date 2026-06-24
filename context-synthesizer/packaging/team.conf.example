@@ -1,5 +1,0 @@
-# Team lead only — not needed for developer install.
-# Publish: bash packaging/publish-to-sharepoint.sh
-
-ENABLE_PROXY=1
-EXTRA_SETUP_ARGS=()

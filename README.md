@@ -1,6 +1,8 @@
-# Smart Context Synthesizer
+# Context Synthesizer
 
-A local API proxy between **Claude Code** / **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
+A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
+
+**Public branch** — proxy + dashboard only. No corpus reports or team deployment tooling.
 
 **Docs:** [docs/README.md](docs/README.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
@@ -8,18 +10,16 @@ A local API proxy between **Claude Code** / **Cursor** and the Anthropic API. It
 
 ## Quick start
 
-### From GitHub (recommended for open source)
-
 ```bash
-git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
-bash install.sh your.handle --install-dir ~/.local/share/context-synthesizer
+bash install.sh your.handle
 ```
 
-Or one-liner (public repo):
+Or one-liner:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- your.handle
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/public/install.sh | bash -s -- your.handle
 ```
 
 Then:
@@ -39,7 +39,7 @@ cd context-synthesizer-toolkit-*
 bash run-setup.sh your.handle
 ```
 
-Team leads: `bash packaging/build-release-tarball.sh` — see [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md).
+Build a tarball from this branch: [docs/guides/RELEASE.md](docs/guides/RELEASE.md).
 
 ---
 
@@ -61,13 +61,13 @@ Team leads: `bash packaging/build-release-tarball.sh` — see [docs/guides/DEPLO
 ```
 .
 ├── README.md
-├── docs/                     guides, reports, architecture
+├── docs/                     user guides + architecture
 └── context-synthesizer/
     ├── proxy_tool.py         FastAPI gateway
     ├── proxy_message_bridge.py
     ├── compaction.py         Dreaming v4
-    ├── scripts/csynth          post-install CLI
-    ├── packaging/            tarball build (optional team publish scripts)
+    ├── scripts/csynth        post-install CLI
+    ├── packaging/            release tarball build
     └── stats/                local telemetry — gitignored, never commit
 ```
 
@@ -86,11 +86,12 @@ Full reference: [docs/guides/CSYNTH_QUICK_REFERENCE.md](docs/guides/CSYNTH_QUICK
 
 ---
 
-## Public release checklist
+## Branches
 
-Before publishing or sharing forks, read [docs/guides/PUBLIC_RELEASE.md](docs/guides/PUBLIC_RELEASE.md).
-
-**Never commit:** `.env`, `stats/`, `stats/backups/`, session exports, or org-specific `packaging/share.conf`.
+| Branch | Purpose |
+|--------|---------|
+| **`public`** | Open-source release — proxy product only |
+| **`main`** | Full internal toolkit (team deploy, corpus tooling) |
 
 ---
 

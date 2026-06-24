@@ -3,17 +3,14 @@ Context Synthesizer — install card
 
 Ubuntu 22.04 / WSL2 — pick one way to get the toolkit:
 
-  A) Git clone
-     git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+  A) Git clone (public branch)
+     git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
      cd smart-context-synthesizer/context-synthesizer
      bash install.sh your.handle
 
   B) Release tarball
      tar -xzf context-synthesizer-toolkit-*.tar.gz
      cd context-synthesizer-toolkit-*
-
-  C) Team shared folder (optional)
-     cd context-synthesizer-toolkit-latest
 
 Then:
   bash run-setup.sh your.handle
@@ -29,11 +26,5 @@ Claude Max/Pro login only — no API key.
 
 Docs: docs/guides/DEVELOPER_ONBOARDING.md
 
-Team lead build:
+Build tarball:
   bash packaging/build-release-tarball.sh
-
-Optional shared-drive publish:
-  cp packaging/share.conf.example packaging/share.conf
-  bash packaging/publish-to-sharepoint.sh
-
-Public release checklist: docs/guides/PUBLIC_RELEASE.md

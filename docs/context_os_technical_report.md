@@ -5,7 +5,7 @@
 
 > **What this document is:** Engineering record for the **Context Synthesizer** proxy — design rationale (LLM physics, caching economics, OS memory analogy) plus what is **shipped** in `context-synthesizer/` vs **planned** next.
 >
-> **Companion docs:** [`README.md`](../context-synthesizer/README.md) · [`Usage.md`](guides/Usage.md) · [`DEPLOY.md`](guides/DEPLOY.md) · [`SYNTHESIZER_RND_REPORT.md`](reports/SYNTHESIZER_RND_REPORT.md) · [`CORPUS_COMPARATIVE_ANALYSIS.md`](reports/CORPUS_COMPARATIVE_ANALYSIS.md) · [`CLI_STATS_GUIDE.md`](guides/CLI_STATS_GUIDE.md)
+> **Companion docs:** [`README.md`](../context-synthesizer/README.md) · [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) · [COST_SAVINGS.md](guides/COST_SAVINGS.md) · [DASHBOARD.md](guides/DASHBOARD.md)
 
 ---
 
@@ -24,18 +24,11 @@
 | Dreaming v4 compaction | **Shipped** | `compaction.py` + `dream_compact()` in `proxy_tool.py` |
 | Turn + token compaction triggers | **Shipped** | `MAX_TURNS_THRESHOLD`, `COMPACTION_TOKEN_THRESHOLD`, `MAX_LAYER3_TURNS` |
 | Haiku compaction model | **Shipped** | `claude-haiku-4-5-20251001` via `COMPACTION_MODEL` |
-| Mode A/C/D offline importers | **Shipped** | `import_cli_logs.py`, `import_cursor_sessions.py`, `import_claude_sessions.py` |
-| Hot session + caching analyzers | **Shipped** | `analyze_hot_session.py`, `analyze_claude_caching.py` |
-| Naive vs Dreaming compaction compare | **Shipped** | `compare_compaction.py` — offline spike-turn proof |
-| Phase 2 validation suite | **Shipped** | `run_phase2_validation.py` |
-| Weekly corpus export + team rollup | **Shipped** | `scripts/export_weekly_corpus.sh`, `team_rollup.sh`, `setup.sh` |
-| Claude backup zip import | **Shipped** | `scripts/import_claude_backup.sh` |
-| Production L1 builder | **Shipped** | `build_production_claude_md.py` |
 | 12-turn JetBrains simulator | **Shipped** | `test_simulator.py` (internal gateway validation) |
 | Layer 1 token budget verifier | **Shipped** | `count_tokens.py` |
-| Team stats aggregator + CSV export | **Shipped** | `collect_stats.py` |
 | Model registry | **Shipped** | `models.py` |
-| Full ~200K production `Claude.md` | **Planned** | Team architecture corpus; starter ~380 tokens |
+| Tool-faithful message bridge | **Shipped** | `proxy_message_bridge.py` |
+| Full ~200K production `Claude.md` | **Planned** | Large project rules file; starter ~380 tokens |
 | State Override validation | **Partial** | Rules in Dreaming v4; stricter post-check planned |
 | Asymmetric tiered routing (§7) | **Planned** | Not in codebase |
 | Per-layer token counts in telemetry | **Planned** | Char estimates in `ContextSnapshot` today |
@@ -51,9 +44,9 @@
 5. [Architecture: The Four-Layer Context Stack](#5-architecture)
 6. [The Dreaming Loop: Asynchronous State Synthesis](#6-the-dreaming-loop)
 7. [Future: Asymmetric Tiered Routing](#7-future-asymmetric-tiered-routing)
-8. [Telemetry: Measuring What You Save](#8-telemetry) — incl. [§8.3 developer corpora](#83-developer-corpus-evidence-2026-06-12)
+8. [Telemetry: Measuring What You Save](#8-telemetry)
 9. [Implementation: Repository Layout](#9-implementation-repository-layout)
-10. [Deployment: JetBrains Team Rollout](#10-deployment-jetbrains-team-rollout)
+10. [Deployment](#10-deployment)
 11. [Ecosystem Comparison](#11-ecosystem-comparison)
 12. [Comprehension Checkpoints](#12-comprehension-checkpoints)
 
@@ -89,9 +82,9 @@ At Claude Sonnet 4.6's standard input rate of $3.00 per 1M tokens:
 17,750,000 ÷ 1,000,000 × $3.00 = $53.25 per session (naive)
 ```
 
-> **Real-world nuance:** Claude Code on Max/Pro already achieves **~94–99% `cache_read`** on long sessions ([§8.3](#83-developer-corpus-evidence-2026-06-12)). The naive bill above assumes **no caching** — useful as an upper bound on *history bloat*, not as today's invoice. Our value is **shrinking the cached prefix and uncached tail**, not enabling caching.
+> **Real-world nuance:** Claude Code on Max/Pro already achieves high `cache_read` on long sessions. The naive bill above assumes **no caching** — useful as an upper bound on *history bloat*, not as today's invoice. Our value is **shrinking the cached prefix and uncached tail**, not enabling caching.
 
-The **target** for Context Synthesizer is ~80–90% input-cost reduction once a production-sized `Claude.md` is cached. The 12-turn proxy simulator measured **10.2%** on a starter `Claude.md` ([§8.1](#81-proxy-simulator-benchmark-2026-06-10)). **Real developer sessions** already show **90–99% counterfactual history compression** and **94–99% native cache_read** — see [§8.3](#83-developer-corpus-evidence-2026-06-12).
+The **target** for Context Synthesizer is ~80–90% input-cost reduction once a production-sized `Claude.md` is cached. The 12-turn proxy simulator measured **10.2%** on a starter `Claude.md` ([§8.1](#81-proxy-simulator-benchmark)).
 
 ---
 
@@ -364,22 +357,11 @@ def compute_costs(usage):
     return actual, baseline, baseline - actual
 ```
 
-Printed per request in the proxy terminal; appended to `stats/*.jsonl`; team rollup via `collect_stats.py`.
+Printed per request in the proxy terminal; appended to `stats/*.jsonl` (local only, gitignored).
 
-### 8.2 Collecting stats from Claude CLI developers
+### 8.1 Proxy simulator benchmark
 
-See [`CLI_STATS_GUIDE.md`](guides/CLI_STATS_GUIDE.md).
-
-**Two modes:**
-
-1. **Baseline** — `import_cli_logs.py` reads `~/.claude/projects/**/*.jsonl` (native CLI `usage` per assistant turn).
-2. **Synthesizer** — developers set `ANTHROPIC_BASE_URL=http://127.0.0.1:8080`; proxy logs bifurcated events with `TELEMETRY_DEVELOPER_ID`.
-
-Compare baseline vs synthesizer `savings_pct` and `cache_efficiency_pct` to tune Layer 1 size, compaction threshold, and ledger synthesis.
-
-### 8.1 Proxy simulator benchmark (2026-06-10)
-
-12-turn run via `test_simulator.py` against starter `Claude.md`. Full analysis: [`BENCHMARK_ANALYSIS.md`](reports/BENCHMARK_ANALYSIS.md).
+12-turn run via `test_simulator.py` against starter `Claude.md`.
 
 | Metric | Measured | Production target (200K L1) |
 |--------|----------|------------------------------|
@@ -391,72 +373,26 @@ Compare baseline vs synthesizer `savings_pct` and `cache_efficiency_pct` to tune
 
 **Conclusion:** Architecture behaved correctly; savings were modest because the cached prefix was ~2.5K tokens, not 200K. Replace `Claude.md`, re-run `count_tokens.py`, then `test_simulator.py`.
 
-### 8.3 Developer corpus evidence (2026-06-12)
-
-Three offline Mode D corpora (developer-a, developer-b, developer-c) validate the **history-architect** thesis: Claude Code already caches well; our value is **shrinking and stabilizing what gets cached**, not enabling caching.
-
-| Developer | Sessions | Hot session | Turns | Session compression | Spike-turn proof | Cache read (hot) |
-|-----------|----------|-------------|------:|--------------------:|-----------------:|-----------------:|
-| developer-a | 32 | `ac4ecef7` | 415 | **97.5%** | turn 178: **99.6%** | 99.3% |
-| developer-b | 99 | `d326033e` | 28 | **68.9%** | turn 23: **95.2%** | 93.5% |
-| developer-c | 1 | `dcb92020` | 120 | **90.9%** | turn 100: **99.5%** | 99.8% |
-
-**Counterfactual naive history** (full transcript) vs **synthesizer-shaped payload** at worst spike turns:
-
-```
-developer-a turn 178:  ~725K → ~3K tokens   (PNG/screenshot + Bash bloat)
-developer-b turn 23:     ~127K → ~6K tokens   (Java SSO tool spike)
-developer-c turn 100:           ~516K → ~3K tokens   (Edit/tab iteration burst)
-```
-
-**Native `/compact` vs synthesizer:** on hot sessions, Claude auto-compacted **1–3×** while synthesizer would fire **12–41×** at the 10-turn threshold.
-
-**Waste patterns (Dreaming v4 targets):**
-
-| Pattern | Example | Corpus |
-|---------|---------|--------|
-| Bash / pipeline dumps | docker, orchestrator logs | developer-a |
-| Image / base64 in Read results | printer UI PNGs | developer-a turn 178 |
-| File re-read loops | `Admin.tsx` 21×, `SettingsTab.jsx` 33× | developer-a, developer-c |
-| Short-session overhead | ledger + window > naive | developer-b (many under-25-turn sessions) |
-
-Per-developer reports: [DEVELOPER_A_CORPUS_REPORT.md](reports/DEVELOPER_A_CORPUS_REPORT.md) · [DEVELOPER_B_CORPUS_REPORT.md](reports/DEVELOPER_B_CORPUS_REPORT.md) · [DEVELOPER_C_CORPUS_REPORT.md](reports/DEVELOPER_C_CORPUS_REPORT.md). Full comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md). Turn-178 narrative: [COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md).
-
-**Offline proof command:**
-
-```bash
-.venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \
-  --session ac4ecef7 --turn 178
-```
-
----
+Live savings on real sessions: see [COST_SAVINGS.md](guides/COST_SAVINGS.md) and the dashboard bifurcation view.
 
 ## 9. Implementation: Repository Layout
 
 ```
-Out-of-bound-chronicles/
-├── docs/                          # All documentation (guides, reports, this file)
-│   ├── guides/                    # Usage, DEPLOY, CLI_STATS_GUIDE
-│   └── reports/                   # Corpus analysis, benchmarks, proofs
+smart-context-synthesizer/
+├── docs/                          # User guides + this file
+│   └── guides/                    # Onboarding, dashboard, CLI reference
 └── context-synthesizer/
-    ├── proxy_tool.py              # FastAPI gateway (implementation target)
+    ├── proxy_tool.py              # FastAPI gateway
+    ├── proxy_message_bridge.py    # Tool-faithful message assembly
     ├── compaction.py              # Dreaming v4 preprocessing rules
-    ├── compare_compaction.py      # Naive vs synth at spike turn (offline)
-    ├── analyze_hot_session.py   # Single-session deep dive
-    ├── analyze_claude_caching.py
-    ├── import_cli_logs.py         # Mode A
-    ├── import_cursor_sessions.py  # Mode C
-    ├── import_claude_sessions.py  # Mode D
-    ├── run_phase2_validation.py
-    ├── collect_stats.py           # Team aggregate + CSV
+    ├── telemetry.py               # Cost / cache bifurcation
     ├── test_simulator.py          # 12-turn proxy benchmark
     ├── count_tokens.py            # Layer 1 token budget
     ├── models.py
     ├── Claude.md                  # Layer 1 starter (~380 tokens)
-    ├── scripts/                   # setup, weekly export, backup import, rollup
-    ├── stats/                     # Local corpora (gitignored)
-    └── README.md                  # Toolkit entry → ../docs/
+    ├── scripts/                   # setup, csynth CLI, proxy systemd
+    ├── stats/                     # Local telemetry (gitignored)
+    └── README.md
 ```
 
 ### Key functions (`proxy_tool.py`)
@@ -492,18 +428,26 @@ Claude CLI / JetBrains POST /v1/messages
 
 ## 10. Deployment
 
-> **Team rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `bash run-setup.sh` from SharePoint package (or `install.sh`); **live compaction proxy on by default** (`ENABLE_PROXY=1`), optional Monday SharePoint upload (`ENABLE_WEEKLY_CRON=1`). Team lead: [DEPLOY.md](guides/DEPLOY.md).
-> The proxy below is the **gateway implementation**; `run-setup.sh` / `install.sh --enable-proxy` installs a systemd user service — no manual terminal.
+> **Install:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `bash install.sh your.handle` from git or `bash run-setup.sh` from a release tarball. Live compaction proxy on by default (`ENABLE_PROXY=1`).
 
-### Gateway implementation (venv — not team workflow)
+### End-user install (recommended)
 
 ```bash
-cd ~/Out-of-bound-chronicles
+git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+cd smart-context-synthesizer/context-synthesizer
+bash install.sh your.handle
+csynth doctor && csynth dashboard
+```
+
+### Manual dev run (venv)
+
+```bash
+cd smart-context-synthesizer
 python3 -m venv .venv
 .venv/bin/pip install fastapi uvicorn anthropic httpx
 
-export ANTHROPIC_API_KEY="sk-ant-your-team-key"
-export CLAUDE_MD_PATH="context-synthesizer/Claude.md"   # or production path
+# Claude Code Max/Pro forwards OAuth; API key is optional fallback only.
+export CLAUDE_MD_PATH="context-synthesizer/Claude.md"
 export ANTHROPIC_MODEL="claude-sonnet-4-6"
 export COMPACTION_MODEL="claude-haiku-4-5-20251001"
 
@@ -540,7 +484,7 @@ In `~/.claude/settings.json`:
 }
 ```
 
-Stats collection workflow: [`CLI_STATS_GUIDE.md`](guides/CLI_STATS_GUIDE.md).
+Telemetry events append to local `stats/*.jsonl`. See [DASHBOARD.md](guides/DASHBOARD.md) and [COST_SAVINGS.md](guides/COST_SAVINGS.md).
 
 ### Planned: PyInstaller binary
 
@@ -567,12 +511,12 @@ pyinstaller --onefile context-synthesizer/proxy_tool.py
 | **Token strategy** | Visualizes degradation | Truncates CLI output | Caches static blocks; synthesizes history |
 | **Active or passive** | Passive viewer | Active input filter | Active middleware |
 | **IDE change** | None (companion app) | Terminal wrapper | URL redirect + optional session header |
-| **Metrics** | Visual UI | No | Per-turn terminal audit + simulator rollup |
-| **Offline proof** | Session viewer | No | `compare_compaction.py` — spike-turn naive vs synth on real JSONL |
+| **Metrics** | Visual UI | No | Per-turn terminal audit + live dashboard |
+| **Offline proof** | Session viewer | No | `test_simulator.py` — 12-turn gateway benchmark |
 
-**Complementary chain:** `rtk` → **Context Synthesizer** → Anthropic API → `claude-devtools` for visual audit. Corpus validation: `compare_compaction.py` + [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md).
+**Complementary chain:** `rtk` → **Context Synthesizer** → Anthropic API → `claude-devtools` for visual audit.
 
-**Zero-touch rollout:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `run-setup.sh` / `install.sh` (no git), live compaction proxy by default, optional weekly upload via OneDrive sync or rclone.
+**Install:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `install.sh` / `run-setup.sh`, live compaction proxy by default.
 
 ---
 
@@ -622,4 +566,4 @@ Good ledger: `- Database layer: MongoDB — relational schema deprecated`
 
 > **Repository:** `Out-of-bound-chronicles/context-synthesizer/`  
 > **Key references:** [Anthropic Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) · `matt1398/claude-devtools` · `rtk-ai/rtk`  
-> **Last aligned with codebase:** 2026-06-12 (three-developer corpus, consolidated `docs/`)
+> **Last aligned with codebase:** 2026-06-24 (`public` branch — proxy product)

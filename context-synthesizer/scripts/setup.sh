@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-time setup for context-synthesizer corpus workflow (Modes A/C/D).
+# One-time setup: venv for the context-synthesizer proxy.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,12 +20,9 @@ if ! "$VENV/bin/python" -c "import anyio._backends._asyncio" 2>/dev/null; then
   echo "WARN: anyio backend missing after install — run repair_venv.sh" >&2
 fi
 
-mkdir -p "$REPO_ROOT/context-synthesizer/stats/weekly"
-mkdir -p "$REPO_ROOT/context-synthesizer/stats/inbox"
+mkdir -p "$REPO_ROOT/context-synthesizer/stats"
 
 echo ""
 echo "Setup complete."
 echo "  Python:  $VENV/bin/python"
-echo "  Export:  context-synthesizer/scripts/export_weekly_corpus.sh --mode d"
 echo "  Onboard: context-synthesizer/scripts/setup_developer.sh --developer YOU"
-echo "  Deploy:  docs/guides/DEPLOY.md"
