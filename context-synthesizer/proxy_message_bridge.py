@@ -11,6 +11,8 @@ from __future__ import annotations
 import copy
 import json
 from typing import Any
+
+from compaction import MAX_COMPACTION_SNIPPET_CHARS
 TOOL_BLOCK_TYPES = frozenset(
     {
         "tool_use",
@@ -116,7 +118,7 @@ def serialize_assistant_content(content: Any) -> Any:
 
 def normalize_content_with_tools(content: Any) -> str:
     """Text extraction for telemetry/compaction; preserves tool-result signal."""
-    def _truncate(text: str, limit: int = 1200) -> str:
+    def _truncate(text: str, limit: int = MAX_COMPACTION_SNIPPET_CHARS) -> str:
         text = (text or "").strip()
         if len(text) <= limit:
             return text

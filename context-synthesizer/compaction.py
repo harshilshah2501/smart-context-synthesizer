@@ -11,8 +11,9 @@ import re
 from typing import Any, Callable
 
 # Per-block limits when feeding turns into the compaction model
-MAX_BASH_BLOCK_CHARS = 1200
-MAX_TOOL_RESULT_CHARS = 800
+MAX_COMPACTION_SNIPPET_CHARS = 1200
+MAX_BASH_BLOCK_CHARS = MAX_COMPACTION_SNIPPET_CHARS
+MAX_TOOL_RESULT_CHARS = MAX_COMPACTION_SNIPPET_CHARS
 MAX_TURN_BODY_CHARS = 12_000
 
 # All recognised @synth-remember aliases (case-insensitive prefix match)
