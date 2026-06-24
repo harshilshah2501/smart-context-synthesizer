@@ -1,17 +1,20 @@
-# meet-chavda Corpus Report — CMDB research sessions
+# Developer A Corpus Report — CMDB research sessions
+
+> **Anonymized corpus:** Developer handles (developer-a/b/c) replace real identities from a private study. Session IDs and aggregate metrics are preserved; no raw exports are in this repository.
+
 
 **Date:** 2026-06-12  
-**Source:** `claude-folder-backup.zip` → `stats/backups/meet-chavda/.claude/projects/`  
-**Developer:** meet-chavda  
+**Source:** `claude-folder-backup.zip` → `stats/backups/developer-a/.claude/projects/`  
+**Developer:** developer-a  
 **Primary project:** `cmdb-research-repository` (CMDB pipeline + React frontend)
 
 ---
 
 ## Executive summary
 
-meet-chavda is the **reference corpus** — 32 sessions, 859 user turns, including the longest session studied so far (**415 turns**, `ac4ecef7`).
+developer-a is the **reference corpus** — 32 sessions, 859 user turns, including the longest session studied so far (**415 turns**, `ac4ecef7`).
 
-| | meet-chavda | chandresh | om |
+| | developer-a | developer-b | developer-c |
 |--|-------------|-----------|-----|
 | Sessions | **32** | 99 | 1 |
 | Longest session | **415 turns** | 28 turns | 120 turns |
@@ -31,7 +34,7 @@ meet-chavda is the **reference corpus** — 32 sessions, 859 user turns, includi
 ```bash
 bash context-synthesizer/scripts/import_claude_backup.sh \
   path/to/claude-folder-backup.zip \
-  --developer meet-chavda
+  --developer developer-a
 ```
 
 Or from an existing backup tree:
@@ -39,20 +42,20 @@ Or from an existing backup tree:
 ```bash
 cd context-synthesizer
 ../.venv/bin/python import_claude_sessions.py \
-  --cli-root stats/backups/meet-chavda/.claude/projects \
-  --developer meet-chavda --min-turns 25 \
-  --output stats/meet-chavda_corpus.jsonl \
-  --export stats/meet-chavda_corpus.csv
+  --cli-root stats/backups/developer-a/.claude/projects \
+  --developer developer-a --min-turns 25 \
+  --output stats/developer-a_corpus.jsonl \
+  --export stats/developer-a_corpus.csv
 ```
 
 **Outputs:**
 
 | File | Description |
 |------|-------------|
-| `stats/backups/meet-chavda/.claude/projects/` | Extracted transcripts |
-| `stats/meet-chavda_corpus.jsonl` | Mode D corpus (32 sessions) |
-| `stats/meet-chavda_corpus.csv` | CSV summary |
-| `stats/meet-chavda_hot_ac4ecef7.json` | Hot session deep dive |
+| `stats/backups/developer-a/.claude/projects/` | Extracted transcripts |
+| `stats/developer-a_corpus.jsonl` | Mode D corpus (32 sessions) |
+| `stats/developer-a_corpus.csv` | CSV summary |
+| `stats/developer-a_hot_ac4ecef7.json` | Hot session deep dive |
 
 ---
 
@@ -134,7 +137,7 @@ synth: ▁▂▁▁▁▁▁▁▂▁▁▃▁▃▁▄▂▃▁▁▁█▃▃�
 
 ## Native caching
 
-| Signal | meet-chavda (32 sessions) | Hot session `ac4ecef7` |
+| Signal | developer-a (32 sessions) | Hot session `ac4ecef7` |
 |--------|--------------------------:|-----------------------:|
 | Assistant msgs with cache_read | **99.2%** | 99.3% |
 | User turns with cache_read | **89.8%** | ~99%+ after warm-up |
@@ -154,13 +157,13 @@ synth: ▁▂▁▁▁▁▁▁▂▁▁▃▁▃▁▄▂▃▁▁▁█▃▃�
 | Preprocessed 10-turn window | 2,543 | 98.4% vs raw window |
 | Synthesizer-shaped | 2,912 | **99.6%** |
 
-Export: `stats/meet-chavda_compare_turn178.json`
+Export: `stats/developer-a_compare_turn178.json`
 
 ### Turn 178 with Haiku ledger (optional)
 
 ```bash
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \
   --session ac4ecef7 --turn 178 --run-dreaming --haiku
 ```
 
@@ -180,13 +183,13 @@ Native compact did **not** prevent prefix bloat over 415 turns.
 
 ---
 
-## How the synthesizer helps meet-chavda specifically
+## How the synthesizer helps developer-a specifically
 
 1. **Marathon sessions** — steady naive growth over 400+ turns; compaction every ~10 turns is essential.  
 2. **Bash pipeline logs** — docker, migrations, orchestrator output collapsed in preprocessing.  
 3. **Screenshot / image reads** — turn 178 dumps base64 PNG data; ledger + window strip low-value blobs.  
 4. **File re-read loops** — `Admin.tsx` 21×; ledger holds one latest state.  
-5. **Phase 2 regression baseline** — `meet-chavda_corpus.jsonl` is the drift-check reference for importer changes.
+5. **Phase 2 regression baseline** — `developer-a_corpus.jsonl` is the drift-check reference for importer changes.
 
 ---
 
@@ -196,14 +199,14 @@ Native compact did **not** prevent prefix bloat over 415 turns.
 cd ~/Out-of-bound-chronicles/context-synthesizer
 
 ../.venv/bin/python analyze_hot_session.py \
-  --source claude --cli-root stats/backups/meet-chavda/.claude/projects \
-  --session ac4ecef7 --export stats/meet-chavda_hot_ac4ecef7.json
+  --source claude --cli-root stats/backups/developer-a/.claude/projects \
+  --session ac4ecef7 --export stats/developer-a_hot_ac4ecef7.json
 
 ../.venv/bin/python analyze_claude_caching.py \
-  --cli-root stats/backups/meet-chavda/.claude/projects
+  --cli-root stats/backups/developer-a/.claude/projects
 
 ../.venv/bin/python compare_compaction.py \
-  --cli-root stats/backups/meet-chavda/.claude/projects \
+  --cli-root stats/backups/developer-a/.claude/projects \
   --session ac4ecef7 --turn 178
 ```
 
@@ -212,6 +215,6 @@ cd ~/Out-of-bound-chronicles/context-synthesizer
 ## See also
 
 - [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — turn 178 proof in plain English (+ Haiku ledger)
-- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — meet-chavda vs chandresh vs om
-- [CHANDRESH_CORPUS_REPORT.md](CHANDRESH_CORPUS_REPORT.md) · [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md)
-- [SYNTHESIZER_RND_REPORT.md §7](SYNTHESIZER_RND_REPORT.md#7-developer-corpus-meet-chavda) — extended R&D notes
+- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — developer-a vs developer-b vs developer-c
+- [DEVELOPER_B_CORPUS_REPORT.md](DEVELOPER_B_CORPUS_REPORT.md) · [DEVELOPER_C_CORPUS_REPORT.md](DEVELOPER_C_CORPUS_REPORT.md)
+- [SYNTHESIZER_RND_REPORT.md §7](SYNTHESIZER_RND_REPORT.md#7-developer-corpus-developer-a) — extended R&D notes

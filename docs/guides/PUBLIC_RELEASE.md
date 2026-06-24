@@ -35,7 +35,7 @@ If `.env` was ever committed: `git rm --cached .env` and rotate any exposed keys
 | **`packaging/publish-to-sharepoint.sh`** | Optional enterprise helper; requires local `share.conf` |
 | **`COPILOT_TOKEN` / Copilot backend** | Disabled unless `ENABLE_COPILOT_BACKEND=1`; may violate GitHub ToS |
 | **`Claude.production.md`** | Large benchmark Layer-1 doc; review for internal product names before publish |
-| **Corpus reports** | `docs/reports/*` use anonymized developer handles from private study — no raw session data |
+| **Corpus reports** | `docs/reports/DEVELOPER_{A,B,C}_*` use anonymized handles (`developer-a/b/c`) |
 
 ---
 

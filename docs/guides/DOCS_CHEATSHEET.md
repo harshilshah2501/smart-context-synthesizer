@@ -40,9 +40,9 @@ One-page map: **which doc to open**, **which command to run**, **who it's for**.
 | [COMPACTION_PROOF_REPORT.md](../reports/COMPACTION_PROOF_REPORT.md) | Turn-178 compaction deep dive |
 | [CORPUS_COMPARATIVE_ANALYSIS.md](../reports/CORPUS_COMPARATIVE_ANALYSIS.md) | Three-developer corpus comparison |
 | [BENCHMARK_ANALYSIS.md](../reports/BENCHMARK_ANALYSIS.md) | Internal proxy benchmark |
-| [MEET_CHAVDA_CORPUS_REPORT.md](../reports/MEET_CHAVDA_CORPUS_REPORT.md) | meet-chavda (32 sessions) |
-| [CHANDRESH_CORPUS_REPORT.md](../reports/CHANDRESH_CORPUS_REPORT.md) | chandresh corpus |
-| [OM_CORPUS_REPORT.md](../reports/OM_CORPUS_REPORT.md) | om Org Mgmt (120 turns) |
+| [DEVELOPER_A_CORPUS_REPORT.md](../reports/DEVELOPER_A_CORPUS_REPORT.md) | developer-a (32 sessions) |
+| [DEVELOPER_B_CORPUS_REPORT.md](../reports/DEVELOPER_B_CORPUS_REPORT.md) | developer-b corpus |
+| [DEVELOPER_C_CORPUS_REPORT.md](../reports/DEVELOPER_C_CORPUS_REPORT.md) | developer-c UI session (120 turns) |
 
 ---
 

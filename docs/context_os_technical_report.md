@@ -393,20 +393,20 @@ Compare baseline vs synthesizer `savings_pct` and `cache_efficiency_pct` to tune
 
 ### 8.3 Developer corpus evidence (2026-06-12)
 
-Three offline Mode D corpora (meet-chavda, chandresh, om) validate the **history-architect** thesis: Claude Code already caches well; our value is **shrinking and stabilizing what gets cached**, not enabling caching.
+Three offline Mode D corpora (developer-a, developer-b, developer-c) validate the **history-architect** thesis: Claude Code already caches well; our value is **shrinking and stabilizing what gets cached**, not enabling caching.
 
 | Developer | Sessions | Hot session | Turns | Session compression | Spike-turn proof | Cache read (hot) |
 |-----------|----------|-------------|------:|--------------------:|-----------------:|-----------------:|
-| meet-chavda | 32 | `ac4ecef7` | 415 | **97.5%** | turn 178: **99.6%** | 99.3% |
-| chandresh | 99 | `d326033e` | 28 | **68.9%** | turn 23: **95.2%** | 93.5% |
-| om | 1 | `dcb92020` | 120 | **90.9%** | turn 100: **99.5%** | 99.8% |
+| developer-a | 32 | `ac4ecef7` | 415 | **97.5%** | turn 178: **99.6%** | 99.3% |
+| developer-b | 99 | `d326033e` | 28 | **68.9%** | turn 23: **95.2%** | 93.5% |
+| developer-c | 1 | `dcb92020` | 120 | **90.9%** | turn 100: **99.5%** | 99.8% |
 
 **Counterfactual naive history** (full transcript) vs **synthesizer-shaped payload** at worst spike turns:
 
 ```
-meet-chavda turn 178:  ~725K → ~3K tokens   (PNG/screenshot + Bash bloat)
-chandresh turn 23:     ~127K → ~6K tokens   (Java SSO tool spike)
-om turn 100:           ~516K → ~3K tokens   (Edit/tab iteration burst)
+developer-a turn 178:  ~725K → ~3K tokens   (PNG/screenshot + Bash bloat)
+developer-b turn 23:     ~127K → ~6K tokens   (Java SSO tool spike)
+developer-c turn 100:           ~516K → ~3K tokens   (Edit/tab iteration burst)
 ```
 
 **Native `/compact` vs synthesizer:** on hot sessions, Claude auto-compacted **1–3×** while synthesizer would fire **12–41×** at the 10-turn threshold.
@@ -415,18 +415,18 @@ om turn 100:           ~516K → ~3K tokens   (Edit/tab iteration burst)
 
 | Pattern | Example | Corpus |
 |---------|---------|--------|
-| Bash / pipeline dumps | docker, orchestrator logs | meet-chavda |
-| Image / base64 in Read results | printer UI PNGs | meet-chavda turn 178 |
-| File re-read loops | `Admin.tsx` 21×, `SettingsTab.jsx` 33× | meet-chavda, om |
-| Short-session overhead | ledger + window > naive | chandresh (many under-25-turn sessions) |
+| Bash / pipeline dumps | docker, orchestrator logs | developer-a |
+| Image / base64 in Read results | printer UI PNGs | developer-a turn 178 |
+| File re-read loops | `Admin.tsx` 21×, `SettingsTab.jsx` 33× | developer-a, developer-c |
+| Short-session overhead | ledger + window > naive | developer-b (many under-25-turn sessions) |
 
-Per-developer reports: [MEET_CHAVDA_CORPUS_REPORT.md](reports/MEET_CHAVDA_CORPUS_REPORT.md) · [CHANDRESH_CORPUS_REPORT.md](reports/CHANDRESH_CORPUS_REPORT.md) · [OM_CORPUS_REPORT.md](reports/OM_CORPUS_REPORT.md). Full comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md). Turn-178 narrative: [COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md).
+Per-developer reports: [DEVELOPER_A_CORPUS_REPORT.md](reports/DEVELOPER_A_CORPUS_REPORT.md) · [DEVELOPER_B_CORPUS_REPORT.md](reports/DEVELOPER_B_CORPUS_REPORT.md) · [DEVELOPER_C_CORPUS_REPORT.md](reports/DEVELOPER_C_CORPUS_REPORT.md). Full comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md). Turn-178 narrative: [COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md).
 
 **Offline proof command:**
 
 ```bash
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \
   --session ac4ecef7 --turn 178
 ```
 

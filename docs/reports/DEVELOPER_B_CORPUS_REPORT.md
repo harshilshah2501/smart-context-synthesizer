@@ -1,17 +1,20 @@
 # Chandresh Corpus Report — `claude-sessions.zip`
 
+> **Anonymized corpus:** Developer handles (developer-a/b/c) replace real identities from a private study. Session IDs and aggregate metrics are preserved; no raw exports are in this repository.
+
+
 **Date:** 2026-06-11  
 **Source:** `context-synthesizer/claude-sessions.zip` (17 MB)  
-**Developer:** chandresh  
-**Project:** Motadata NR (`motadata` Java workspace)
+**Developer:** developer-b  
+**Project:** Java NR monitoring workspace (anonymized)
 
 ---
 
 ## Executive summary
 
-The new corpus imported successfully (**99 sessions**). It is a **different shape** from meet-chavda:
+The new corpus imported successfully (**99 sessions**). It is a **different shape** from developer-a:
 
-| | meet-chavda | chandresh (this zip) |
+| | developer-a | developer-b (this zip) |
 |--|-------------|----------------------|
 | Sessions | 32 | **99** |
 | Longest session | **415** turns | **28** turns |
@@ -29,7 +32,7 @@ The new corpus imported successfully (**99 sessions**). It is a **different shap
 ```bash
 bash context-synthesizer/scripts/import_claude_backup.sh \
   context-synthesizer/claude-sessions.zip \
-  --developer chandresh
+  --developer developer-b
 ```
 
 **Note:** This zip uses `projects/` at the top level (not `.claude/projects/`). `import_claude_backup.sh` was updated to support that layout.
@@ -38,9 +41,9 @@ bash context-synthesizer/scripts/import_claude_backup.sh \
 
 | File | Description |
 |------|-------------|
-| `stats/backups/chandresh/projects/` | Extracted transcripts |
-| `stats/weekly/2026-06-11_chandresh_claude_backup.jsonl` | Mode D corpus |
-| `stats/weekly/2026-06-11_chandresh_claude_backup.csv` | CSV summary |
+| `stats/backups/developer-b/projects/` | Extracted transcripts |
+| `stats/weekly/2026-06-11_developer-b_claude_backup.jsonl` | Mode D corpus |
+| `stats/weekly/2026-06-11_developer-b_claude_backup.csv` | CSV summary |
 
 ---
 
@@ -92,7 +95,7 @@ Best session to study for synthesizer value in this corpus.
 - Dedupe `SingleSignOnUtil.java` reads
 - Compare 1× native compact vs synthesizer’s 2+ triggers
 
-Full JSON: `stats/chandresh_hot_d326033e.json`
+Full JSON: `stats/developer-b_hot_d326033e.json`
 
 ---
 
@@ -106,21 +109,21 @@ Full JSON: `stats/chandresh_hot_d326033e.json`
 | Compression est. | **-0.3%** (no win — almost all spike in one turn) |
 | Spike | Turn 5: **+269,232 tokens** (browser automation) |
 
-**Takeaway:** Short sessions with one huge tool dump are a **different failure mode** than meet-chavda’s long steady growth. Preprocessing + dump compaction at turn 5 would be the fix.
+**Takeaway:** Short sessions with one huge tool dump are a **different failure mode** than developer-a’s long steady growth. Preprocessing + dump compaction at turn 5 would be the fix.
 
-Full JSON: `stats/chandresh_hot.json`
+Full JSON: `stats/developer-b_hot.json`
 
 ---
 
 ## Native caching
 
-| Signal | chandresh | meet-chavda (compare) |
+| Signal | developer-b | developer-a (compare) |
 |--------|-----------|------------------------|
 | Assistant msgs with cache_read | **97.0%** | 99.2% |
 | User turns with cache_read | **46.9%** | 89.8% |
 | Turns with no cache signal | **52.0%** | 9.8% |
 
-**Plain English:** Many sessions are **short or synthetic-model** runs with weak per-turn cache signals. Assistant-level caching is still high (97%), but turn-level warmth is **noisier** than meet-chavda.
+**Plain English:** Many sessions are **short or synthetic-model** runs with weak per-turn cache signals. Assistant-level caching is still high (97%), but turn-level warmth is **noisier** than developer-a.
 
 Models seen: `claude-opus-4-6`, `claude-opus-4-7`, `claude-opus-4-8`, `claude-haiku-4-5`, `<synthetic>`
 
@@ -136,12 +139,12 @@ Models seen: `claude-opus-4-6`, `claude-opus-4-7`, `claude-opus-4-8`, `claude-ha
 
 ## Verdict vs Phase 2 criteria
 
-| Criterion | Target | chandresh result |
+| Criterion | Target | developer-b result |
 |-----------|--------|------------------|
 | Compression ≥90% (100+ turns) | PASS | **N/A** — no 100+ turn sessions |
 | Compression on longest session | — | **68.9%** (`d326033e`, 28 turns) |
 | Corpus usable for tooling | — | **Yes** — import, hot session, caching, stats all work |
-| Same playbook as meet-chavda | — | **Partial** — shorter sessions, Chrome MCP spikes |
+| Same playbook as developer-a | — | **Partial** — shorter sessions, Chrome MCP spikes |
 
 ---
 
@@ -156,19 +159,19 @@ Models seen: `claude-opus-4-6`, `claude-opus-4-7`, `claude-opus-4-8`, `claude-ha
    | Preprocessed window | 5,693 (**90.8%** smaller) |
    | Synthesizer-shaped | 6,098 (**95.2%** vs naive) |
 
-   Export: `stats/chandresh_compare_turn23.json`
+   Export: `stats/developer-b_compare_turn23.json`
 
    Haiku ledger replay (optional):
    ```bash
    .venv/bin/python context-synthesizer/compare_compaction.py \
-     --cli-root context-synthesizer/stats/backups/chandresh/projects \
+     --cli-root context-synthesizer/stats/backups/developer-b/projects \
      --session d326033e --turn 23 --run-dreaming --haiku
    ```
 
 2. **Compaction proof on `ed3f3007` turn 5** (Chrome MCP spike):
    ```bash
    .venv/bin/python context-synthesizer/compare_compaction.py \
-     --session ed3f3007 --turn 5 --cli-root context-synthesizer/stats/backups/chandresh/projects
+     --session ed3f3007 --turn 5 --cli-root context-synthesizer/stats/backups/developer-b/projects
    ```
 
 3. **Wait for longer sessions** — this zip may be a snapshot of mostly short tasks; synthesizer wins grow with turn count.
@@ -183,24 +186,24 @@ Models seen: `claude-opus-4-6`, `claude-opus-4-7`, `claude-opus-4-8`, `claude-ha
 cd ~/Out-of-bound-chronicles
 
 bash context-synthesizer/scripts/import_claude_backup.sh \
-  context-synthesizer/claude-sessions.zip --developer chandresh
+  context-synthesizer/claude-sessions.zip --developer developer-b
 
 .venv/bin/python context-synthesizer/analyze_hot_session.py \
-  --cli-root context-synthesizer/stats/backups/chandresh/projects \
-  --session d326033e --export context-synthesizer/stats/chandresh_hot_d326033e.json
+  --cli-root context-synthesizer/stats/backups/developer-b/projects \
+  --session d326033e --export context-synthesizer/stats/developer-b_hot_d326033e.json
 
 .venv/bin/python context-synthesizer/analyze_claude_caching.py \
-  --cli-root context-synthesizer/stats/backups/chandresh/projects
+  --cli-root context-synthesizer/stats/backups/developer-b/projects
 
 .venv/bin/python context-synthesizer/collect_stats.py \
-  --logs context-synthesizer/stats/weekly/2026-06-11_chandresh_claude_backup.jsonl
+  --logs context-synthesizer/stats/weekly/2026-06-11_developer-b_claude_backup.jsonl
 ```
 
 ---
 
 ## See also
 
-- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — meet-chavda vs chandresh vs om
-- [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) — om Org Mgmt session (120 turns)
-- [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) — meet-chavda reference corpus
-- [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — meet-chavda turn 178 deep dive
+- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — developer-a vs developer-b vs developer-c
+- [DEVELOPER_C_CORPUS_REPORT.md](DEVELOPER_C_CORPUS_REPORT.md) — developer-c Org Mgmt session (120 turns)
+- [DEVELOPER_A_CORPUS_REPORT.md](DEVELOPER_A_CORPUS_REPORT.md) — developer-a reference corpus
+- [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — developer-a turn 178 deep dive

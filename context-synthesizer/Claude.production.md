@@ -210,7 +210,7 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 4. [Project Evolution](#4-project-evolution)
 5. [Data Collection Modes](#5-data-collection-modes)
 6. [Proxy Benchmark (12-Turn Simulator)](#6-proxy-benchmark-12-turn-simulator)
-7. [Developer Corpus: meet-chavda](#7-developer-corpus-meet-chavda)
+7. [Developer Corpus: developer-a](#7-developer-corpus-developer-a)
 8. [Native Claude Code Caching Analysis](#8-native-claude-code-caching-analysis)
 9. [Hot Session Deep Dive: ac4ecef7](#9-hot-session-deep-dive-ac4ecef7)
 10. [Cursor Corpus (m-coder)](#10-cursor-corpus-m-coder)
@@ -229,7 +229,7 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 
 The **Context Synthesizer** is an offline R&D toolkit for **smart context compaction**. It imports long IDE sessions (Modes **A**, **C**, **D**), measures native token usage and history bloat, and estimates how much smaller a **four-layer gateway payload** would be. The gateway itself lives in `proxy_tool.py` (implementation target, not used in the team workflow).
 
-**Key finding from real developer data (meet-chavda, 32 sessions, 859 turns):**
+**Key finding from real developer data (developer-a, 32 sessions, 859 turns):**
 
 | Metric | Native Claude Code | Synthesizer opportunity |
 |--------|-------------------|-------------------------|
@@ -397,11 +397,11 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 ---
 
-## 7. Developer Corpus: meet-chavda
+## 7. Developer Corpus: developer-a
 
 **Source:** `context-synthesizer/claude-folder-backup.zip`  
-**Extracted to:** `stats/backups/meet-chavda/.claude/projects/`  
-**Developer:** meet-chavda  
+**Extracted to:** `stats/backups/developer-a/.claude/projects/`  
+**Developer:** developer-a  
 
 ### Corpus summary
 
@@ -427,9 +427,9 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 **Outputs:**
 
-- `stats/meet-chavda_corpus.jsonl` (32 session summaries)
-- `stats/meet-chavda_corpus.csv`
-- `stats/meet-chavda_hot_ac4ecef7.json` (deep dive export)
+- `stats/developer-a_corpus.jsonl` (32 session summaries)
+- `stats/developer-a_corpus.csv`
+- `stats/developer-a_hot_ac4ecef7.json` (deep dive export)
 
 ---
 
@@ -437,7 +437,7 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 Tool: `analyze_claude_caching.py --cli-root <path>`
 
-### Corpus-wide (meet-chavda, 32 sessions)
+### Corpus-wide (developer-a, 32 sessions)
 
 | Metric | Value |
 |--------|------:|
@@ -470,7 +470,7 @@ Claude Code’s compaction is a **built-in slash command** (`/compact`), not a u
 | **Goal** | Avoid `context exceeded` / `prompt_too_long` — **fit in the window**, not optimize cost per turn |
 | **Enforcement** | **Weak by design** — history keeps growing turn-by-turn until pressure mounts |
 
-**Evidence from meet-chavda hot session (415 turns):**
+**Evidence from developer-a hot session (415 turns):**
 
 | Compaction type | Count | Implication |
 |-----------------|------:|-------------|
@@ -775,10 +775,10 @@ Ordered workstream after this report:
 
 | Path | Contents |
 |------|----------|
-| `claude-folder-backup.zip` | meet-chavda backup (source) |
-| `stats/backups/meet-chavda/` | Extracted `~/.claude/projects/` |
-| `stats/meet-chavda_corpus.jsonl` | 32-session corpus |
-| `stats/meet-chavda_hot_ac4ecef7.json` | Hot session export |
+| `claude-folder-backup.zip` | developer-a backup (source) |
+| `stats/backups/developer-a/` | Extracted `~/.claude/projects/` |
+| `stats/developer-a_corpus.jsonl` | 32-session corpus |
+| `stats/developer-a_hot_ac4ecef7.json` | Hot session export |
 
 ### Commands cheat sheet
 
@@ -787,9 +787,9 @@ Ordered workstream after this report:
 .venv/bin/python context-synthesizer/import_cli_logs.py --output stats/baseline.jsonl
 
 # Mode D — Claude Max corpus
-.venv/bin/python context-synthesizer/import_claude_sessions.py --developer meet-chavda --min-turns 25
+.venv/bin/python context-synthesizer/import_claude_sessions.py --developer developer-a --min-turns 25
 .venv/bin/python context-synthesizer/analyze_hot_session.py --source claude --largest
-.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/backups/meet-chavda/.claude/projects
+.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/backups/developer-a/.claude/projects
 
 # Cursor corpus
 .venv/bin/python context-synthesizer/import_cursor_sessions.py --project m-coder --min-turns 25
@@ -817,7 +817,7 @@ Ordered workstream after this report:
 
 ---
 
-*Report generated from engineering sessions, proxy benchmarks, and meet-chavda / m-coder corpus analysis. For questions or updates, extend this file rather than scattering findings across chat logs.*
+*Report generated from engineering sessions, proxy benchmarks, and developer-a / m-coder corpus analysis. For questions or updates, extend this file rather than scattering findings across chat logs.*
 
 <!-- SOURCE: /home/harshil/Out-of-bound-chronicles/context-synthesizer/SYNTHESIZER_RND_REPORT.md sha256:b3999cd507e5 -->
 

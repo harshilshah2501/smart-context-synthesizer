@@ -28,11 +28,11 @@ All project documentation lives here (single `docs/` tree).
 | Doc                                                                                                | Purpose                    |
 | -------------------------------------------------------------------------------------------------- | -------------------------- |
 | [reports/SYNTHESIZER_RND_REPORT.md](reports/SYNTHESIZER_RND_REPORT.md) | Full R&D record, roadmap   |
-| [reports/MEET_CHAVDA_CORPUS_REPORT.md](reports/MEET_CHAVDA_CORPUS_REPORT.md)                       | meet-chavda corpus (32 sessions) |
-| [reports/COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md)                           | meet-chavda turn-178 deep dive |
-| [reports/CHANDRESH_CORPUS_REPORT.md](reports/CHANDRESH_CORPUS_REPORT.md)                           | chandresh corpus test      |
-| [reports/OM_CORPUS_REPORT.md](reports/OM_CORPUS_REPORT.md)                                         | om Org Mgmt session (120 turns) |
-| [reports/CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md)                 | meet-chavda vs chandresh vs om |
+| [reports/DEVELOPER_A_CORPUS_REPORT.md](reports/DEVELOPER_A_CORPUS_REPORT.md)                       | developer-a corpus (32 sessions) |
+| [reports/COMPACTION_PROOF_REPORT.md](reports/COMPACTION_PROOF_REPORT.md)                           | developer-a turn-178 deep dive |
+| [reports/DEVELOPER_B_CORPUS_REPORT.md](reports/DEVELOPER_B_CORPUS_REPORT.md)                           | developer-b corpus test      |
+| [reports/DEVELOPER_C_CORPUS_REPORT.md](reports/DEVELOPER_C_CORPUS_REPORT.md) | developer-c UI session (120 turns) |
+| [reports/CORPUS_COMPARATIVE_ANALYSIS.md](reports/CORPUS_COMPARATIVE_ANALYSIS.md)                 | developer-a vs developer-b vs developer-c |
 | [reports/BENCHMARK_ANALYSIS.md](reports/BENCHMARK_ANALYSIS.md)                                     | Internal proxy benchmark   |
 
 ## Architecture

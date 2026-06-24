@@ -1,7 +1,7 @@
 # Compaction Proof Report — Simple Explanation
 
 **Date:** 2026-06-11  
-**Session studied:** `ac4ecef7` (meet-chavda, CMDB research repo)  
+**Session studied:** `ac4ecef7` (developer-a, CMDB research repo)  
 **Focus turn:** **178** (largest context spike in the session)  
 **Tools used:** `analyze_hot_session.py`, `analyze_claude_caching.py`, `compare_compaction.py` (Dreaming v4 + Haiku)
 
@@ -289,12 +289,12 @@ cd ~/Out-of-bound-chronicles
 # 1. Hot session overview
 .venv/bin/python context-synthesizer/analyze_hot_session.py \
   --source claude --largest \
-  --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \
   --export context-synthesizer/stats/hot_review.json
 
 # 2. Native caching
 .venv/bin/python context-synthesizer/analyze_claude_caching.py \
-  --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects
+  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects
 
 # 3. Compaction proof (offline — preprocessing only)
 .venv/bin/python context-synthesizer/compare_compaction.py \
@@ -336,9 +336,9 @@ export ANTHROPIC_API_KEY=...
 
 | Doc | Purpose |
 |-----|---------|
-| [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) | meet-chavda vs chandresh vs om (Phase 2 validation) |
+| [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) | developer-a vs developer-b vs developer-c (Phase 2 validation) |
 | [SYNTHESIZER_RND_REPORT.md](SYNTHESIZER_RND_REPORT.md) | Full R&D record |
 | [DEPLOY.md](../guides/DEPLOY.md) | Weekly export playbook (monitoring, not initial proof) |
 | [README.md](../../context-synthesizer/README.md) | Toolkit overview |
-| [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) | Full meet-chavda corpus (32 sessions) |
-| [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) | om turn-100 proof (99.5%) |
+| [DEVELOPER_A_CORPUS_REPORT.md](DEVELOPER_A_CORPUS_REPORT.md) | Full developer-a corpus (32 sessions) |
+| [DEVELOPER_C_CORPUS_REPORT.md](DEVELOPER_C_CORPUS_REPORT.md) | developer-c turn-100 proof (99.5%) |

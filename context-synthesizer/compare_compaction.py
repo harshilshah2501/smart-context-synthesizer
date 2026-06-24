@@ -10,7 +10,7 @@ Replays a Claude CLI transcript up to --turn (default 178 on ac4ecef7), then sho
 
 Usage:
     .venv/bin/python context-synthesizer/compare_compaction.py \\
-        --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \\
+        --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \\
         --session ac4ecef7 --turn 178
 
     export ANTHROPIC_API_KEY=...

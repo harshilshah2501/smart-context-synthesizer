@@ -14,9 +14,9 @@ We’re rolling out the **Context Synthesizer** PoC. It routes **Claude Code** t
 
 ### Get the package
 
-1. Open the SharePoint folder: [Context-Synthesizer](https://motadataindia-my.sharepoint.com/:f:/g/personal/harshil_shah_motadata_com/IgBhQlYbLSLgRa2PO0LB8JoNAUkR135NoV-Nc2ssPJnwgmM?e=LvMdib)
+1. Open the SharePoint folder: [Context-Synthesizer](https://your-org.sharepoint.com/sites/Context-Synthesizer)
 2. Click **Sync** in OneDrive so it appears locally, e.g.  
-   `OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.16`  
+   `YourSharedDrive/Context-Synthesizer/context-synthesizer-toolkit-2026.06.16`  
    *(Ubuntu without the Windows OneDrive app: download the `.tar.gz` from SharePoint and extract it.)*
 
 ### Prerequisites (once per machine)
@@ -48,7 +48,7 @@ Use your **Azure email local-part** as the ID (e.g. `harshil.shah` for `harshil.
 Example:
 
 ```bash
-cd "$HOME/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-2026.06.16"
+cd "$HOME/YourSharedDrive/Context-Synthesizer/context-synthesizer-toolkit-2026.06.16"
 bash run-setup.sh harshil.shah
 ```
 

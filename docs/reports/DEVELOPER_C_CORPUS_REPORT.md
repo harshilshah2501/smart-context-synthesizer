@@ -1,17 +1,20 @@
-# Om Corpus Report — Org Management prototype session
+# Developer C Corpus Report — UI prototype session
+
+> **Anonymized corpus:** Developer handles (developer-a/b/c) replace real identities from a private study. Session IDs and aggregate metrics are preserved; no raw exports are in this repository.
+
 
 **Date:** 2026-06-12  
 **Source:** `dcb92020-2f81-447f-8ace-a90d43b8793e.jsonl` (repo root export)  
-**Developer:** om (om-vekariya)  
-**Project:** Org Management UI (`~/Downloads/Org Mgmt`) — React/JSX MSP org-management prototype from Anthropic design + PRD
+**Developer:** developer-c  
+**Project:** React/JSX UI prototype (anonymized workspace path)
 
 ---
 
 ## Executive summary
 
-Om’s corpus is a **single long session** (120 turns) — a middle ground between meet-chavda’s marathon (415 turns) and chandresh’s short-session zip (max 28 turns).
+Developer C's corpus is a **single long session** (120 turns) — a middle ground between developer-a’s marathon (415 turns) and developer-b’s short-session zip (max 28 turns).
 
-| | meet-chavda | chandresh | **Om (this session)** |
+| | developer-a | developer-b | **Developer C (this session)** |
 |--|-------------|-----------|------------------------|
 | Sessions | 32 | 99 | **1** |
 | Longest session | 415 turns | 28 turns | **120 turns** |
@@ -20,7 +23,7 @@ Om’s corpus is a **single long session** (120 turns) — a middle ground betwe
 | Tool profile | Bash + Edit | Read + Edit + Java | **Edit-heavy UI** (51%) |
 | Best turn-level proof | turn 178: **99.5%** | turn 23: **95.2%** | turn 100: **99.5%** |
 
-**Plain English:** Om built a large React prototype over 120 turns with heavy file editing and re-reads. Claude already caches ~99.8% of input on the last turn, but a **counterfactual full transcript** would be ~347K tokens vs ~32K synthesizer-shaped — and at spike turns the savings hit **~99%**.
+**Plain English:** Developer C built a large React prototype over 120 turns with heavy file editing and re-reads. Claude already caches ~99.8% of input on the last turn, but a **counterfactual full transcript** would be ~347K tokens vs ~32K synthesizer-shaped — and at spike turns the savings hit **~99%**.
 
 ---
 
@@ -29,14 +32,14 @@ Om’s corpus is a **single long session** (120 turns) — a middle ground betwe
 This corpus arrived as one transcript file (not a zip). Place it under the standard backup layout, then import Mode D:
 
 ```bash
-mkdir -p context-synthesizer/stats/backups/om/.claude/projects/-home-om-vekariya-Downloads-Org-Mgmt
+mkdir -p context-synthesizer/stats/backups/developer-c/.claude/projects/-home-developer-c-Downloads-Org-Mgmt
 cp dcb92020-2f81-447f-8ace-a90d43b8793e.jsonl \
-  context-synthesizer/stats/backups/om/.claude/projects/-home-om-vekariya-Downloads-Org-Mgmt/
+  context-synthesizer/stats/backups/developer-c/.claude/projects/-home-developer-c-Downloads-Org-Mgmt/
 
 cd context-synthesizer
 ../.venv/bin/python import_claude_sessions.py \
-  --cli-root stats/backups/om/.claude/projects \
-  --developer om --min-turns 1 \
+  --cli-root stats/backups/developer-c/.claude/projects \
+  --developer developer-c --min-turns 1 \
   --output stats/weekly/2026-06-12_om_claude_backup.jsonl \
   --export stats/weekly/2026-06-12_om_claude_backup.csv
 ```
@@ -45,7 +48,7 @@ cd context-synthesizer
 
 | File | Description |
 |------|-------------|
-| `stats/backups/om/.claude/projects/.../dcb92020....jsonl` | Session transcript |
+| `stats/backups/developer-c/.claude/projects/.../dcb92020....jsonl` | Session transcript |
 | `stats/weekly/2026-06-12_om_claude_backup.jsonl` | Mode D corpus (1 row) |
 | `stats/om_hot_dcb92020.json` | Hot session deep dive |
 
@@ -106,7 +109,7 @@ Synthesizer-shaped context stays mostly flat; naive history climbs steadily afte
 | `data.js` | 12 | Mock data — single canonical version in ledger |
 | `OrgDetail.jsx` | 12 | Tab shell — dedupe reads |
 
-Same failure mode as meet-chavda (`Admin.tsx` 21×): iterative UI work re-injects file bodies into history.
+Same failure mode as developer-a (`Admin.tsx` 21×): iterative UI work re-injects file bodies into history.
 
 ---
 
@@ -119,19 +122,19 @@ Same failure mode as meet-chavda (`Admin.tsx` 21×): iterative UI work re-inject
 | Read | 19.0% | Dedupe by path |
 | TaskCreate / TaskUpdate | 6.9% | Summarize task list in ledger |
 
-Om is **Edit-dominant** (UI prototype) vs meet-chavda’s **Bash-dominant** CMDB research session.
+Developer C is **Edit-dominant** (UI prototype) vs developer-a’s **Bash-dominant** CMDB research session.
 
 ---
 
 ## Native caching
 
-| Signal | Om | meet-chavda (compare) |
+| Signal | Developer C | developer-a (compare) |
 |--------|-----|------------------------|
 | Assistant msgs with cache_read | **99.9%** | 99.2% |
 | User turns with cache_read | **94.2%** | 89.8% |
 | Turns with no cache signal | **5.8%** | 9.8% |
 
-Turns 3–7 show **no cache** (early session churn before turn-8 spike). After turn 8, cache_read climbs to 99%+ — same pattern as meet-chavda: caching works, but **history shape** still matters for counterfactual payload size and cache-write events on growth.
+Turns 3–7 show **no cache** (early session churn before turn-8 spike). After turn 8, cache_read climbs to 99%+ — same pattern as developer-a: caching works, but **history shape** still matters for counterfactual payload size and cache-write events on growth.
 
 ---
 
@@ -152,7 +155,7 @@ Optional Haiku ledger replay:
 
 ```bash
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/om/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-c/.claude/projects \
   --session dcb92020 --turn 100 --run-dreaming --haiku
 ```
 
@@ -170,7 +173,7 @@ On a 120-turn UI sprint, native compact ran **once** while history counterfactua
 
 ---
 
-## How the synthesizer helps Om specifically
+## How the synthesizer helps Developer C specifically
 
 1. **Turn-8 burst** — 68 tools in one user turn (mass PRD fixes). Without compaction, a single turn can add ~53K tokens; preprocessing collapses the sliding window to **<1K**.
 2. **Tab iteration** — 33× `SettingsTab.jsx` reads. Ledger holds one latest state instead of replaying edits in history.
@@ -185,14 +188,14 @@ On a 120-turn UI sprint, native compact ran **once** while history counterfactua
 cd ~/Out-of-bound-chronicles/context-synthesizer
 
 ../.venv/bin/python analyze_hot_session.py \
-  --source claude --cli-root stats/backups/om/.claude/projects \
+  --source claude --cli-root stats/backups/developer-c/.claude/projects \
   --session dcb92020 --export stats/om_hot_dcb92020.json
 
 ../.venv/bin/python analyze_claude_caching.py \
-  --cli-root stats/backups/om/.claude/projects
+  --cli-root stats/backups/developer-c/.claude/projects
 
 ../.venv/bin/python compare_compaction.py \
-  --cli-root stats/backups/om/.claude/projects \
+  --cli-root stats/backups/developer-c/.claude/projects \
   --session dcb92020 --turn 100
 ```
 
@@ -200,7 +203,7 @@ cd ~/Out-of-bound-chronicles/context-synthesizer
 
 ## See also
 
-- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — meet-chavda vs chandresh vs Om
-- [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) — meet-chavda reference corpus
-- [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — meet-chavda turn 178 deep dive
-- [CHANDRESH_CORPUS_REPORT.md](CHANDRESH_CORPUS_REPORT.md) — chandresh zip corpus
+- [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md) — developer-a vs developer-b vs developer-c
+- [DEVELOPER_A_CORPUS_REPORT.md](DEVELOPER_A_CORPUS_REPORT.md) — developer-a reference corpus
+- [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) — developer-a turn 178 deep dive
+- [DEVELOPER_B_CORPUS_REPORT.md](DEVELOPER_B_CORPUS_REPORT.md) — developer-b zip corpus

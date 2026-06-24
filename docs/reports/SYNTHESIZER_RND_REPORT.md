@@ -1,6 +1,6 @@
 # Context Synthesizer — R&D Report
 
-> **Rollout doc:** This report is the R&D record. For Motadata team install (live proxy, dashboard, SharePoint), use **[DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md)** and **[TEAM_ANNOUNCEMENT.md](../guides/TEAM_ANNOUNCEMENT.md)**.
+> **Rollout doc:** This report is the R&D record. For team install (live proxy, dashboard, SharePoint), use **[DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md)** and **[TEAM_ANNOUNCEMENT.md](../guides/TEAM_ANNOUNCEMENT.md)**.
 
 **Date:** 2026-06-10 (updated 2026-06-16)  
 **Status:** Phase 1–3 complete — live proxy + dashboard + SharePoint deploy live  
@@ -29,7 +29,7 @@ This document captures the full arc of the Context Synthesizer project: goals, a
 4. [Project Evolution](#4-project-evolution)
 5. [Data Collection Modes](#5-data-collection-modes)
 6. [Proxy Benchmark (12-Turn Simulator)](#6-proxy-benchmark-12-turn-simulator)
-7. [Developer Corpus: meet-chavda](#7-developer-corpus-meet-chavda)
+7. [Developer Corpus: developer-a](#7-developer-corpus-developer-a)
 8. [Native Claude Code Caching Analysis](#8-native-claude-code-caching-analysis)
 9. [Hot Session Deep Dive: ac4ecef7](#9-hot-session-deep-dive-ac4ecef7)
 10. [Cursor Corpus (m-coder)](#10-cursor-corpus-m-coder)
@@ -50,7 +50,7 @@ The **Context Synthesizer** is a toolkit for **smart context compaction**. It sh
 
 **Key finding from real developer data (three corpora — see [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md)):**
 
-meet-chavda (32 sessions, 859 turns):
+developer-a (32 sessions, 859 turns):
 
 | Metric                              | Native Claude Code               | Synthesizer opportunity                                           |
 | ----------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
@@ -62,7 +62,7 @@ meet-chavda (32 sessions, 859 turns):
 
 **Bottom line:** Claude Code already caches brilliantly. Our value is as a **history architect**—shrinking and stabilizing what gets cached—not as a caching enabler.
 
-**Team workflow (Motadata rollout):** SharePoint package → `bash run-setup.sh firstname.lastname` → live compaction proxy (default) + optional Monday corpus export. No git, no per-dev API key. See [DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md).
+**Team workflow (team rollout):** SharePoint package → `bash run-setup.sh firstname.lastname` → live compaction proxy (default) + optional Monday corpus export. No git, no per-dev API key. See [DEVELOPER_ONBOARDING.md](../guides/DEVELOPER_ONBOARDING.md).
 
 **Offline R&D workflow:** Mode **D** (Claude Max), **Mode C** (Cursor), or **Mode A** (Claude Code import) — see [Usage.md](../guides/Usage.md).
 
@@ -220,11 +220,11 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 ---
 
-## 7. Developer Corpus: meet-chavda
+## 7. Developer Corpus: developer-a
 
 **Source:** `context-synthesizer/claude-folder-backup.zip`  
-**Extracted to:** `stats/backups/meet-chavda/.claude/projects/`  
-**Developer:** meet-chavda  
+**Extracted to:** `stats/backups/developer-a/.claude/projects/`  
+**Developer:** developer-a  
 
 ### Corpus summary
 
@@ -250,17 +250,17 @@ Full turn-by-turn narrative: [BENCHMARK_ANALYSIS.md](BENCHMARK_ANALYSIS.md).
 
 **Outputs:**
 
-- `stats/meet-chavda_corpus.jsonl` (32 session summaries)
-- `stats/meet-chavda_corpus.csv`
-- `stats/meet-chavda_hot_ac4ecef7.json` (deep dive export)
+- `stats/developer-a_corpus.jsonl` (32 session summaries)
+- `stats/developer-a_corpus.csv`
+- `stats/developer-a_hot_ac4ecef7.json` (deep dive export)
 
 ### Per-developer corpus reports
 
 | Developer | Report | Hot session | Turns | Compression | Spike-turn proof |
 |-----------|--------|-------------|------:|------------:|-----------------:|
-| meet-chavda | [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) | `ac4ecef7` | 415 | 97.5% | turn 178: **99.5%** |
-| chandresh | [CHANDRESH_CORPUS_REPORT.md](CHANDRESH_CORPUS_REPORT.md) | `d326033e` | 28 | 68.9% | turn 23: **95.2%** |
-| om | [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) | `dcb92020` | 120 | 90.9% | turn 100: **99.5%** |
+| developer-a | [DEVELOPER_A_CORPUS_REPORT.md](DEVELOPER_A_CORPUS_REPORT.md) | `ac4ecef7` | 415 | 97.5% | turn 178: **99.5%** |
+| developer-b | [DEVELOPER_B_CORPUS_REPORT.md](DEVELOPER_B_CORPUS_REPORT.md) | `d326033e` | 28 | 68.9% | turn 23: **95.2%** |
+| developer-c | [DEVELOPER_C_CORPUS_REPORT.md](DEVELOPER_C_CORPUS_REPORT.md) | `dcb92020` | 120 | 90.9% | turn 100: **99.5%** |
 
 Full three-way comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md).
 
@@ -270,7 +270,7 @@ Full three-way comparison: [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_A
 
 Tool: `analyze_claude_caching.py --cli-root <path>`
 
-### Corpus-wide (meet-chavda, 32 sessions)
+### Corpus-wide (developer-a, 32 sessions)
 
 | Metric                                | Value                     |
 | ------------------------------------- | -------------------------:|
@@ -303,7 +303,7 @@ Claude Code’s compaction is a **built-in slash command** (`/compact`), not a u
 | **Goal**           | Avoid `context exceeded` / `prompt_too_long` — **fit in the window**, not optimize cost per turn                                     |
 | **Enforcement**    | **Weak by design** — history keeps growing turn-by-turn until pressure mounts                                                        |
 
-**Evidence from meet-chavda hot session (415 turns):**
+**Evidence from developer-a hot session (415 turns):**
 
 | Compaction type                                  | Count           | Implication                                         |
 | ------------------------------------------------ | ---------------:| --------------------------------------------------- |
@@ -532,7 +532,7 @@ Always verify: `total_input = input_tokens + cache_read_input_tokens + cache_cre
 | `scripts/import_claude_backup.sh`        | One-command unzip + import pipeline           |
 | `scripts/weekly_sync.sh`                 | Developer weekly export + upload              |
 | `scripts/team_rollup.sh`                 | Team lead aggregation                         |
-| `DEPLOY.md` + `DEVELOPER_ONBOARDING.md`  | Motadata rollout guides                       |
+| `DEPLOY.md` + `DEVELOPER_ONBOARDING.md`  | team rollout guides                       |
 
 ### Planned (pre-production)
 
@@ -556,7 +556,7 @@ Ordered workstream after this report:
 
 ### Phase 2 — Test (corpus-first) *(done — see [CORPUS_COMPARATIVE_ANALYSIS.md](CORPUS_COMPARATIVE_ANALYSIS.md); re-run via `run_phase2_validation.py`)*
 
-1. ~~`import_claude_sessions.py` on team backups~~ — **0 regression drift** vs `meet-chavda_corpus.jsonl`.
+1. ~~`import_claude_sessions.py` on team backups~~ — **0 regression drift** vs `developer-a_corpus.jsonl`.
 2. ~~`analyze_hot_session.py` on 100+ turn sessions~~ — Claude `ac4ecef7` 97.5%; Cursor 6/8 ≥90%.
 3. ~~`analyze_claude_caching.py`~~ — **99.2%** assistant-msg cache_read; hot session **99.3%**.
 4. ~~`collect_stats.py` corpus insights~~ — 40 sessions; 100+ turn avg save **93.5%**.
@@ -619,10 +619,10 @@ Ordered workstream after this report:
 
 | Path                                  | Contents                        |
 | ------------------------------------- | ------------------------------- |
-| `claude-folder-backup.zip`            | meet-chavda backup (source)     |
-| `stats/backups/meet-chavda/`                   | Extracted `~/.claude/projects/` |
-| `stats/meet-chavda_corpus.jsonl`      | 32-session corpus               |
-| `stats/meet-chavda_hot_ac4ecef7.json` | Hot session export              |
+| `claude-folder-backup.zip`            | developer-a backup (source)     |
+| `stats/backups/developer-a/`                   | Extracted `~/.claude/projects/` |
+| `stats/developer-a_corpus.jsonl`      | 32-session corpus               |
+| `stats/developer-a_hot_ac4ecef7.json` | Hot session export              |
 
 ### Commands cheat sheet
 
@@ -631,9 +631,9 @@ Ordered workstream after this report:
 .venv/bin/python context-synthesizer/import_cli_logs.py --output stats/baseline.jsonl
 
 # Mode D — Claude Max corpus
-.venv/bin/python context-synthesizer/import_claude_sessions.py --developer meet-chavda --min-turns 25
+.venv/bin/python context-synthesizer/import_claude_sessions.py --developer developer-a --min-turns 25
 .venv/bin/python context-synthesizer/analyze_hot_session.py --source claude --largest
-.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/backups/meet-chavda/.claude/projects
+.venv/bin/python context-synthesizer/analyze_claude_caching.py --cli-root stats/backups/developer-a/.claude/projects
 
 # Cursor corpus
 .venv/bin/python context-synthesizer/import_cursor_sessions.py --project m-coder --min-turns 25
@@ -661,4 +661,4 @@ Ordered workstream after this report:
 
 ---
 
-*Report generated from engineering sessions, proxy benchmarks, and meet-chavda / m-coder corpus analysis. For questions or updates, extend this file rather than scattering findings across chat logs.*
+*Report generated from engineering sessions, proxy benchmarks, and developer-a / m-coder corpus analysis. For questions or updates, extend this file rather than scattering findings across chat logs.*

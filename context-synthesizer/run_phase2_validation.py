@@ -7,8 +7,8 @@ checks success criteria from SYNTHESIZER_RND_REPORT.md §16.
 
 Usage:
     .venv/bin/python context-synthesizer/run_phase2_validation.py \\
-        --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \\
-        --developer meet-chavda
+        --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \\
+        --developer developer-a
 
     .venv/bin/python context-synthesizer/run_phase2_validation.py \\
         --cursor-project m-coder --skip-claude
@@ -342,15 +342,15 @@ def main() -> int:
     parser.add_argument(
         "--cli-root",
         type=Path,
-        default=ROOT / "stats" / "backups" / "meet-chavda" / ".claude" / "projects",
+        default=ROOT / "stats" / "backups" / "developer-a" / ".claude" / "projects",
     )
     parser.add_argument("--cursor-project", default="m-coder")
-    parser.add_argument("--developer", default="meet-chavda")
+    parser.add_argument("--developer", default="developer-a")
     parser.add_argument("--stats-dir", type=Path, default=ROOT / "stats")
     parser.add_argument(
         "--baseline-corpus",
         type=Path,
-        default=ROOT / "stats" / "meet-chavda_corpus.jsonl",
+        default=ROOT / "stats" / "developer-a_corpus.jsonl",
         help="Prior corpus for regression compare (0 drift expected)",
     )
     parser.add_argument("--skip-claude", action="store_true")

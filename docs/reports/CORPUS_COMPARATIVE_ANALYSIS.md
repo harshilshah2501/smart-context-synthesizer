@@ -1,7 +1,7 @@
 # Corpus Comparative Analysis — Three Developers
 
 **Date:** 2026-06-12  
-**Corpora:** meet-chavda · chandresh · om  
+**Corpora:** developer-a · developer-b · developer-c  
 **Question:** Where does the context synthesizer help, and how much — across different developer session shapes?
 
 ---
@@ -10,23 +10,23 @@
 
 | Developer | Corpus shape | Longest session | Session compression | Best turn proof | Primary waste pattern |
 |-----------|----------------|----------------:|--------------------:|----------------:|------------------------|
-| **meet-chavda** | 32 sessions, CMDB research | **415** turns | **97.5%** | turn 178: **99.5%** | Bash logs + PNG screenshots |
-| **chandresh** | 99 sessions, Java/NR | **28** turns | **68.9%** | turn 23: **95.2%** | Java file re-reads + tool spikes |
-| **om** | 1 session, React Org Mgmt UI | **120** turns | **90.9%** | turn 100: **99.5%** | Edit loops + tab file re-reads |
+| **developer-a** | 32 sessions, CMDB research | **415** turns | **97.5%** | turn 178: **99.5%** | Bash logs + PNG screenshots |
+| **developer-b** | 99 sessions, Java/NR | **28** turns | **68.9%** | turn 23: **95.2%** | Java file re-reads + tool spikes |
+| **developer-c** | 1 session, React Org Mgmt UI | **120** turns | **90.9%** | turn 100: **99.5%** | Edit loops + tab file re-reads |
 
 **Unified conclusion:** The synthesizer is a **history architect**, not a caching enabler. All three corpora show **high native cache_read** on long sessions (94–99%), yet counterfactual naive transcripts still grow to **100K–900K+ tokens**. Dreaming v4 + four-layer payload keeps shaped context in the **~2K–32K** range at spike turns.
 
 **Who benefits most (live proxy pilot order):**
 
-1. **meet-chavda** — extreme length, proven 415-turn session  
-2. **om** — 120-turn UI sprint, 99.5% at turn 100, Edit-heavy  
-3. **chandresh** — valuable on longest Java sessions; corpus is mostly short tasks
+1. **developer-a** — extreme length, proven 415-turn session  
+2. **developer-c** — 120-turn UI sprint, 99.5% at turn 100, Edit-heavy  
+3. **developer-b** — valuable on longest Java sessions; corpus is mostly short tasks
 
 ---
 
 ## Corpus at a glance
 
-| Metric | meet-chavda | chandresh | om |
+| Metric | developer-a | developer-b | developer-c |
 |--------|------------:|----------:|---:|
 | Sessions | 32 | 99 | 1 |
 | Total user turns | 859 | 637 | 120 |
@@ -48,22 +48,22 @@
 ## Session shape archetypes
 
 ```text
-meet-chavda (ac4ecef7)     ████████████████████████████████████████  415 turns  marathon
-om (dcb92020)              ████████████                              120 turns  sprint
-chandresh (d326033e)       ███                                        28 turns  burst
+developer-a (ac4ecef7)     ████████████████████████████████████████  415 turns  marathon
+developer-c (dcb92020)              ████████████                              120 turns  sprint
+developer-b (d326033e)       ███                                        28 turns  burst
 ```
 
 | Archetype | Example | Synthesizer value driver |
 |-----------|---------|--------------------------|
-| **Marathon** | meet-chavda | Steady naive growth; compaction every ~10 turns essential |
-| **Sprint** | om | Early mega-spike (turn 8, 68 tools) + sustained tab iteration |
-| **Burst** | chandresh | Single-session spikes; lower session-level % on short corpora |
+| **Marathon** | developer-a | Steady naive growth; compaction every ~10 turns essential |
+| **Sprint** | developer-c | Early mega-spike (turn 8, 68 tools) + sustained tab iteration |
+| **Burst** | developer-b | Single-session spikes; lower session-level % on short corpora |
 
 ---
 
 ## Tool mix comparison (hot sessions)
 
-| Tool | meet-chavda | chandresh (`d326033e`) | om |
+| Tool | developer-a | developer-b (`d326033e`) | developer-c |
 |------|------------:|----------------------:|---:|
 | Bash | **39.7%** | 17% | 21.4% |
 | Edit | 33.5% | 18% | **50.7%** |
@@ -74,9 +74,9 @@ chandresh (d326033e)       ███                                        28 t
 
 | Pattern | Rule | Strongest in |
 |---------|------|--------------|
-| Terminal / pipeline output | Bash collapse | meet-chavda |
-| Repeated file reads | Read dedupe → ledger | chandresh, om |
-| Iterative JSX/TS edits | Latest edit per file | om, meet-chavda |
+| Terminal / pipeline output | Bash collapse | developer-a |
+| Repeated file reads | Read dedupe → ledger | developer-b, developer-c |
+| Iterative JSX/TS edits | Latest edit per file | developer-c, developer-a |
 
 ---
 
@@ -84,9 +84,9 @@ chandresh (d326033e)       ███                                        28 t
 
 | Developer | Top re-read | Count | Synthesizer action |
 |-----------|-------------|------:|--------------------|
-| meet-chavda | `Admin.tsx` | 21× | Ledger: latest component state |
-| chandresh | `SingleSignOnUtil.java` | 15× | Ledger: latest SSO util snippet |
-| om | `SettingsTab.jsx` | 33× | Ledger: latest settings tab |
+| developer-a | `Admin.tsx` | 21× | Ledger: latest component state |
+| developer-b | `SingleSignOnUtil.java` | 15× | Ledger: latest SSO util snippet |
+| developer-c | `SettingsTab.jsx` | 33× | Ledger: latest settings tab |
 
 All three show the same underlying problem: **the IDE appends full file bodies on every Read/Edit cycle**. The ledger replaces N copies with one.
 
@@ -98,9 +98,9 @@ Offline `compare_compaction.py` at each corpus’s worst spike turn:
 
 | Developer | Session | Spike turn | Tools @ turn | Naive tokens | Synth-shaped | Reduction |
 |-----------|---------|------------|-------------:|-------------:|-------------:|----------:|
-| meet-chavda | `ac4ecef7` | 178 | 40 | ~725,000 | ~3,800 | **99.5%** |
-| chandresh | `d326033e` | 23 | 40 | ~126,789 | ~6,098 | **95.2%** |
-| om | `dcb92020` | 100 | 58 | ~516,436 | ~2,748 | **99.5%** |
+| developer-a | `ac4ecef7` | 178 | 40 | ~725,000 | ~3,800 | **99.5%** |
+| developer-b | `d326033e` | 23 | 40 | ~126,789 | ~6,098 | **95.2%** |
+| developer-c | `dcb92020` | 100 | 58 | ~516,436 | ~2,748 | **99.5%** |
 
 **Insight:** Turn-level savings converge to **~95–99.5%** whenever a spike turn stacks dozens of tool results — regardless of whether the session is 28 or 415 turns total. Session-level compression % is lower on short corpora because overhead dominates early turns.
 
@@ -108,7 +108,7 @@ Offline `compare_compaction.py` at each corpus’s worst spike turn:
 
 ## Native caching vs synthesizer (all three)
 
-| Signal | meet-chavda | chandresh | om |
+| Signal | developer-a | developer-b | developer-c |
 |--------|------------:|----------:|---:|
 | Assistant-level cache_read | 99.2% | 97.0% | 99.9% |
 | Turn-level cache_read | ~90% | ~47% | 94.2% |
@@ -127,29 +127,29 @@ Claude Code already achieves excellent cache hit rates on long sessions. The syn
 
 | Developer | Hot turns | Native auto-compact | Synth @ turn 10 |
 |-----------|----------:|--------------------:|----------------:|
-| meet-chavda | 415 | 3 | ~41 |
-| chandresh | 28 | 1 | 2 |
-| om | 120 | 1 | 12 |
+| developer-a | 415 | 3 | ~41 |
+| developer-b | 28 | 1 | 2 |
+| developer-c | 120 | 1 | 12 |
 
-Native compaction is **reactive** (user `/compact` or near limit). Synthesizer is **proactive** — critical for om’s turn-8 burst before any auto-compact would fire.
+Native compaction is **reactive** (user `/compact` or near limit). Synthesizer is **proactive** — critical for developer-c’s turn-8 burst before any auto-compact would fire.
 
 ---
 
 ## Recommendations by developer profile
 
-### meet-chavda — marathon researcher
+### developer-a — marathon researcher
 
 - **Pilot:** proxy on longest CMDB sessions first  
 - **Tune:** Bash collapse + image/base64 dump stripping (turn 178 pattern)  
 - **Metric:** turn 178 naive vs synth as regression gate  
 
-### chandresh — many short Java tasks
+### developer-b — many short Java tasks
 
 - **Collect:** wait for or encourage longer sessions (25+ turns) for stronger session-level %  
 - **Tune:** Read dedupe on utility classes (`*Util.java`)  
 - **Metric:** turn 23 spike on `d326033e` as Java-session template  
 
-### om — UI prototype sprint
+### developer-c — UI prototype sprint
 
 - **Pilot:** strong candidate — 120 turns, 99.5% at turn 100, Opus 4.7  
 - **Tune:** Edit-heavy ledger rules; `*Tab.jsx` dedupe  
@@ -163,21 +163,21 @@ Native compaction is **reactive** (user `/compact` or near limit). Synthesizer i
 |------|--------|
 | 1 | All three developers run weekly `export_weekly_corpus.sh --mode d` |
 | 2 | Lead runs `team_rollup.sh` — compare compression distributions |
-| 3 | Proxy pilots: **meet-chavda** + **om** first (long sessions) |
+| 3 | Proxy pilots: **developer-a** + **developer-c** first (long sessions) |
 | 4 | Regression: `compare_compaction.py` on each corpus’s spike turn after `compaction.py` changes |
 
 ```bash
 # Spike-turn regression suite (offline, no API key)
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/meet-chavda/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-a/.claude/projects \
   --session ac4ecef7 --turn 178
 
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/chandresh/projects \
+  --cli-root context-synthesizer/stats/backups/developer-b/projects \
   --session d326033e --turn 23
 
 .venv/bin/python context-synthesizer/compare_compaction.py \
-  --cli-root context-synthesizer/stats/backups/om/.claude/projects \
+  --cli-root context-synthesizer/stats/backups/developer-c/.claude/projects \
   --session dcb92020 --turn 100
 ```
 
@@ -187,9 +187,9 @@ Native compaction is **reactive** (user `/compact` or near limit). Synthesizer i
 
 | Developer | Detail report |
 |-----------|---------------|
-| meet-chavda | [MEET_CHAVDA_CORPUS_REPORT.md](MEET_CHAVDA_CORPUS_REPORT.md) · [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) (turn 178) |
-| chandresh | [CHANDRESH_CORPUS_REPORT.md](CHANDRESH_CORPUS_REPORT.md) |
-| om | [OM_CORPUS_REPORT.md](OM_CORPUS_REPORT.md) |
+| developer-a | [DEVELOPER_A_CORPUS_REPORT.md](DEVELOPER_A_CORPUS_REPORT.md) · [COMPACTION_PROOF_REPORT.md](COMPACTION_PROOF_REPORT.md) (turn 178) |
+| developer-b | [DEVELOPER_B_CORPUS_REPORT.md](DEVELOPER_B_CORPUS_REPORT.md) |
+| developer-c | [DEVELOPER_C_CORPUS_REPORT.md](DEVELOPER_C_CORPUS_REPORT.md) |
 
 ---
 

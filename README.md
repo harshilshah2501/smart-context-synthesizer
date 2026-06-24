@@ -96,4 +96,4 @@ Before publishing or sharing forks, read [docs/guides/PUBLIC_RELEASE.md](docs/gu
 
 ## License
 
-MIT (see LICENSE if present) · Issues: [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer)
+MIT — see [LICENSE](LICENSE). · Issues: [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer)
