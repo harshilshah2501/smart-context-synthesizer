@@ -15,7 +15,7 @@ export PATH="$HOME/.local/bin:$PATH"
 ### First install (from git)
 
 ```bash
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh firstname.lastname
 ```

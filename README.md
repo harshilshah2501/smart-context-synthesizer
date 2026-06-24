@@ -2,7 +2,7 @@
 
 A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
 
-**Public branch** — proxy + dashboard only. No corpus reports or team deployment tooling.
+Open-source release — proxy + dashboard only. Internal team tooling lives in a separate private repository.
 
 **Docs:** [docs/README.md](docs/README.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
@@ -11,7 +11,7 @@ A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. 
 ## Quick start
 
 ```bash
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh your.handle
 ```
@@ -19,7 +19,7 @@ bash install.sh your.handle
 Or one-liner:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/public/install.sh | bash -s -- your.handle
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- your.handle
 ```
 
 Then:
@@ -86,12 +86,12 @@ Full reference: [docs/guides/CSYNTH_QUICK_REFERENCE.md](docs/guides/CSYNTH_QUICK
 
 ---
 
-## Branches
+## Repositories
 
-| Branch | Purpose |
-|--------|---------|
-| **`public`** | Open-source release — proxy product only |
-| **`main`** | Full internal toolkit (team deploy, corpus tooling) |
+| Repository | Visibility | Contents |
+|------------|------------|----------|
+| [smart-context-synthesizer](https://github.com/harshilshah2501/smart-context-synthesizer) | **Public** | Proxy product, install, user docs |
+| `smart-context-synthesizer-internal` | **Private** | Team deploy, corpus tooling, internal reports |
 
 ---
 

@@ -34,8 +34,8 @@ One-page map: **which doc to open**, **which command to run**.
 ### Install & daily use
 
 ```bash
-# From git (public branch)
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+# From git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh firstname.lastname
 

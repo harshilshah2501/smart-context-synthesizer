@@ -16,10 +16,10 @@ Local proxy + compaction layer for **Claude Code** and **Cursor**.
 
 ## Install
 
-**From git (`public` branch):**
+**From git:**
 
 ```bash
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh your.handle
 ```

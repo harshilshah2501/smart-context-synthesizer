@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Context Synthesizer — one-file installer (no git required).
 #
-#   curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/public/install.sh | bash -s -- your.handle
+#   curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- your.handle
 #
 # Or from a release tarball:
 #   bash install.sh your.handle
@@ -11,7 +11,7 @@ set -euo pipefail
 
 DEFAULT_INSTALL_DIR="${HOME}/.local/share/context-synthesizer"
 DEFAULT_GITHUB_REPO="${SYNTH_GITHUB_REPO:-harshilshah2501/smart-context-synthesizer}"
-DEFAULT_BRANCH="${SYNTH_GITHUB_BRANCH:-public}"
+DEFAULT_BRANCH="${SYNTH_GITHUB_BRANCH:-main}"
 
 INSTALL_DIR=""
 TARBALL_FILE=""
@@ -35,7 +35,7 @@ Options:
 
 Environment:
   SYNTH_GITHUB_REPO           Override GitHub repo (owner/name)
-  SYNTH_GITHUB_BRANCH         Override branch (default: public)
+  SYNTH_GITHUB_BRANCH         Override branch (default: main)
   SYNTH_TARBALL_URL           Default tarball URL if not downloading from GitHub
 EOF
   exit "${1:-0}"

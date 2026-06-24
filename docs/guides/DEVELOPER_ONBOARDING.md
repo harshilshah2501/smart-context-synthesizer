@@ -8,10 +8,10 @@
 
 ## Install
 
-### From git (`public` branch)
+### From git
 
 ```bash
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh your.handle
 ```
@@ -19,7 +19,7 @@ bash install.sh your.handle
 ### One-liner (no clone)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/public/install.sh | bash -s -- your.handle
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- your.handle
 ```
 
 ### From release tarball

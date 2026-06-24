@@ -3,8 +3,8 @@ Context Synthesizer — install card
 
 Ubuntu 22.04 / WSL2 — pick one way to get the toolkit:
 
-  A) Git clone (public branch)
-     git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+  A) Git clone
+     git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
      cd smart-context-synthesizer/context-synthesizer
      bash install.sh your.handle
 

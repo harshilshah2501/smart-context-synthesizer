@@ -433,7 +433,7 @@ Claude CLI / JetBrains POST /v1/messages
 ### End-user install (recommended)
 
 ```bash
-git clone -b public https://github.com/harshilshah2501/smart-context-synthesizer.git
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer
 bash install.sh your.handle
 csynth doctor && csynth dashboard
@@ -566,4 +566,4 @@ Good ledger: `- Database layer: MongoDB — relational schema deprecated`
 
 > **Repository:** `Out-of-bound-chronicles/context-synthesizer/`  
 > **Key references:** [Anthropic Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) · `matt1398/claude-devtools` · `rtk-ai/rtk`  
-> **Last aligned with codebase:** 2026-06-24 (`public` branch — proxy product)
+> **Last aligned with codebase:** 2026-06-24 (public OSS repository)
