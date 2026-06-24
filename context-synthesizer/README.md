@@ -62,10 +62,11 @@ See [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFER
 **Team lead — publish a release** (from dev machine with OneDrive sync):
 
 ```bash
+cd context-synthesizer
 bash packaging/publish-to-sharepoint.sh
 ```
 
-Copies to `OneDrive - Motadata/Context-Synthesizer/` — no manual `install.sh` edits per release.
+Builds the toolkit and copies to `OneDrive - Motadata/Context-Synthesizer/`. See [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md).
 
 ---
 

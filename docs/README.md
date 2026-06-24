@@ -12,7 +12,7 @@ All project documentation lives here (single `docs/` tree).
 | [guides/COST_SAVINGS.md](guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |
 | [guides/DASHBOARD.md](guides/DASHBOARD.md) | **Live dashboard** — billing & compaction bifurcation |
 | [guides/FETCH_BUNDLE.md](guides/FETCH_BUNDLE.md) | WSL ← build server rsync (dev sync) |
-| [guides/DEPLOY.md](guides/DEPLOY.md)                   | Team lead — shared drive, rollup |
+| [guides/DEPLOY.md](guides/DEPLOY.md)                   | **Team lead** — build tarball, publish to SharePoint |
 | [guides/TEAM_ANNOUNCEMENT.md](guides/TEAM_ANNOUNCEMENT.md) | Copy-paste rollout message for Slack/email |
 | [guides/CLI_STATS_GUIDE.md](guides/CLI_STATS_GUIDE.md) | Mode A import details                |
 

@@ -4,62 +4,152 @@
 
 | Role | After setup |
 |------|-------------|
-| **Developer** | Use Claude Code normally (proxy runs in background); 0 min/week for cron |
-| **Team lead** | Pull drive → `team_rollup.sh` (~1 min/week) |
+| **Developer** | Use Claude Code normally (proxy runs in background); `csynth proxy on\|off` as needed |
+| **Team lead** | Publish releases to SharePoint; optional weekly `team_rollup.sh` (~1 min/week) |
 
-**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) (copy-paste) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [DASHBOARD.md](DASHBOARD.md) (live metrics)
+**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) · [COST_SAVINGS.md](COST_SAVINGS.md)
 
 > **Motadata teams:** use only the section below. Skip [Alternative: GitHub / rclone](#alternative-github--rclone).
 
 ---
 
-## Motadata / SharePoint — share the package directly
+## Motadata / SharePoint — team lead publish (recommended)
 
-> **Repo is private** — do not use `curl` from GitHub.  
-> **Share one installer package** on SharePoint; developers run **`run-setup.sh`**.
+> **Repo is private** — do not ask developers to `curl` from GitHub.  
+> **One command** builds the toolkit and copies it to your synced OneDrive folder → SharePoint updates automatically.
 
-### Team lead — build & share once
+### One-time setup (team lead machine)
+
+1. **Clone or sync** the repo on a machine with OneDrive sync to SharePoint:
+   ```bash
+   git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+   cd smart-context-synthesizer/context-synthesizer
+   ```
+
+2. **Edit `packaging/share.conf` once** if your OneDrive path differs:
+   ```bash
+   # packaging/share.conf
+   SHARE_DIR_WIN='C:\Users\Harshil Shah\OneDrive - Motadata\Context-Synthesizer'
+   SHARE_DIR_WSL='/mnt/c/Users/Harshil Shah/OneDrive - Motadata/Context-Synthesizer'
+   LATEST_NAME='context-synthesizer-toolkit-latest'
+   ```
+
+3. **Create the SharePoint folder** in OneDrive (if missing):
+   `OneDrive - Motadata/Context-Synthesizer/`
+
+4. **Share the SharePoint link** with the team → developers click **Sync** in OneDrive.
+
+### Every release — build + copy to shared drive
+
+From the `context-synthesizer` directory (repo checkout or dev copy):
 
 ```bash
-cd /path/to/Out-of-bound-chronicles
-bash context-synthesizer/packaging/build-release-tarball.sh
+bash packaging/publish-to-sharepoint.sh
 ```
 
-Upload **one** of these to SharePoint (`ContextSynthesizer/`):
+This script:
 
-| Share | What |
-|-------|------|
-| **Recommended** | Extracted folder `context-synthesizer-toolkit-YYYY.MM.DD/` from `packaging/build/` |
-| Or | Single file `context-synthesizer-toolkit-YYYY.MM.DD.tar.gz` (devs extract after sync) |
+1. Runs `packaging/build-release-tarball.sh` (creates dated toolkit under `packaging/build/`)
+2. Copies **`context-synthesizer-toolkit-latest/`** → your OneDrive `Context-Synthesizer/` folder
+3. Copies **`context-synthesizer-toolkit-YYYY.MM.DD.tar.gz`** (dated archive)
+4. Copies **`context-synthesizer-toolkit-latest.tar.gz`** (stable archive name)
+5. Writes **`INSTALL.txt`** at the share root with developer instructions
 
-**Configure once** in the package (before or after upload):
+**No manual upload. No `install.sh` edits per release.**
+
+OneDrive syncs to SharePoint within minutes. Developers always use the stable folder name:
+
+```text
+OneDrive - Motadata/Context-Synthesizer/
+  context-synthesizer-toolkit-latest/     ← always current (recommended)
+  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
+  context-synthesizer-toolkit-latest.tar.gz
+  INSTALL.txt
+```
+
+### Manual build only (without OneDrive copy)
+
+If you need the tarball locally without publishing:
 
 ```bash
-# Edit team.conf inside the package folder:
-SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
-ENABLE_PROXY=1          # live compaction (default)
-ENABLE_WEEKLY_CRON=1    # optional Monday SharePoint upload (default)
+bash packaging/build-release-tarball.sh
 ```
 
-Share the SharePoint link → team clicks **Sync** in OneDrive.
+Output:
 
-### Developer — one command
+```text
+context-synthesizer/packaging/build/
+  context-synthesizer-toolkit-YYYY.MM.DD/          # extracted package
+  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz    # dated archive
+  context-synthesizer-toolkit-latest.tar.gz        # symlink to latest .tar.gz
+```
+
+Then upload manually to SharePoint if `publish-to-sharepoint.sh` cannot reach your OneDrive path.
+
+### What gets built
+
+The toolkit package includes:
+
+| Path in package | Contents |
+|-----------------|----------|
+| `run-setup.sh` | Developer entry point |
+| `install.sh` | Install / `--reinstall` |
+| `INSTALL.txt` | Quick install card |
+| `docs/` | Guides (onboarding, dashboard, cost savings, `csynth`) |
+| `context-synthesizer/` | Proxy, dashboard, scripts, compaction |
+
+`team.conf` in the built package sets `ENABLE_PROXY=1` by default. Weekly cron is **not** enabled by default.
+
+### Verify publish
+
+```bash
+ls -la "/mnt/c/Users/Harshil Shah/OneDrive - Motadata/Context-Synthesizer/"
+# expect: context-synthesizer-toolkit-latest, *.tar.gz, INSTALL.txt
+```
+
+Tell developers after a release:
+
+```text
+1. OneDrive → Sync Context-Synthesizer (or wait for auto-sync)
+2. cd context-synthesizer-toolkit-latest
+3. bash run-setup.sh firstname.lastname
+4. csynth doctor && csynth dashboard
+```
+
+---
+
+## Developer — one command
 
 Open terminal in the synced package folder:
 
 ```bash
+cd context-synthesizer-toolkit-latest
 bash run-setup.sh harshil.shah
 ```
 
-Use Azure email local-part (`firstname.lastname`). No git or rclone.
+Use Azure email local-part (`firstname.lastname`). No git or API key.
 
-See `INSTALL.txt` inside the package. **Live compaction is on by default** (`ENABLE_PROXY=1` in `team.conf`). Claude Code Max/Pro login forwards auth — no per-developer API key at setup.
+See `INSTALL.txt` at the share root or inside the package. **Live compaction is on by default.** Claude Code Max/Pro login forwards auth.
 
-**Live dashboard:** after setup, run `bash context-synthesizer/scripts/open_dashboard.sh`. On **WSL**, open the **WSL IP** URL in Windows browser (not `127.0.0.1`). See [DASHBOARD.md](DASHBOARD.md).
+**Reinstall / upgrade** (after team lead publishes a new `context-synthesizer-toolkit-latest`):
 
-Weekly files (optional) are **copied** into the synced folder; OneDrive uploads to SharePoint.
+```bash
+cd context-synthesizer-toolkit-latest
+bash install.sh firstname.lastname --reinstall
+csynth doctor
+```
 
-**Team lead rollup** (same synced folder on your machine):
+**Proxy toggle** (no reinstall): `csynth proxy on` · `csynth proxy off` · `csynth restart`
+
+Full CLI reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
+
+---
+
+## Optional: weekly team rollup
+
+Weekly export cron is **optional** (`ENABLE_WEEKLY_CRON=1` in `team.conf` before build, or run `weekly_sync.sh` manually).
+
+When developers upload weekly summaries to the synced folder:
 
 ```bash
 bash context-synthesizer/scripts/pull_from_drive.sh \
@@ -67,10 +157,10 @@ bash context-synthesizer/scripts/pull_from_drive.sh \
 bash context-synthesizer/scripts/team_rollup.sh
 ```
 
-Optional team-lead cron (Mondays 09:15, adjust path to your synced toolkit):
+Optional team-lead cron (Mondays 09:15):
 
 ```cron
-15 9 * * 1 bash /path/to/context-synthesizer-toolkit-YYYY.MM.DD/context-synthesizer/scripts/pull_from_drive.sh "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" && bash /path/to/context-synthesizer-toolkit-YYYY.MM.DD/context-synthesizer/scripts/team_rollup.sh
+15 9 * * 1 bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/pull_from_drive.sh "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" && bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/team_rollup.sh
 ```
 
 ---
@@ -78,14 +168,18 @@ Optional team-lead cron (Mondays 09:15, adjust path to your synced toolkit):
 ## Architecture
 
 ```text
-run-setup.sh / install.sh  →  toolkit folder (SharePoint sync, in-place)
-                                        │
-Claude Code ──► proxy (default ON) ─────┼── /dashboard  (live bifurcation UI)
-~/.claude/projects/ ────────────────────┼── weekly_sync.sh (cron, optional)
-                                        ▼
-                              OneDrive sync folder (SharePoint)
-                                        │
-                              pull_from_drive.sh → team_rollup.sh
+Team lead: publish-to-sharepoint.sh
+              │
+              ▼
+    OneDrive/Context-Synthesizer/  ──sync──►  SharePoint
+              │
+Developer: run-setup.sh / install.sh
+              │
+Claude Code ──► proxy (default ON) ────────►  /dashboard  (live bifurcation UI)
+~/.claude/projects/ ───────────────────────►  weekly_sync.sh (optional)
+              │
+              ▼
+    pull_from_drive.sh → team_rollup.sh  (team lead, optional)
 ```
 
 ---
@@ -94,33 +188,27 @@ Claude Code ──► proxy (default ON) ─────┼── /dashboard  (l
 
 | Problem | Fix |
 |---------|-----|
+| `Share folder not found` on publish | Fix paths in `packaging/share.conf`; ensure OneDrive folder exists and is synced |
+| Publish works but devs see old version | Wait for OneDrive sync; confirm `context-synthesizer-toolkit-latest` timestamp |
 | Setup fails at proxy step | Enable systemd (WSL: `[boot] systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`) |
-| Download fails | Use tarball from SharePoint; extract and run `run-setup.sh` from package folder |
-| No Monday upload | Check `~/.local/state/context-synthesizer/weekly-*.log`; verify `SYNC_DIR` in `team.conf` |
-| Proxy `activating (auto-restart)` / exit 1 | See below |
-| Proxy down | `systemctl --user restart context-synthesizer-proxy` |
-| Reinstall | `bash install.sh --reinstall --developer ...` from package root |
+| Proxy down | `csynth restart` |
+| Reinstall | `bash install.sh firstname.lastname --reinstall` from package root |
 
 ### Proxy won't start (exit-code / auto-restart)
 
 ```bash
-# 1. See the real error (systemd often hides it in status alone)
+csynth logs
+# or:
 journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
-
-# 2. Or run in the foreground
-cd /path/to/toolkit
-.venv/bin/python context-synthesizer/proxy_tool.py
 ```
 
 | Error | Fix |
 |-------|-----|
-| `ModuleNotFoundError: uvicorn` (or `fastapi`) | `bash context-synthesizer/scripts/setup.sh` |
-| `address already in use` / port 8080 | Often **Tabby** or another IDE plugin (`ss -tlnp \| grep 8080`). Set `PROXY_PORT=8081` in `context-synthesizer/.env`, then re-run `configure_claude_proxy.sh` and `install_proxy_service.sh` |
-| `Claude.md not found` | Re-extract toolkit; file must exist at `context-synthesizer/Claude.md` |
+| `ModuleNotFoundError` | `bash context-synthesizer/scripts/repair_venv.sh` then `csynth restart` |
+| Port 8080 busy (Tabby, etc.) | `PROXY_PORT=8081` in `context-synthesizer/.env`, re-run `configure_claude_proxy.sh` |
+| Upstream 502 | `csynth logs` — look for `[PROXY] ✗ upstream error` |
 
-Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
-
-**Dashboard (WSL):** `bash context-synthesizer/scripts/open_dashboard.sh` — do not use `127.0.0.1` in Windows browser. See [DASHBOARD.md](DASHBOARD.md).
+Preflight: `csynth doctor` · `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
 ---
 
@@ -128,17 +216,18 @@ Preflight helper: `bash context-synthesizer/scripts/check_proxy_ready.sh`
 
 | Script | Who |
 |--------|-----|
-| `run-setup.sh` (package root) | **Developer entry point** (Motadata) |
-| `install.sh` (package root) | Called by `run-setup.sh`; also direct install |
-| `packaging/build-release-tarball.sh` | Team lead — build SharePoint bundle |
+| **`packaging/publish-to-sharepoint.sh`** | **Team lead — build + copy to OneDrive (primary)** |
+| `packaging/build-release-tarball.sh` | Team lead — build only |
+| `packaging/share.conf` | Team lead — OneDrive paths (edit once) |
+| `run-setup.sh` (package root) | **Developer entry point** |
+| `install.sh` (package root) | Install / `--reinstall` |
+| `scripts/csynth` | Developer CLI — proxy, dashboard, logs |
 | `scripts/setup_developer.sh` | Called by install.sh |
-| `scripts/check_proxy_ready.sh` | Preflight before proxy install |
-| `scripts/open_dashboard.sh` | Print/open dashboard URL (WSL-aware) |
-| `scripts/weekly_sync.sh` | Cron |
-| `static/dashboard.html` + `/dashboard` | Live bifurcation UI (same port as proxy) |
-| `scripts/pull_from_drive.sh` | Team lead |
+| `scripts/weekly_sync.sh` | Optional cron |
+| `scripts/pull_from_drive.sh` | Team lead rollup |
+| `scripts/team_rollup.sh` | Team lead rollup |
 
-More: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CORPUS_COMPARATIVE_ANALYSIS.md](../reports/CORPUS_COMPARATIVE_ANALYSIS.md)
+More: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · `INSTALL.txt` at the SharePoint share root
 
 ---
 
@@ -152,21 +241,19 @@ bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer 
 
 ## Alternative: GitHub / rclone
 
-> **Not for Motadata rollout.** Use SharePoint + `run-setup.sh` above. This section is for public-repo or Google Drive deployments.
+> **Not for Motadata rollout.** Use SharePoint + `publish-to-sharepoint.sh` above.
 
-### Publish installer (once)
-
-**Path A — GitHub raw (public repo only):**
+### Publish installer (public repo only)
 
 ```text
 https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh
 ```
 
-**Path B — shared drive tarball:**
+Or build tarball manually:
 
 ```bash
-bash context-synthesizer/packaging/build-release-tarball.sh
-# Upload context-synthesizer-toolkit-YYYY.MM.DD.tar.gz + install.sh to shared drive
+bash packaging/build-release-tarball.sh
+# Upload .tar.gz to shared drive
 ```
 
 ### Developer install (rclone)
@@ -175,46 +262,18 @@ bash context-synthesizer/packaging/build-release-tarball.sh
 curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
   --developer THEIR_HANDLE \
   --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
-```
-
-Or from a synced drive tarball:
-
-```bash
-bash /path/from/drive/install.sh \
-  --tarball-file /path/from/drive/context-synthesizer-toolkit-YYYY.MM.DD.tar.gz \
-  --developer THEIR_HANDLE \
-  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
+  --enable-proxy
 ```
 
 | Flag / `team.conf` | Effect |
 |--------------------|--------|
-| `ENABLE_PROXY=1` / `--enable-proxy` | Live compaction during Claude Code sessions (**default** in `run-setup.sh`) |
-| `ENABLE_WEEKLY_CRON=1` / `--install-cron` | Monday auto-export + upload (**default** in `run-setup.sh`) |
-| `--sync-dir` / `SYNC_DIR` | OneDrive folder for weekly upload (SharePoint teams) |
-| `--rclone-remote` | Shared drive destination (optional) |
-
-### rclone setup (team lead, once)
-
-1. Create `ContextSynthesizer/weekly/` on Google Drive (or S3).  
-2. `rclone config` → remote name e.g. `gdrive`.  
-3. Give developers the remote path: `gdrive:Shared/ContextSynthesizer/weekly`  
-4. Each developer configures the **same remote name** on their machine (`rclone config` once).
+| `ENABLE_PROXY=1` / `--enable-proxy` | Live compaction (**default** in `run-setup.sh`) |
+| `ENABLE_WEEKLY_CRON=1` / `--install-cron` | Monday auto-export (optional, not default) |
+| `--sync-dir` / `SYNC_DIR` | OneDrive folder for weekly upload |
 
 ### Team lead weekly rollup (rclone)
 
 ```bash
-bash context-synthesizer/scripts/pull_from_drive.sh \
-  'gdrive:Shared/ContextSynthesizer/weekly'
-
+bash context-synthesizer/scripts/pull_from_drive.sh 'gdrive:Shared/ContextSynthesizer/weekly'
 bash context-synthesizer/scripts/team_rollup.sh
-```
-
-Optional cron (Mondays 09:15):
-
-```cron
-15 9 * * 1 bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/pull_from_drive.sh 'gdrive:Shared/ContextSynthesizer/weekly' && bash $HOME/.local/share/context-synthesizer/context-synthesizer/scripts/team_rollup.sh
 ```
