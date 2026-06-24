@@ -7,9 +7,11 @@ from proxy_message_bridge import (
     count_cache_control_blocks,
     enforce_cache_control_budget,
     message_has_tool_blocks,
+    normalize_content_with_tools,
     passthrough_api_kwargs,
     user_message_has_content,
 )
+from compaction import prepare_turn_text
 
 
 def _prefix() -> list[dict]:
@@ -177,3 +179,31 @@ def test_build_upstream_strips_tail_cache_control():
         max_recent_messages=4,
     )
     assert count_cache_control_blocks(out) <= 4
+
+
+def test_normalize_content_keeps_tool_result_payload_text():
+    content = [
+        {"type": "text", "text": "checking deps"},
+        {
+            "type": "tool_result",
+            "tool_use_id": "tu_1",
+            "content": [
+                {"type": "text", "text": "package.json => react 19.0.0"},
+                {"type": "text", "text": "vite 6.1.0"},
+            ],
+        },
+    ]
+    out = normalize_content_with_tools(content)
+    assert "[tool_result]" in out
+    assert "react 19.0.0" in out
+
+
+def test_prepare_turn_text_keeps_different_updates_same_path():
+    raw = "\n".join(
+        [
+            "/repo/api/client.py: uses requests",
+            "/repo/api/client.py: updated retry policy after regression",
+        ]
+    )
+    out = prepare_turn_text(raw)
+    assert out.count("/repo/api/client.py") == 2

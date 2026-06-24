@@ -11,7 +11,7 @@ import re
 from typing import Any, Callable
 
 # Per-block limits when feeding turns into the compaction model
-MAX_BASH_BLOCK_CHARS = 400
+MAX_BASH_BLOCK_CHARS = 1200
 MAX_TOOL_RESULT_CHARS = 800
 MAX_TURN_BODY_CHARS = 12_000
 
@@ -30,6 +30,7 @@ PRESERVE (dense bullets):
 - Key decisions, constraints, open tasks, API contracts
 - File paths and what changed in each file (latest state only)
 - Errors encountered and their resolution (one line each)
+- Regressions introduced later (what changed, when discovered, and fix/rollback)
 - Test/lint outcomes that affect next steps
 
 CODE-AWARE COLLAPSE:
@@ -109,16 +110,18 @@ def _collapse_bash_blocks(text: str) -> str:
 
 
 def _dedupe_file_mentions(text: str) -> str:
-    """Collapse consecutive duplicate path lines (common after re-reads)."""
+    """Drop exact duplicate file-path lines while keeping state transitions."""
     path_re = re.compile(r"(/[\w./-]+\.(?:py|tsx?|jsx?|md|json|yaml|yml|go|rs|java))\b")
-    seen_paths: set[str] = set()
+    seen_fingerprints: set[str] = set()
     out: list[str] = []
     for line in text.splitlines():
         paths = path_re.findall(line)
-        if paths and all(p in seen_paths for p in paths):
-            continue
-        for p in paths:
-            seen_paths.add(p)
+        if paths:
+            norm_line = " ".join(line.strip().split()).lower()
+            fingerprint = "|".join(sorted(set(paths))) + "::" + norm_line
+            if fingerprint in seen_fingerprints:
+                continue
+            seen_fingerprints.add(fingerprint)
         out.append(line)
     return "\n".join(out)
 

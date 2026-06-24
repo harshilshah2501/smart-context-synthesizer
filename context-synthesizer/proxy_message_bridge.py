@@ -115,7 +115,43 @@ def serialize_assistant_content(content: Any) -> Any:
 
 
 def normalize_content_with_tools(content: Any) -> str:
-    """Text extraction for telemetry/compaction; summarizes tool blocks."""
+    """Text extraction for telemetry/compaction; preserves tool-result signal."""
+    def _truncate(text: str, limit: int = 1200) -> str:
+        text = (text or "").strip()
+        if len(text) <= limit:
+            return text
+        return text[:limit] + f"\n… [truncated {len(text) - limit} chars]"
+
+    def _tool_payload_to_text(payload: Any) -> str:
+        if isinstance(payload, str):
+            return _truncate(payload)
+        if isinstance(payload, list):
+            chunks: list[str] = []
+            for item in payload:
+                if isinstance(item, str):
+                    chunks.append(item)
+                elif isinstance(item, dict):
+                    if item.get("type") == "text":
+                        chunks.append(str(item.get("text") or ""))
+                    else:
+                        try:
+                            chunks.append(json.dumps(item, ensure_ascii=False))
+                        except TypeError:
+                            chunks.append(str(item))
+                else:
+                    chunks.append(str(item))
+            return _truncate("\n".join(c for c in chunks if c.strip()))
+        if isinstance(payload, dict):
+            if "text" in payload and isinstance(payload.get("text"), str):
+                return _truncate(payload.get("text") or "")
+            try:
+                return _truncate(json.dumps(payload, ensure_ascii=False))
+            except TypeError:
+                return _truncate(str(payload))
+        if payload is None:
+            return ""
+        return _truncate(str(payload))
+
     if isinstance(content, str):
         return content
     if isinstance(content, list):
@@ -130,9 +166,17 @@ def normalize_content_with_tools(content: Any) -> str:
                 parts.append(block.get("text") or "")
             elif btype == "tool_use":
                 name = block.get("name") or "tool"
-                parts.append(f"[tool_use: {name}]")
+                tool_input = _tool_payload_to_text(block.get("input"))
+                if tool_input:
+                    parts.append(f"[tool_use: {name}] {tool_input}")
+                else:
+                    parts.append(f"[tool_use: {name}]")
             elif btype == "tool_result":
-                parts.append("[tool_result]")
+                result_text = _tool_payload_to_text(block.get("content"))
+                if result_text:
+                    parts.append(f"[tool_result] {result_text}")
+                else:
+                    parts.append("[tool_result]")
             elif btype in TOOL_BLOCK_TYPES:
                 parts.append(f"[{btype}]")
             elif "text" in block:
