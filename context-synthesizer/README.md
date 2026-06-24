@@ -8,6 +8,7 @@ Offline analysis and tuning toolkit for **smart context compaction**.
 
 | Doc | Read when |
 |-----|-----------|
+| [../docs/guides/DOCS_CHEATSHEET.md](../docs/guides/DOCS_CHEATSHEET.md) | **Cheatsheet** — doc map + commands by role |
 | [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Start here** — one-time setup |
 | [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** — install, proxy on/off, restart |
 | [../docs/guides/COST_SAVINGS.md](../docs/guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |

@@ -2,11 +2,13 @@
 
 All project documentation lives here (single `docs/` tree).
 
+**Cheatsheet:** [guides/DOCS_CHEATSHEET.md](guides/DOCS_CHEATSHEET.md) — one-page map by role, commands, and “which doc when”.
+
 ## Guides (how to run)
 
 | Doc                                                    | Purpose                              |
 | ------------------------------------------------------ | ------------------------------------ |
-| [guides/Usage.md](guides/Usage.md)                     | Per-mode setup (A / C / D)           |
+| [guides/DOCS_CHEATSHEET.md](guides/DOCS_CHEATSHEET.md) | **Cheatsheet** — doc map, commands, FAQ by role |
 | [guides/DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) | **Developers:** one-time setup, live compaction proxy (default) |
 | [guides/CSYNTH_QUICK_REFERENCE.md](guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** — install, proxy on/off, restart, logs |
 | [guides/COST_SAVINGS.md](guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |
