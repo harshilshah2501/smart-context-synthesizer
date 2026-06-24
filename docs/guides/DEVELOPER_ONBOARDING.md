@@ -1,6 +1,9 @@
 # Developer onboarding — one installer, no git
 
-**Time:** ~5 minutes once. After setup: use Claude Code normally; optional zero weekly chores.
+**Time:** ~5 minutes once. After setup: use Claude Code normally.
+
+**Quick CLI reference:** [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)  
+**Cost vs payload on dashboard:** [COST_SAVINGS.md](COST_SAVINGS.md)
 
 ---
 
@@ -26,11 +29,17 @@ Use your **Azure email local-part** as the setup ID (e.g. `bash run-setup.sh har
 
 **Primary benefit — live compaction (on by default):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Log in to Claude Code (Max/Pro) as usual — the CLI forwards auth to the proxy; no separate API key at setup.
 
-**Live dashboard:** `bash context-synthesizer/scripts/open_dashboard.sh` prints the correct URL (on WSL, includes `?token=...`). On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md).
+**Live dashboard:** `csynth dashboard` (or `bash context-synthesizer/scripts/open_dashboard.sh`) prints the correct URL (on WSL, includes `?token=...`). On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md).
 
-**Optional — weekly SharePoint reports:** Monday cron copies session summaries to your synced folder for team rollup (`ENABLE_WEEKLY_CRON=1` in `team.conf`).
+**Proxy toggle (no reinstall):**
 
-**How upload works:** cron copies files into your local OneDrive folder → OneDrive app syncs to SharePoint. No rclone.
+```bash
+csynth proxy on    # route Claude Code through synthesizer
+csynth proxy off   # direct Anthropic API
+csynth restart     # after updates or errors
+```
+
+**Optional — weekly SharePoint reports:** set `ENABLE_WEEKLY_CRON=1` in `team.conf` before setup, or run `weekly_sync.sh` manually. Not enabled by default.
 
 Adjust `--sync-dir` if your OneDrive path differs (check in file manager after Sync).
 
@@ -141,15 +150,30 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
 
 ---
 
-## What you get (default via run-setup.sh / team.conf)
+## What you get (default via run-setup.sh)
 
 | After setup | You do | Benefit |
 |-------------|--------|---------|
 | `ENABLE_PROXY=1` (default) | Use Claude Code normally | Live context compaction during sessions |
-| `/dashboard` on proxy port | Open in browser while coding | Live bifurcation — cache/cost/layers/naive vs shaped |
-| `ENABLE_WEEKLY_CRON=1` (default) | Nothing weekly | `summary.md` + JSONL on SharePoint every Monday |
+| `/dashboard` on proxy port | `csynth dashboard` while coding | Live bifurcation — cache/cost/layers/naive vs shaped |
+| `csynth` on PATH | `csynth doctor`, `csynth logs` | Status, proxy toggle, troubleshooting |
 
 ---
+
+## `csynth` commands (summary)
+
+| Command | Purpose |
+|---------|---------|
+| `csynth status` | Proxy service + routing |
+| `csynth proxy on` / `off` | Enable / disable synthesizer |
+| `csynth dashboard` | Live cost & token dashboard URL |
+| `csynth doctor` | Full routing preflight |
+| `csynth logs` | Tail proxy journal |
+| `csynth restart` | Restart proxy service |
+
+**Reinstall:** `bash install.sh firstname.lastname --reinstall` from toolkit package root.
+
+Full reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
 
 ## Prerequisites
 
@@ -163,11 +187,18 @@ curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synth
 ### Smoke test (live compaction + dashboard)
 
 ```bash
+csynth status
+csynth doctor
+csynth dashboard
+```
+
+Or without `csynth` on PATH:
+
+```bash
 systemctl --user status context-synthesizer-proxy
 bash context-synthesizer/scripts/check_proxy_ready.sh
 bash context-synthesizer/scripts/open_dashboard.sh
-# Windows browser: use the WSL IP URL printed above (or --open)
-bash context-synthesizer/scripts/verify_claude_routing.sh   # why proxy_requests is 0
+bash context-synthesizer/scripts/verify_claude_routing.sh
 ```
 
 Use Claude Code in a project — charts should update per API call. Badge top-left should show **live**.
@@ -181,8 +212,8 @@ Use Claude Code in a project — charts should update per API call. Badge top-le
 After re-running configure, **restart VS Code** (or Claude Code panel). If the dashboard shows `proxy_requests: 0` but health checks pass:
 
 ```bash
-bash context-synthesizer/scripts/verify_claude_routing.sh
-journalctl --user -u context-synthesizer-proxy -f | grep -E '\[ACCESS\]|\[PROXY\]'
+csynth logs
+# or: journalctl --user -u context-synthesizer-proxy -f | grep -E '\[ACCESS\]|\[PROXY\]'
 ```
 
 Send one chat message in VS Code — you should see `[PROXY] → POST /v1/messages` in the journal. Cursor uses a different endpoint (`/v1/chat/completions`); that working does **not** prove VS Code is wired.
@@ -197,7 +228,7 @@ journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
 
 ```bash
 bash context-synthesizer/scripts/repair_venv.sh
-systemctl --user restart context-synthesizer-proxy
+csynth restart
 ```
 
 **Port conflict (Tabby on 8080):**

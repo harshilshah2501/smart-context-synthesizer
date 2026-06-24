@@ -8,6 +8,8 @@ All project documentation lives here (single `docs/` tree).
 | ------------------------------------------------------ | ------------------------------------ |
 | [guides/Usage.md](guides/Usage.md)                     | Per-mode setup (A / C / D)           |
 | [guides/DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) | **Developers:** one-time setup, live compaction proxy (default) |
+| [guides/CSYNTH_QUICK_REFERENCE.md](guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** — install, proxy on/off, restart, logs |
+| [guides/COST_SAVINGS.md](guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |
 | [guides/DASHBOARD.md](guides/DASHBOARD.md) | **Live dashboard** — billing & compaction bifurcation |
 | [guides/FETCH_BUNDLE.md](guides/FETCH_BUNDLE.md) | WSL ← build server rsync (dev sync) |
 | [guides/DEPLOY.md](guides/DEPLOY.md)                   | Team lead — shared drive, rollup |

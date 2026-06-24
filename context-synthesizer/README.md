@@ -2,22 +2,19 @@
 
 Offline analysis and tuning toolkit for **smart context compaction**.
 
-`proxy_tool.py` is the **gateway implementation target**; the team workflow is **offline** corpus import (Modes A / C / D).
+`proxy_tool.py` is the **gateway implementation target**; the team workflow is **offline** corpus import (Modes A / C / D) plus an optional **live proxy** for Claude Code (Max/Pro).
 
 **All documentation:** [../docs/README.md](../docs/README.md)
 
 | Doc | Read when |
 |-----|-----------|
-| [../docs/guides/Usage.md](../docs/guides/Usage.md) | Per-mode setup (A / C / D) |
 | [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Start here** — one-time setup |
-| [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Team lead — drive + rollup |
+| [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** — install, proxy on/off, restart |
+| [../docs/guides/COST_SAVINGS.md](../docs/guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |
 | [../docs/guides/DASHBOARD.md](../docs/guides/DASHBOARD.md) | **Live dashboard** — bifurcation & savings |
+| [../docs/guides/Usage.md](../docs/guides/Usage.md) | Per-mode setup (A / C / D) |
+| [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Team lead — drive + rollup |
 | [../docs/reports/SYNTHESIZER_RND_REPORT.md](../docs/reports/SYNTHESIZER_RND_REPORT.md) | R&D record, roadmap |
-| [../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md](../docs/reports/MEET_CHAVDA_CORPUS_REPORT.md) | meet-chavda corpus (reference) |
-| [../docs/reports/COMPACTION_PROOF_REPORT.md](../docs/reports/COMPACTION_PROOF_REPORT.md) | Turn-178 deep dive |
-| [../docs/reports/CHANDRESH_CORPUS_REPORT.md](../docs/reports/CHANDRESH_CORPUS_REPORT.md) | chandresh corpus test |
-| [../docs/reports/OM_CORPUS_REPORT.md](../docs/reports/OM_CORPUS_REPORT.md) | om Org Mgmt session |
-| [../docs/reports/CORPUS_COMPARATIVE_ANALYSIS.md](../docs/reports/CORPUS_COMPARATIVE_ANALYSIS.md) | Three-developer comparison |
 | [../docs/context_os_technical_report.md](../docs/context_os_technical_report.md) | Gateway design |
 
 ---
@@ -30,7 +27,7 @@ Offline analysis and tuning toolkit for **smart context compaction**.
 | **C** | Cursor IDE | `import_cursor_sessions.py` |
 | **D** | Claude Max / Pro | `import_claude_sessions.py` |
 
-All modes are **offline** — no API key, no proxy.
+Modes A/C/D are **offline** — no API key, no proxy.
 
 ---
 
@@ -46,12 +43,21 @@ csynth doctor && csynth dashboard
 
 Live compaction proxy is on by default (`ENABLE_PROXY=1`). Claude Max/Pro login only — no API key.
 
-Toggle without reinstall:
+### `csynth` (after install)
 
 ```bash
-csynth proxy off   # direct Anthropic API
-csynth proxy on    # route through synthesizer again
+csynth status          # proxy service + routing
+csynth proxy on        # route through synthesizer
+csynth proxy off       # direct Anthropic API
+csynth restart         # restart proxy service
+csynth dashboard       # live cost dashboard URL
+csynth doctor          # full preflight
+csynth logs            # tail proxy journal
 ```
+
+**Reinstall:** `bash install.sh firstname.lastname --reinstall`
+
+See [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md).
 
 **Team lead — publish a release** (from dev machine with OneDrive sync):
 
@@ -59,9 +65,7 @@ csynth proxy on    # route through synthesizer again
 bash packaging/publish-to-sharepoint.sh
 ```
 
-Copies to `OneDrive - Motadata/Context-Synthesizer/` — no `install.sh` edits per release.
-
-R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
+Copies to `OneDrive - Motadata/Context-Synthesizer/` — no manual `install.sh` edits per release.
 
 ---
 
@@ -69,16 +73,13 @@ R&D / team lead: [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md)
 
 | Path | Purpose |
 |------|---------|
-| `import_*.py` | Mode A/C/D corpus import |
-| `analyze_hot_session.py` | Single-session deep dive |
-| `compare_compaction.py` | Naive vs Dreaming v4 at a spike turn |
-| `collect_stats.py` | Team aggregate |
-| `compaction.py` | Dreaming v4 rules |
+| `proxy_message_bridge.py` | Tool-faithful message assembly + API passthrough |
 | `proxy_tool.py` | Gateway + `/dashboard` live telemetry UI |
+| `import_*.py` | Mode A/C/D corpus import |
+| `compaction.py` | Dreaming v4 rules |
 | `dashboard_api.py` / `dashboard_routes.py` | Dashboard aggregation + SSE |
 | `static/dashboard.html` | Live bifurcation charts |
-| `scripts/open_dashboard.sh` | Print/open dashboard URL (WSL-aware) |
-| `scripts/` | setup, weekly export, backup import |
+| `scripts/csynth` | Post-install CLI |
+| `packaging/` | SharePoint publish, tarball build |
 | `stats/` | Local corpora (**gitignored**) |
-| `packaging/` | Deprecated `.deb` legacy |
 | `../docs/` | All guides and reports |

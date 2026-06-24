@@ -33,6 +33,9 @@ rsync -a \
   "$REPO_ROOT/packaging/team.conf.example" \
   "$STAGE/"
 [[ -d "$REPO_ROOT/docs" ]] && rsync -a "$REPO_ROOT/docs" "$STAGE/"
+if [[ ! -d "$STAGE/docs" && -d "$REPO_ROOT/../docs" ]]; then
+  rsync -a "$REPO_ROOT/../docs" "$STAGE/"
+fi
 
 # Nested package (scripts expect REPO_ROOT/context-synthesizer/...)
 mkdir -p "$STAGE/context-synthesizer"

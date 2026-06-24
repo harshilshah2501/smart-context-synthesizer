@@ -73,5 +73,13 @@ Disable synthesizer:
 WHAT YOU GET
 ------------
 - Live compaction proxy (Dreaming v4) — default ON
-- Live dashboard — Before/After cost + token billing bifurcation
-- csynth CLI — status, dashboard, doctor, restart
+- Tool-faithful bridge — tools, thinking, tool_use loops preserved for Claude Code
+- Live dashboard — cache/cost bifurcation (see docs/guides/COST_SAVINGS.md)
+- csynth CLI — status, proxy on/off, dashboard, doctor, logs, restart
+
+DOCUMENTATION (in toolkit package)
+----------------------------------
+  docs/guides/CSYNTH_QUICK_REFERENCE.md   install, reinstall, proxy toggle
+  docs/guides/COST_SAVINGS.md               why cost drops vs payload size
+  docs/guides/DASHBOARD.md                live dashboard
+  docs/guides/DEVELOPER_ONBOARDING.md     full setup guide

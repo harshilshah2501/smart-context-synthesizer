@@ -2,7 +2,7 @@
 
 Real-time bifurcation of **where the Context Synthesizer saves tokens and cost** — served by the same proxy process as Claude Code traffic.
 
-**URL:** run `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
+**URL:** run `csynth dashboard` or `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
 
 **WSL + Windows browser:** use the **WSL IP** URL from `open_dashboard.sh` — **never** `127.0.0.1` in Windows Chrome (`ERR_EMPTY_RESPONSE`).
 
@@ -27,7 +27,7 @@ bash context-synthesizer/scripts/open_dashboard.sh --open
 | **KPI cards** | Requests, compactions, $ saved, compression vs naive IDE history, cache read %, uncached tail %, IDE bloat ratio |
 | **Billing bifurcation** | Per turn: `cache_read` / `cache_write` / `uncached` tokens (Anthropic billing buckets) |
 | **Four-layer payload** | Est. L1 (rules) / L2 (ledger) / L3 (recent) / L4 (prompt) tokens |
-| **Naive vs shaped** | Full IDE transcript estimate vs synthesizer-shaped payload |
+| **Naive vs shaped** | Full IDE transcript estimate vs synthesizer-shaped payload — see [COST_SAVINGS.md](COST_SAVINGS.md) |
 | **Cumulative cost** | Actual $ vs baseline (if all input were uncached) |
 | **Trends** | Compression % and uncached tail % over turns |
 | **Compaction timeline** | Dreaming v4 runs, ledger delta, trigger reason |
@@ -39,9 +39,11 @@ Updates automatically via **Server-Sent Events** when Claude Code hits the proxy
 
 ## Prerequisites
 
-1. Proxy running (`systemctl --user status context-synthesizer-proxy`)
-2. Claude Code routed through proxy (`ANTHROPIC_BASE_URL` in `~/.claude/settings.json`)
+1. Proxy running (`csynth status` or `systemctl --user status context-synthesizer-proxy`)
+2. Claude Code routed through proxy (`csynth proxy on` or `ANTHROPIC_BASE_URL` in `~/.claude/settings.json`)
 3. Use Claude Code in a project — dashboard populates on each API call
+
+**Understanding the numbers:** [COST_SAVINGS.md](COST_SAVINGS.md) explains why **cost** can drop while **payload size** looks flat.
 
 ---
 
@@ -103,4 +105,4 @@ bash context-synthesizer/scripts/open_dashboard.sh --open
 
 **Alternative:** use a dedicated port on WSL only (e.g. `PROXY_PORT=8081`) and always browse via `http://<WSL_IP>:8081/dashboard`.
 
-See also [DEPLOY.md](DEPLOY.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)
+See also [COST_SAVINGS.md](COST_SAVINGS.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DEPLOY.md](DEPLOY.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md)
