@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 from typing import Any
 
 from compaction import MAX_COMPACTION_SNIPPET_CHARS
@@ -60,6 +61,9 @@ _CONTEXT_MGMT_BETA_MARKERS = (
     "clear-thinking",
 )
 
+_ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[A-Za-z]")
+_BRACKET_STYLE_ANSI_RE = re.compile(r"\[[0-9;]*m")
+
 
 def filter_betas_for_proxy(betas: Any) -> list[Any] | None:
     """Drop context-management betas — handled by Dreaming v4 instead."""
@@ -71,6 +75,16 @@ def filter_betas_for_proxy(betas: Any) -> list[Any] | None:
         if not any(m in str(b).lower() for m in _CONTEXT_MGMT_BETA_MARKERS)
     ]
     return kept or None
+
+
+def sanitize_model_name(model: Any) -> str | None:
+    """Strip ANSI/control noise from model ids sent by some clients."""
+    if not isinstance(model, str):
+        return None
+    clean = _ANSI_ESCAPE_RE.sub("", model)
+    clean = _BRACKET_STYLE_ANSI_RE.sub("", clean)
+    clean = "".join(ch for ch in clean if ch.isprintable()).strip()
+    return clean or None
 
 
 def _iter_content_blocks(content: Any) -> list[dict[str, Any]]:
@@ -365,8 +379,9 @@ def passthrough_api_kwargs(
     *,
     use_beta: bool = False,
 ) -> dict[str, Any]:
+    model = sanitize_model_name(body.get("model"))
     kwargs: dict[str, Any] = {
-        "model": body.get("model"),
+        "model": model,
         "max_tokens": body.get("max_tokens", 8192),
         "messages": messages,
     }

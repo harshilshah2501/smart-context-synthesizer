@@ -33,6 +33,15 @@ def test_passthrough_forwards_tools_and_thinking():
     assert kwargs["thinking"]["budget_tokens"] == 10000
 
 
+def test_passthrough_sanitizes_model_name_from_ansi_noise():
+    body = {
+        "model": "claude-opus-4-8[1m",
+        "max_tokens": 8192,
+    }
+    kwargs = passthrough_api_kwargs(body, [{"role": "user", "content": "hi"}])
+    assert kwargs["model"] == "claude-opus-4-8"
+
+
 def test_user_message_accepts_tool_result_only():
     msg = {
         "role": "user",
