@@ -3,15 +3,28 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# Secrets — never commit
 .env
 .env.*
 !.env.example
+**/.env
+!**/.env.example
+
+# Org-specific deploy config (copy from share.conf.example locally)
+context-synthesizer/packaging/share.conf
+packaging/share.conf
 
 # Session corpora, backups, local analysis outputs (never commit)
-context-synthesizer/stats/**
+context-synthesizer/stats/*
 !context-synthesizer/stats/.gitignore
 context-synthesizer/*.zip
 /*.jsonl
+
+# Local test projects
+context-synthesizer/sample-project*/
+**/sample-project*/
+
 docs/notes/
 
 # Nested clones / accidental duplicates

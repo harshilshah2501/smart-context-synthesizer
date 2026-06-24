@@ -1,85 +1,39 @@
-Context Synthesizer — Motadata team package
-==========================================
+Context Synthesizer — install card
+==================================
 
-No git. No API key. Claude Max/Pro login forwards auth to the local proxy.
+Ubuntu 22.04 / WSL2 — pick one way to get the toolkit:
 
-TEAM LEAD — publish (once per release, from dev machine with OneDrive sync)
---------------------------------------------------------------------------
-1. Edit packaging/share.conf only if your OneDrive path changes (default is set).
+  A) Git clone
+     git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+     cd smart-context-synthesizer/context-synthesizer
+     bash install.sh your.handle
 
-2. From the repo:
-     bash packaging/publish-to-sharepoint.sh
+  B) Release tarball
+     tar -xzf context-synthesizer-toolkit-*.tar.gz
+     cd context-synthesizer-toolkit-*
 
-   This builds the toolkit and copies to:
-     C:\Users\Harshil Shah\OneDrive - Motadata\Context-Synthesizer\
-       context-synthesizer-toolkit-latest/    ← always current
-       context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
+  C) Team shared folder (optional)
+     cd context-synthesizer-toolkit-latest
 
-   OneDrive syncs to SharePoint automatically. No install.sh edits per release.
-
-UBUNTU 22.04 — developer install (~2 min)
------------------------------------------
-Prereqs:
-  sudo apt install -y python3 python3-venv curl
-  claude auth login
-  loginctl enable-linger $USER
-
-Get the toolkit (pick one):
-
-  A) OneDrive / SharePoint sync (recommended — no extract)
-     Sync the Context-Synthesizer folder, then:
-       cd context-synthesizer-toolkit-latest
-
-  B) Download the dated archive from SharePoint
-       tar -xzf context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
-       cd context-synthesizer-toolkit-YYYY.MM.DD
-
-Install:
-  bash run-setup.sh firstname.lastname
-
-Example:
-  bash run-setup.sh harshil.shah
+Then:
+  bash run-setup.sh your.handle
 
 Verify:
   csynth doctor
   csynth dashboard
 
-Toggle proxy later (no reinstall):
-  csynth proxy on
-  csynth proxy off
+Toggle proxy (no reinstall):
+  csynth proxy on | csynth proxy off
 
-Use Claude Code normally. Dashboard updates live per API call.
+Claude Max/Pro login only — no API key.
 
-SMOKE TEST
-----------
-  csynth status
-  csynth doctor
-  csynth dashboard
+Docs: docs/guides/DEVELOPER_ONBOARDING.md
 
-TROUBLESHOOTING
----------------
-Proxy / API errors:
-  csynth restart
-  grep ANTHROPIC_BASE_URL ~/.claude/settings.json   # http://127.0.0.1:8080
+Team lead build:
+  bash packaging/build-release-tarball.sh
 
-Port 8080 busy:
-  Setup auto-picks 8081. Re-run configure_claude_proxy.sh if you change port.
+Optional shared-drive publish:
+  cp packaging/share.conf.example packaging/share.conf
+  bash packaging/publish-to-sharepoint.sh
 
-Disable synthesizer:
-  csynth proxy off
-
-  (Re-enable: csynth proxy on)
-
-WHAT YOU GET
-------------
-- Live compaction proxy (Dreaming v4) — default ON
-- Tool-faithful bridge — tools, thinking, tool_use loops preserved for Claude Code
-- Live dashboard — cache/cost bifurcation (see docs/guides/COST_SAVINGS.md)
-- csynth CLI — status, proxy on/off, dashboard, doctor, logs, restart
-
-DOCUMENTATION (in toolkit package)
-----------------------------------
-  docs/guides/CSYNTH_QUICK_REFERENCE.md   install, reinstall, proxy toggle
-  docs/guides/COST_SAVINGS.md               why cost drops vs payload size
-  docs/guides/DASHBOARD.md                live dashboard
-  docs/guides/DEVELOPER_ONBOARDING.md     full setup guide
+Public release checklist: docs/guides/PUBLIC_RELEASE.md

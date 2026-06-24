@@ -1,51 +1,58 @@
-# Developer onboarding — one installer, no git
+# Developer onboarding
 
 **Time:** ~5 minutes once. After setup: use Claude Code normally.
 
-**Quick CLI reference:** [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)  
-**Cost vs payload on dashboard:** [COST_SAVINGS.md](COST_SAVINGS.md)
+**Quick CLI:** [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · **Cost metrics:** [COST_SAVINGS.md](COST_SAVINGS.md)
 
 ---
 
-## Motadata — install from shared package (simplest)
+## Install (GitHub or tarball)
 
-Team lead shares **one folder** on SharePoint (the built toolkit package).  
-You **Sync** it in OneDrive, then run **one command**:
-
-```bash
-cd "/path/to/OneDrive - Motadata/ContextSynthesizer/context-synthesizer-toolkit-YYYY.MM.DD"
-bash run-setup.sh firstname.lastname
-```
-
-Example:
+### From git
 
 ```bash
-bash run-setup.sh harshil.shah
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+cd smart-context-synthesizer/context-synthesizer
+bash install.sh your.handle
 ```
 
-Read `INSTALL.txt` in the same folder. No GitHub, no rclone.
-
-Use your **Azure email local-part** as the setup ID (e.g. `bash run-setup.sh harshil.shah` for `harshil.shah@motadata.com`).
-
-**Primary benefit — live compaction (on by default):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Log in to Claude Code (Max/Pro) as usual — the CLI forwards auth to the proxy; no separate API key at setup.
-
-**Live dashboard:** `csynth dashboard` (or `bash context-synthesizer/scripts/open_dashboard.sh`) prints the correct URL (on WSL, includes `?token=...`). On **WSL + Windows browser**, use the **WSL IP** (not `127.0.0.1` in Chrome/Edge) — see [DASHBOARD.md](DASHBOARD.md).
-
-**Proxy toggle (no reinstall):**
+### From release tarball
 
 ```bash
-csynth proxy on    # route Claude Code through synthesizer
-csynth proxy off   # direct Anthropic API
-csynth restart     # after updates or errors
+tar -xzf context-synthesizer-toolkit-*.tar.gz
+cd context-synthesizer-toolkit-*
+bash run-setup.sh your.handle
 ```
 
-**Optional — weekly SharePoint reports:** set `ENABLE_WEEKLY_CRON=1` in `team.conf` before setup, or run `weekly_sync.sh` manually. Not enabled by default.
+Use a short developer id (e.g. email local-part: `jane.doe`).
 
-Adjust `--sync-dir` if your OneDrive path differs (check in file manager after Sync).
+**Live compaction (default ON):** Claude Code routes through a local proxy; Dreaming v4 compacts context during long sessions. Max/Pro login forwards auth — no API key at setup.
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+csynth doctor && csynth dashboard
+```
+
+**Proxy toggle:**
+
+```bash
+csynth proxy on | off | restart
+```
 
 ---
 
-## WSL + Windows browser (common at Motadata)
+## Optional: install from team shared drive
+
+If your team publishes a synced folder (OneDrive, Google Drive, etc.):
+
+```bash
+cd /path/to/context-synthesizer-toolkit-latest
+bash run-setup.sh your.handle
+```
+
+Team lead setup: [DEPLOY.md](DEPLOY.md) § Optional shared-drive publish.
+
+---
 
 Proxy and Claude Code run **inside WSL**. The live dashboard is served from WSL too.
 
@@ -90,8 +97,8 @@ sudo apt install -y python3 python3-venv python3-pip
 
 Ubuntu has **no Microsoft OneDrive desktop app** like Windows. Common options:
 
-1. **[abraunegg/onedrive](https://github.com/abraunegg/onedrive)** — syncs SharePoint/OneDrive to e.g. `~/OneDrive` or `~/OneDrive - Motadata`  
-2. **IT-provided sync** — if Motadata mounts the folder elsewhere, set that path in `team.conf` → `SYNC_DIR`
+1. **[abraunegg/onedrive](https://github.com/abraunegg/onedrive)** — syncs SharePoint/OneDrive to e.g. `~/OneDrive`  
+2. **IT-provided sync** — set path in `team.conf` → `SYNC_DIR`
 
 ### `team.conf` on Ubuntu
 
@@ -99,8 +106,6 @@ Edit `SYNC_DIR` to match **your** synced weekly folder, for example:
 
 ```bash
 SYNC_DIR="$HOME/OneDrive/ContextSynthesizer/weekly"
-# or, if the client uses the Motadata label:
-SYNC_DIR="$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
 ```
 
 Then:

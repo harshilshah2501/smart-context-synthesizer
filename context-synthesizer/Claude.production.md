@@ -1,5 +1,9 @@
 # Production Context — Layer 1 (cache-pinned)
 
+> **Note:** Large benchmark / rules document used as Layer-1 cache content in internal
+> studies. Review for org-specific names before publishing; safe to replace with your
+> own `Claude.md` for production use.
+
 Byte-identical across requests. Do not inject dynamic values here.
 
 # Claude.md

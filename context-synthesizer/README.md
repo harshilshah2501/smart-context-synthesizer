@@ -1,73 +1,79 @@
 # Context Synthesizer
 
-Offline analysis and tuning toolkit for **smart context compaction**.
+Local proxy + compaction layer for **Claude Code** and **Cursor**.
 
-`proxy_tool.py` is the **gateway implementation target**; the team workflow is **offline** corpus import (Modes A / C / D) plus an optional **live proxy** for Claude Code (Max/Pro).
-
-**All documentation:** [../docs/README.md](../docs/README.md)
+**All documentation:** [../docs/README.md](../docs/README.md) · [../docs/guides/DOCS_CHEATSHEET.md](../docs/guides/DOCS_CHEATSHEET.md)
 
 | Doc | Read when |
 |-----|-----------|
-| [../docs/guides/DOCS_CHEATSHEET.md](../docs/guides/DOCS_CHEATSHEET.md) | **Cheatsheet** — doc map + commands by role |
-| [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Start here** — one-time setup |
-| [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** — install, proxy on/off, restart |
-| [../docs/guides/COST_SAVINGS.md](../docs/guides/COST_SAVINGS.md) | **Why cost drops** when payload size looks flat |
-| [../docs/guides/DASHBOARD.md](../docs/guides/DASHBOARD.md) | **Live dashboard** — bifurcation & savings |
-| [../docs/guides/Usage.md](../docs/guides/Usage.md) | Per-mode setup (A / C / D) |
-| [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Team lead — drive + rollup |
-| [../docs/reports/SYNTHESIZER_RND_REPORT.md](../docs/reports/SYNTHESIZER_RND_REPORT.md) | R&D record, roadmap |
+| [../docs/guides/DEVELOPER_ONBOARDING.md](../docs/guides/DEVELOPER_ONBOARDING.md) | **Install & setup** |
+| [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md) | **`csynth` CLI** |
+| [../docs/guides/COST_SAVINGS.md](../docs/guides/COST_SAVINGS.md) | Cost vs payload on dashboard |
+| [../docs/guides/DASHBOARD.md](../docs/guides/DASHBOARD.md) | Live metrics UI |
+| [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md) | Build tarball / team publish |
 | [../docs/context_os_technical_report.md](../docs/context_os_technical_report.md) | Gateway design |
 
 ---
 
-## Data collection modes
+## Install
 
-| Mode | Who | Tool |
-|------|-----|------|
-| **A** | Claude Code (default) | `import_cli_logs.py` |
-| **C** | Cursor IDE | `import_cursor_sessions.py` |
-| **D** | Claude Max / Pro | `import_claude_sessions.py` |
-
-Modes A/C/D are **offline** — no API key, no proxy.
-
----
-
-## Quick start (developers)
-
-**Motadata / SharePoint:** download `context-synthesizer-toolkit-latest` from the synced folder, then:
-
-```bash
-cd context-synthesizer-toolkit-latest
-bash run-setup.sh firstname.lastname
-csynth doctor && csynth dashboard
-```
-
-Live compaction proxy is on by default (`ENABLE_PROXY=1`). Claude Max/Pro login only — no API key.
-
-### `csynth` (after install)
-
-```bash
-csynth status          # proxy service + routing
-csynth proxy on        # route through synthesizer
-csynth proxy off       # direct Anthropic API
-csynth restart         # restart proxy service
-csynth dashboard       # live cost dashboard URL
-csynth doctor          # full preflight
-csynth logs            # tail proxy journal
-```
-
-**Reinstall:** `bash install.sh firstname.lastname --reinstall`
-
-See [../docs/guides/CSYNTH_QUICK_REFERENCE.md](../docs/guides/CSYNTH_QUICK_REFERENCE.md).
-
-**Team lead — publish a release** (from dev machine with OneDrive sync):
+**From git checkout:**
 
 ```bash
 cd context-synthesizer
+bash install.sh your.handle
+```
+
+**From toolkit tarball:**
+
+```bash
+cd context-synthesizer-toolkit-latest
+bash run-setup.sh your.handle
+```
+
+```bash
+csynth doctor && csynth dashboard
+```
+
+Proxy on by default. Claude Max/Pro login — no API key at setup.
+
+### `csynth`
+
+```bash
+csynth proxy on | off | restart
+csynth status | doctor | dashboard | logs
+```
+
+Reinstall: `bash install.sh your.handle --reinstall`
+
+---
+
+## Offline analysis (no proxy)
+
+| Mode | Tool |
+|------|------|
+| A — Claude Code logs | `import_cli_logs.py` |
+| C — Cursor | `import_cursor_sessions.py` |
+| D — Claude sessions | `import_claude_sessions.py` |
+
+See [../docs/guides/Usage.md](../docs/guides/Usage.md).
+
+---
+
+## Team lead — build release
+
+```bash
+bash packaging/build-release-tarball.sh
+```
+
+Optional shared-drive publish (configure `packaging/share.conf` from `share.conf.example`):
+
+```bash
+cp packaging/share.conf.example packaging/share.conf
 bash packaging/publish-to-sharepoint.sh
 ```
 
-Builds the toolkit and copies to `OneDrive - Motadata/Context-Synthesizer/`. See [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md).
+See [../docs/guides/DEPLOY.md](../docs/guides/DEPLOY.md).
 
 ---
 
@@ -75,13 +81,9 @@ Builds the toolkit and copies to `OneDrive - Motadata/Context-Synthesizer/`. See
 
 | Path | Purpose |
 |------|---------|
-| `proxy_message_bridge.py` | Tool-faithful message assembly + API passthrough |
-| `proxy_tool.py` | Gateway + `/dashboard` live telemetry UI |
-| `import_*.py` | Mode A/C/D corpus import |
-| `compaction.py` | Dreaming v4 rules |
-| `dashboard_api.py` / `dashboard_routes.py` | Dashboard aggregation + SSE |
-| `static/dashboard.html` | Live bifurcation charts |
+| `proxy_message_bridge.py` | Tool-faithful message assembly |
+| `proxy_tool.py` | Gateway + dashboard |
+| `compaction.py` | Dreaming v4 summarization |
+| `telemetry.py` | Cost / cache bifurcation math |
 | `scripts/csynth` | Post-install CLI |
-| `packaging/` | SharePoint publish, tarball build |
-| `stats/` | Local corpora (**gitignored**) |
-| `../docs/` | All guides and reports |
+| `stats/` | **Local only** — gitignored |

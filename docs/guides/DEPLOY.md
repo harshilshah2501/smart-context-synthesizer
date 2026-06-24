@@ -1,90 +1,78 @@
 # Deploying the Context Synthesizer
 
-**Developers never clone git.** They run **`run-setup.sh` once** (~5 min) from the SharePoint package. After that: **live compaction proxy** (primary) + optional weekly SharePoint uploads.
-
 | Role | After setup |
 |------|-------------|
-| **Developer** | Use Claude Code normally (proxy runs in background); `csynth proxy on\|off` as needed |
-| **Team lead** | Publish releases to SharePoint; optional weekly `team_rollup.sh` (~1 min/week) |
+| **Developer** | `bash run-setup.sh` or `bash install.sh` — use Claude Code normally |
+| **Team lead** | Build tarball; optionally publish to a synced shared drive |
 
-**Send developers:** [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) · [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) · [COST_SAVINGS.md](COST_SAVINGS.md)
-
-> **Motadata teams:** use only the section below. Skip [Alternative: GitHub / rclone](#alternative-github--rclone).
+**Docs:** [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [PUBLIC_RELEASE.md](PUBLIC_RELEASE.md)
 
 ---
 
-## Motadata / SharePoint — team lead publish (recommended)
+## Build release tarball (all teams)
 
-> **Repo is private** — do not ask developers to `curl` from GitHub.  
-> **One command** builds the toolkit and copies it to your synced OneDrive folder → SharePoint updates automatically.
-
-### One-time setup (team lead machine)
-
-1. **Clone or sync** the repo on a machine with OneDrive sync to SharePoint:
-   ```bash
-   git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
-   cd smart-context-synthesizer/context-synthesizer
-   ```
-
-2. **Edit `packaging/share.conf` once** if your OneDrive path differs:
-   ```bash
-   # packaging/share.conf
-   SHARE_DIR_WIN='C:\Users\Harshil Shah\OneDrive - Motadata\Context-Synthesizer'
-   SHARE_DIR_WSL='/mnt/c/Users/Harshil Shah/OneDrive - Motadata/Context-Synthesizer'
-   LATEST_NAME='context-synthesizer-toolkit-latest'
-   ```
-
-3. **Create the SharePoint folder** in OneDrive (if missing):
-   `OneDrive - Motadata/Context-Synthesizer/`
-
-4. **Share the SharePoint link** with the team → developers click **Sync** in OneDrive.
-
-### Every release — build + copy to shared drive
-
-From the `context-synthesizer` directory (repo checkout or dev copy):
-
-```bash
-bash packaging/publish-to-sharepoint.sh
-```
-
-This script:
-
-1. Runs `packaging/build-release-tarball.sh` (creates dated toolkit under `packaging/build/`)
-2. Copies **`context-synthesizer-toolkit-latest/`** → your OneDrive `Context-Synthesizer/` folder
-3. Copies **`context-synthesizer-toolkit-YYYY.MM.DD.tar.gz`** (dated archive)
-4. Copies **`context-synthesizer-toolkit-latest.tar.gz`** (stable archive name)
-5. Writes **`INSTALL.txt`** at the share root with developer instructions
-
-**No manual upload. No `install.sh` edits per release.**
-
-OneDrive syncs to SharePoint within minutes. Developers always use the stable folder name:
-
-```text
-OneDrive - Motadata/Context-Synthesizer/
-  context-synthesizer-toolkit-latest/     ← always current (recommended)
-  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
-  context-synthesizer-toolkit-latest.tar.gz
-  INSTALL.txt
-```
-
-### Manual build only (without OneDrive copy)
-
-If you need the tarball locally without publishing:
+From `context-synthesizer/`:
 
 ```bash
 bash packaging/build-release-tarball.sh
 ```
 
-Output:
+Output under `packaging/build/`:
 
 ```text
-context-synthesizer/packaging/build/
-  context-synthesizer-toolkit-YYYY.MM.DD/          # extracted package
-  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz    # dated archive
-  context-synthesizer-toolkit-latest.tar.gz        # symlink to latest .tar.gz
+context-synthesizer-toolkit-YYYY.MM.DD/
+context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
+context-synthesizer-toolkit-latest.tar.gz
 ```
 
-Then upload manually to SharePoint if `publish-to-sharepoint.sh` cannot reach your OneDrive path.
+Distribute the folder or `.tar.gz` via GitHub Releases, internal file share, or optional OneDrive sync below.
+
+Developers install:
+
+```bash
+tar -xzf context-synthesizer-toolkit-*.tar.gz
+cd context-synthesizer-toolkit-*
+bash run-setup.sh developer.id
+```
+
+---
+
+## Optional: shared-drive publish (OneDrive / SharePoint)
+
+For teams that sync a folder to all developers (enterprise rollout).
+
+### One-time setup
+
+```bash
+cp packaging/share.conf.example packaging/share.conf
+# edit SHARE_DIR_WIN / SHARE_DIR_WSL to your synced folder
+```
+
+### Every release
+
+```bash
+bash packaging/publish-to-sharepoint.sh
+```
+
+Copies `context-synthesizer-toolkit-latest/` + dated `.tar.gz` + `INSTALL.txt` to the configured share.  
+`share.conf` is **gitignored** — never commit org paths.
+
+The script:
+
+1. Runs `packaging/build-release-tarball.sh`
+2. Copies `context-synthesizer-toolkit-latest/` to your shared folder
+3. Copies dated and `latest` `.tar.gz` archives
+4. Writes `INSTALL.txt` at the share root
+
+Share layout after publish:
+
+```text
+YourSharedDrive/Context-Synthesizer/
+  context-synthesizer-toolkit-latest/
+  context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
+  context-synthesizer-toolkit-latest.tar.gz
+  INSTALL.txt
+```
 
 ### What gets built
 
@@ -103,16 +91,16 @@ The toolkit package includes:
 ### Verify publish
 
 ```bash
-ls -la "/mnt/c/Users/Harshil Shah/OneDrive - Motadata/Context-Synthesizer/"
+ls -la /path/to/your/shared-drive/Context-Synthesizer/
 # expect: context-synthesizer-toolkit-latest, *.tar.gz, INSTALL.txt
 ```
 
 Tell developers after a release:
 
 ```text
-1. OneDrive → Sync Context-Synthesizer (or wait for auto-sync)
+1. Sync shared folder (or download tarball)
 2. cd context-synthesizer-toolkit-latest
-3. bash run-setup.sh firstname.lastname
+3. bash run-setup.sh developer.id
 4. csynth doctor && csynth dashboard
 ```
 
@@ -124,7 +112,7 @@ Open terminal in the synced package folder:
 
 ```bash
 cd context-synthesizer-toolkit-latest
-bash run-setup.sh harshil.shah
+bash run-setup.sh developer.id
 ```
 
 Use Azure email local-part (`firstname.lastname`). No git or API key.
@@ -135,7 +123,7 @@ See `INSTALL.txt` at the share root or inside the package. **Live compaction is 
 
 ```bash
 cd context-synthesizer-toolkit-latest
-bash install.sh firstname.lastname --reinstall
+bash install.sh developer.id --reinstall
 csynth doctor
 ```
 
@@ -153,14 +141,14 @@ When developers upload weekly summaries to the synced folder:
 
 ```bash
 bash context-synthesizer/scripts/pull_from_drive.sh \
-  "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+  "$HOME/shared-drive/ContextSynthesizer/weekly"
 bash context-synthesizer/scripts/team_rollup.sh
 ```
 
 Optional team-lead cron (Mondays 09:15):
 
 ```cron
-15 9 * * 1 bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/pull_from_drive.sh "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly" && bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/team_rollup.sh
+15 9 * * 1 bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/pull_from_drive.sh "$HOME/shared-drive/ContextSynthesizer/weekly" && bash /path/to/context-synthesizer-toolkit-latest/context-synthesizer/scripts/team_rollup.sh
 ```
 
 ---
@@ -171,7 +159,7 @@ Optional team-lead cron (Mondays 09:15):
 Team lead: publish-to-sharepoint.sh
               │
               ▼
-    OneDrive/Context-Synthesizer/  ──sync──►  SharePoint
+    SharedDrive/Context-Synthesizer/  ──sync──►  team machines
               │
 Developer: run-setup.sh / install.sh
               │
@@ -192,7 +180,7 @@ Claude Code ──► proxy (default ON) ────────►  /dashboard
 | Publish works but devs see old version | Wait for OneDrive sync; confirm `context-synthesizer-toolkit-latest` timestamp |
 | Setup fails at proxy step | Enable systemd (WSL: `[boot] systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown`) |
 | Proxy down | `csynth restart` |
-| Reinstall | `bash install.sh firstname.lastname --reinstall` from package root |
+| Reinstall | `bash install.sh developer.id --reinstall` from package root |
 
 ### Proxy won't start (exit-code / auto-restart)
 
@@ -234,14 +222,14 @@ More: [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) · `INSTALL.txt` at the
 ## Backup zip import (team lead)
 
 ```bash
-bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer meet-chavda
+bash context-synthesizer/scripts/import_claude_backup.sh backup.zip --developer dev-id
 ```
 
 ---
 
 ## Alternative: GitHub / rclone
 
-> **Not for Motadata rollout.** Use SharePoint + `publish-to-sharepoint.sh` above.
+> **Enterprise teams:** optional `publish-to-sharepoint.sh` after configuring `share.conf`.
 
 ### Publish installer (public repo only)
 

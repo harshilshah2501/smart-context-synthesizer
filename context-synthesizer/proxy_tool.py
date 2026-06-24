@@ -238,11 +238,18 @@ CHECKPOINTS_PREFIX = (
 CLAUDE_MD_CONTENT: str = ""
 DEFAULT_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip() or None
 
-# ── GitHub Copilot backend ────────────────────────────────────────────────────
-# Set COPILOT_TOKEN (GitHub OAuth token from `gh auth token`) to route all LLM
-# traffic through api.githubcopilot.com instead of api.anthropic.com.
-# The Anthropic SDK is bypassed; requests are translated to OpenAI format.
-COPILOT_TOKEN: str | None = os.environ.get("COPILOT_TOKEN", "").strip() or None
+# ── GitHub Copilot backend (EXPERIMENTAL — unsupported) ─────────────────────
+# Routing Claude traffic through GitHub Copilot may violate GitHub ToS.
+# Disabled by default. Set ENABLE_COPILOT_BACKEND=1 + COPILOT_TOKEN only for
+# local experiments — not supported in production or public installs.
+_ENABLE_COPILOT = os.environ.get("ENABLE_COPILOT_BACKEND", "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+)
+COPILOT_TOKEN: str | None = (
+    os.environ.get("COPILOT_TOKEN", "").strip() or None if _ENABLE_COPILOT else None
+)
 COPILOT_BASE_URL: str = os.environ.get("COPILOT_BASE_URL", "https://api.githubcopilot.com")
 
 

@@ -1,51 +1,99 @@
 # Smart Context Synthesizer
 
-Offline R&D toolkit for **smart context compaction** — study long IDE sessions, estimate synthesizer-shaped payloads, and tune Dreaming rules.
+A local API proxy between **Claude Code** / **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
 
-**Team install:** SharePoint package + `bash run-setup.sh` → live proxy + **[dashboard](docs/guides/DASHBOARD.md)** (`open_dashboard.sh`; WSL users: WSL IP in Windows browser).
+**Docs:** [docs/README.md](docs/README.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
-**Start here:** [context-synthesizer/README.md](context-synthesizer/README.md)  
-**All docs:** [docs/README.md](docs/README.md)
+---
+
+## Quick start
+
+### From GitHub (recommended for open source)
+
+```bash
+git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
+cd smart-context-synthesizer/context-synthesizer
+bash install.sh your.handle --install-dir ~/.local/share/context-synthesizer
+```
+
+Or one-liner (public repo):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- your.handle
+```
+
+Then:
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+csynth doctor && csynth dashboard
+```
+
+Use **Claude Code Max/Pro** — the CLI forwards OAuth; no separate API key at setup.
+
+### From a release tarball
+
+```bash
+tar -xzf context-synthesizer-toolkit-*.tar.gz
+cd context-synthesizer-toolkit-*
+bash run-setup.sh your.handle
+```
+
+Team leads: `bash packaging/build-release-tarball.sh` — see [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md).
+
+---
+
+## What it does
+
+| Feature | Description |
+|---------|-------------|
+| **Layered compaction** | L1 rules + L2 ledger + L3 recent turns + L4 prompt |
+| **Prompt cache alignment** | `cache_control` breakpoints on stable prefix |
+| **Tool-faithful proxy** | Preserves `tool_use` / `tool_result` in active loops |
+| **Pinned checkpoints** | `@synth-remember:` in user messages → L2a |
+| **Live dashboard** | Cache read / uncached / cost bifurcation per request |
+| **Dual API** | Anthropic `/v1/messages` + OpenAI `/v1/chat/completions` (Cursor) |
+
+---
 
 ## Repository layout
 
 ```
 .
-├── README.md                 ← you are here
-├── docs/                     ← all documentation (guides, reports, architecture)
-│   ├── guides/
-│   ├── reports/
-│   └── context_os_technical_report.md
+├── README.md
+├── docs/                     guides, reports, architecture
 └── context-synthesizer/
-    ├── *.py                  ← import pipeline, compaction, gateway
-    ├── scripts/
-    ├── packaging/            ← tarball build + run-setup.sh (SharePoint rollout)
-    └── stats/                ← local corpora (gitignored)
+    ├── proxy_tool.py         FastAPI gateway
+    ├── proxy_message_bridge.py
+    ├── compaction.py         Dreaming v4
+    ├── scripts/csynth          post-install CLI
+    ├── packaging/            tarball build (optional team publish scripts)
+    └── stats/                local telemetry — gitignored, never commit
 ```
 
-## Quick start (developers — no git)
+---
 
-**SharePoint / Motadata package (recommended):** `bash run-setup.sh firstname.lastname` — live compaction on by default (`ENABLE_PROXY=1` in `team.conf`).
-
-**curl / rclone:**
+## Daily commands
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/harshilshah2501/smart-context-synthesizer/main/install.sh | bash -s -- \
-  --developer YOUR_HANDLE \
-  --rclone-remote 'gdrive:Shared/ContextSynthesizer/weekly' \
-  --enable-proxy \
-  --install-cron
+csynth proxy on | off | restart
+csynth status | doctor | dashboard | logs
 ```
 
-Team lead: [docs/guides/DEPLOY.md](docs/guides/DEPLOY.md) · Developers: [docs/guides/DEVELOPER_ONBOARDING.md](docs/guides/DEVELOPER_ONBOARDING.md) · Live metrics: [docs/guides/DASHBOARD.md](docs/guides/DASHBOARD.md)
+Full reference: [docs/guides/CSYNTH_QUICK_REFERENCE.md](docs/guides/CSYNTH_QUICK_REFERENCE.md)
 
-## What is not in this repo
+**Why cost drops when payload looks flat:** [docs/guides/COST_SAVINGS.md](docs/guides/COST_SAVINGS.md)
 
-| Path | Reason |
-|------|--------|
-| `m-coder-core/`, `Ollama/` | Unrelated projects (gitignored) |
-| `context-synthesizer/stats/` | Session JSONL — sensitive, local only |
-| `*.zip` backups | Session exports — never commit |
-| `docs/notes/` | Personal scratch notes (gitignored) |
+---
 
-GitHub: [harshilshah2501/smart-context-synthesizer](https://github.com/harshilshah2501/smart-context-synthesizer)
+## Public release checklist
+
+Before publishing or sharing forks, read [docs/guides/PUBLIC_RELEASE.md](docs/guides/PUBLIC_RELEASE.md).
+
+**Never commit:** `.env`, `stats/`, `stats/backups/`, session exports, or org-specific `packaging/share.conf`.
+
+---
+
+## License
+
+MIT (see LICENSE if present) · Issues: [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer)

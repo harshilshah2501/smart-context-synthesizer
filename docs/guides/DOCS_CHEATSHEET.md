@@ -8,7 +8,7 @@ One-page map: **which doc to open**, **which command to run**, **who it's for**.
 
 | I am… | Read first | Then |
 |-------|------------|------|
-| **Developer** (Motadata) | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) |
+| **Developer** | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) | [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · [DASHBOARD.md](DASHBOARD.md) |
 | **Team lead** | [DEPLOY.md](DEPLOY.md) | [TEAM_ANNOUNCEMENT.md](TEAM_ANNOUNCEMENT.md) · [DASHBOARD.md](DASHBOARD.md) |
 | **R&D / architect** | [context_os_technical_report.md](../context_os_technical_report.md) | [SYNTHESIZER_RND_REPORT.md](../reports/SYNTHESIZER_RND_REPORT.md) |
 | **Offline analysis only** | [Usage.md](Usage.md) | [CLI_STATS_GUIDE.md](CLI_STATS_GUIDE.md) |
@@ -88,7 +88,7 @@ bash packaging/build-release-tarball.sh
 ### Optional — weekly rollup
 
 ```bash
-bash context-synthesizer/scripts/pull_from_drive.sh "$HOME/OneDrive - Motadata/ContextSynthesizer/weekly"
+bash context-synthesizer/scripts/pull_from_drive.sh "$HOME/shared-drive/ContextSynthesizer/weekly"
 bash context-synthesizer/scripts/team_rollup.sh
 ```
 
@@ -125,7 +125,7 @@ bash context-synthesizer/scripts/team_rollup.sh
 ## SharePoint layout (after publish)
 
 ```text
-OneDrive - Motadata/Context-Synthesizer/
+YourSharedDrive/Context-Synthesizer/
   context-synthesizer-toolkit-latest/     ← developers cd here
   context-synthesizer-toolkit-YYYY.MM.DD.tar.gz
   context-synthesizer-toolkit-latest.tar.gz

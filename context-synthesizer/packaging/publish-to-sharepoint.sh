@@ -12,9 +12,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 CONF="$SCRIPT_DIR/share.conf"
-
 if [[ ! -f "$CONF" ]]; then
   echo "Missing $CONF" >&2
+  echo "  cp packaging/share.conf.example packaging/share.conf" >&2
+  echo "  # edit paths, then re-run" >&2
   exit 1
 fi
 # shellcheck source=share.conf
