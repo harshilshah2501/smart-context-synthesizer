@@ -22,6 +22,9 @@ Verify:
 Toggle proxy (no reinstall):
   csynth proxy on | csynth proxy off
 
+Upgrade in place (preserves .env + stats/):
+  csynth upgrade
+
 Claude Max/Pro login only — no API key.
 
 Docs: docs/guides/DEVELOPER_ONBOARDING.md

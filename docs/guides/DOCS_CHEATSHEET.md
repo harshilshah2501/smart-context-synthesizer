@@ -12,6 +12,7 @@ One-page map: **which doc to open**, **which command to run**.
 | **Understand cost metrics** | [COST_SAVINGS.md](COST_SAVINGS.md) | [DASHBOARD.md](DASHBOARD.md) |
 | **Test with Cursor** | [CURSOR_TEST.md](CURSOR_TEST.md) | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) |
 | **Ship a tarball** | [RELEASE.md](RELEASE.md) | [DEVELOPER_ONBOARDING.md](DEVELOPER_ONBOARDING.md) |
+| **Announce / HN** | [LAUNCH.md](../LAUNCH.md) | [README.md](../../README.md) |
 | **Architecture deep dive** | [context_os_technical_report.md](../context_os_technical_report.md) | — |
 
 ---
@@ -26,6 +27,7 @@ One-page map: **which doc to open**, **which command to run**.
 | [COST_SAVINGS.md](COST_SAVINGS.md) | Why **cost** drops when **payload** looks flat |
 | [CURSOR_TEST.md](CURSOR_TEST.md) | Cursor IDE + OpenAI shim testing |
 | [RELEASE.md](RELEASE.md) | Build `context-synthesizer-toolkit-*.tar.gz` |
+| [LAUNCH.md](../LAUNCH.md) | HN / X / Reddit templates (v0.1.1) |
 
 ---
 
@@ -44,8 +46,9 @@ tar -xzf context-synthesizer-toolkit-*.tar.gz
 cd context-synthesizer-toolkit-*
 bash run-setup.sh firstname.lastname
 
-# Reinstall / upgrade
+# Reinstall (wipes install dir) or in-place upgrade
 bash install.sh firstname.lastname --reinstall
+csynth upgrade   # preserves .env + stats/
 
 # Proxy
 csynth proxy on

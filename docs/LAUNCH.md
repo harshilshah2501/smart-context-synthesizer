@@ -1,9 +1,9 @@
 # Launch kit — HN, X, Reddit
 
-Copy-paste templates for announcing **Context Synthesizer v0.1.0**.
+Copy-paste templates for announcing **Context Synthesizer v0.1.1**.
 
 **Repo:** https://github.com/harshilshah2501/smart-context-synthesizer  
-**Release:** https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.0
+**Release:** https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.1
 
 ---
 
@@ -34,16 +34,18 @@ Option 1 is the clearest for a general HN audience.
 >
 > Session IDs go in HTTP headers (`X-Session-Id`), not in cached message bodies, so the prefix stays byte-stable for cache hits.
 >
-> Every ~10 turns (or 100K estimated history tokens), a background Haiku call compacts the rolling window into the ledger. Active tool loops (`tool_use` / `tool_result`) pass through verbatim so Claude Code doesn’t break mid-bash.
+> Every ~10 turns (or 100K estimated history tokens), a background Haiku call compacts the rolling window into the ledger. Active tool loops (`tool_use` / `tool_result`) pass through verbatim on the Claude Code `/v1/messages` path so bash/grep don’t break mid-loop.
 >
 > You can pin facts that must survive compaction with `@synth-remember:` in a user message.
 >
-> **What you get**
+> **What you get (v0.1.1)**
 >
-> - Live dashboard: cache read / uncached / cost per request
+> - Live dashboard: cache read / uncached / cost per request + cache-floor banner
 > - `csynth` CLI: `doctor`, `dashboard`, `proxy on|off`, `logs`, `upgrade`
+> - Structured ledger validation (programmatic state override after compaction)
+> - 33 automated tests in CI (route + dashboard + ledger coverage)
 > - Works with Claude Code Max/Pro (OAuth forwarded — no API key at setup)
-> - Cursor via OpenAI-compatible `/v1/chat/completions` shim
+> - Cursor via OpenAI-compatible `/v1/chat/completions` shim (chat + telemetry; not full tool-loop parity)
 >
 > **Install**
 >
@@ -54,16 +56,17 @@ Option 1 is the clearest for a general HN audience.
 > csynth doctor && csynth dashboard
 > ```
 >
-> Or tarball (no git): https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.0
+> Or tarball (no git): https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.1
 >
 > **Honest limitations**
 >
 > - Anthropic-specific economics (`cache_control` breakpoints). Not a generic OpenAI/Ollama proxy.
 > - Linux / WSL2 first (systemd user service for the proxy).
+> - Cursor `/v1/chat/completions` uses a simpler payload path than Claude Code — fine for chat, not ideal for heavy tool loops.
 > - Compaction quality depends on Haiku synthesis — pinned checkpoints are the escape hatch.
 > - First `cache_read` may be low until the prefix warms; judge long sessions on **cost vs payload**, not turn 1.
 >
-> MIT licensed. v0.1.0 tagged.
+> MIT licensed. **v0.1.1** tagged (beta).
 >
 > Repo: https://github.com/harshilshah2501/smart-context-synthesizer  
 > Architecture: `docs/context_os_technical_report.md`
@@ -76,30 +79,30 @@ Option 1 is the clearest for a general HN audience.
 > Native compaction is opaque, fires infrequently, and doesn’t structurally separate stable rules (L1) from compacted state (L2) from the active tool tail (L3). This proxy:
 > 1. Keeps a fixed cached prefix (rules + ledger) across turns  
 > 2. Compacts on a predictable schedule (every 10 turns or token threshold)  
-> 3. Preserves active `tool_use`/`tool_result` blocks in the tail  
+> 3. Preserves active `tool_use`/`tool_result` blocks in the tail (Claude Code path)  
 > 4. Shows you the cost bifurcation live on `/dashboard`  
 >
-> On long sessions we measured 90–99% counterfactual history compression vs sending the full transcript — but the main win is shrinking what enters the cached prefix, not enabling caching per se (Claude Code already caches well).
+> On long sessions the shaped payload can be much smaller than sending the full transcript — but the main win is shrinking what enters the cached prefix. Measure on your machine with `python test_simulator.py` and the dashboard; avoid quoting fixed % savings.
 
 ---
 
 ## Twitter / X
 
-> Shipped v0.1.0 of Context Synthesizer — a local proxy for Claude Code that compacts session history into cache-friendly layers before each Anthropic API call.
+> Shipped v0.1.1 of Context Synthesizer — a local proxy for Claude Code that compacts session history into cache-friendly layers before each Anthropic API call.
 >
 > • L1 rules + L2 ledger = stable cached prefix  
-> • Tool loops preserved verbatim  
-> • Live cost dashboard  
+> • Tool loops preserved (Claude Code path)  
+> • Live cost dashboard + ledger validation  
 > • `@synth-remember:` pins for facts that must survive compaction  
 >
-> MIT · Linux/WSL  
+> Beta · MIT · Linux/WSL  
 > https://github.com/harshilshah2501/smart-context-synthesizer
 
 ---
 
 ## Reddit (r/ClaudeAI or r/LocalLLaMA)
 
-**Title:** `Open-source local proxy for Claude Code — compacts context into cache-friendly layers (v0.1.0)`
+**Title:** `Open-source local proxy for Claude Code — compacts context into cache-friendly layers (v0.1.1 beta)`
 
 **Body:**
 
@@ -107,7 +110,7 @@ I built Context Synthesizer — a localhost proxy between Claude Code and Anthro
 
 - Restructures each request into 4 layers (rules → compacted ledger → recent turns → prompt)
 - Runs background Haiku compaction every ~10 turns
-- Keeps active tool_use/tool_result loops intact
+- Keeps active tool_use/tool_result loops intact on the Claude Code API path
 - Shows live cache/cost metrics on a dashboard
 
 Install:
@@ -117,9 +120,9 @@ git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
 cd smart-context-synthesizer/context-synthesizer && bash install.sh your.handle
 ```
 
-Anthropic-specific (uses `cache_control`). Linux/WSL. MIT.
+Anthropic-specific (uses `cache_control`). Linux/WSL. MIT. **Beta.**
 
-Release: https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.0
+Release: https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.1
 
 Feedback welcome — especially on compaction quality in real multi-hour sessions.
 
@@ -133,4 +136,4 @@ Feedback welcome — especially on compaction quality in real multi-hour session
 | **X** | Same day as HN | Link HN thread once live |
 | **Reddit** | 24h after HN | Cross-post if HN discussion is active |
 
-**Be ready to answer:** cache floor (1,024 tokens), session ID in headers, Haiku vs Sonnet for compaction, comparison to `rtk` / `claude-devtools`.
+**Be ready to answer:** cache floor (1,024 tokens), session ID in headers, Haiku vs Sonnet for compaction, Cursor shim vs Claude Code parity, comparison to `rtk` / `claude-devtools`.

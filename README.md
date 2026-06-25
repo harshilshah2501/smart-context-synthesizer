@@ -71,6 +71,27 @@ More detail: [docs/guides/COST_SAVINGS.md](docs/guides/COST_SAVINGS.md) · [docs
 
 ---
 
+## Benchmark locally
+
+Reproducible 12-turn session against a running proxy (no Claude Code required):
+
+```bash
+# Terminal 1 — proxy (or: csynth proxy on)
+cd context-synthesizer
+source .venv/bin/activate   # or use install dir venv
+uvicorn proxy_tool:app --host 127.0.0.1 --port 8080
+
+# Terminal 2 — simulator (needs ANTHROPIC_API_KEY or proxy .env)
+export ANTHROPIC_API_KEY=sk-ant-...
+python test_simulator.py --base-url http://127.0.0.1:8080 --turns 12
+```
+
+The simulator prints cumulative cache read/write, shaped vs naive payload, and estimated cost. Results vary by model and `Claude.md` size — use your numbers, not fixed % claims.
+
+Watch live metrics: `csynth dashboard` in a third terminal.
+
+---
+
 ## What it does
 
 | Feature | Description |
@@ -135,6 +156,13 @@ Full details: [SECURITY.md](SECURITY.md)
 ```bash
 csynth proxy on | off | restart
 csynth status | doctor | dashboard | logs
+csynth upgrade    # pull latest from GitHub; preserves .env + stats/
+```
+
+If `csynth upgrade` is unknown (install from before v0.1.1), bootstrap once:
+
+```bash
+bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/upgrade.sh
 ```
 
 Full reference: [docs/guides/CSYNTH_QUICK_REFERENCE.md](docs/guides/CSYNTH_QUICK_REFERENCE.md)

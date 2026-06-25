@@ -23,6 +23,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 - GitHub Copilot backend moved to `context-synthesizer/experimental/` — not loaded by the supported proxy
 - Cursor/OpenAI path limitations documented in README and `docs/guides/CURSOR_TEST.md`
+- Documentation refreshed for v0.1.1 (LAUNCH kit, technical report, CLI guides)
 
 ## [0.1.0] - 2026-06-24
 

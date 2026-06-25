@@ -36,15 +36,19 @@ From a new toolkit folder:
 bash install.sh firstname.lastname --reinstall
 ```
 
-Or from inside the package:
+### In-place upgrade (preserves `.env` + `stats/`)
 
 ```bash
-bash run-setup.sh firstname.lastname
-# with install.sh at package root:
-bash install.sh firstname.lastname --reinstall
+csynth upgrade
 ```
 
-`--reinstall` removes `~/.local/share/context-synthesizer` first, then runs setup again.
+If `csynth upgrade` is unknown (install from before v0.1.1):
+
+```bash
+bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/upgrade.sh
+```
+
+`--reinstall` removes `~/.local/share/context-synthesizer` first, then runs setup again. Use **`csynth upgrade`** when you only need newer code without wiping local config.
 
 ### After reinstall
 
@@ -85,8 +89,9 @@ csynth proxy on   # re-enable when done
 **Proxy running but errors / after code update:**
 
 ```bash
+csynth upgrade      # pull latest from GitHub; refresh venv
 csynth restart
-csynth logs       # watch for [PROXY] ✗ upstream error
+csynth logs         # watch for [PROXY] ✗ upstream error
 ```
 
 **WSL note:** if `systemctl --user restart` hangs, use:
@@ -110,6 +115,7 @@ systemctl --user start context-synthesizer-proxy
 | `csynth doctor` | Full preflight: service, port, Claude settings, health |
 | `csynth logs` | Tail proxy journal (`journalctl -f`) |
 | `csynth restart` | Restart proxy service |
+| `csynth upgrade` | Pull latest from GitHub; refresh venv (preserves `.env`, `stats/`) |
 | `csynth help` | Short usage |
 
 ### Dashboard
@@ -149,6 +155,7 @@ csynth logs
 | Dashboard empty | `csynth proxy on` + use Claude through proxy |
 | Port 8080 busy (Tabby, etc.) | Set `PROXY_PORT=8081` in `~/.local/share/context-synthesizer/context-synthesizer/.env`, then `bash …/configure_claude_proxy.sh` and `csynth restart` |
 | Broken venv | `bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/repair_venv.sh` then `csynth restart` |
+| Old `csynth` (no upgrade command) | `bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/upgrade.sh` |
 | Compare cost vs payload | [COST_SAVINGS.md](COST_SAVINGS.md) |
 
 ---

@@ -123,8 +123,15 @@ bash install.sh your.handle
 | `csynth doctor` | Full routing preflight |
 | `csynth logs` | Tail proxy journal |
 | `csynth restart` | Restart proxy service |
+| `csynth upgrade` | Pull latest from GitHub; refresh venv (preserves `.env`, `stats/`) |
 
 **Reinstall:** `bash install.sh your.handle --reinstall`
+
+**Upgrade bootstrap** (if `csynth upgrade` unknown on old installs):
+
+```bash
+bash ~/.local/share/context-synthesizer/context-synthesizer/scripts/upgrade.sh
+```
 
 Full reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
 

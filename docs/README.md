@@ -23,7 +23,7 @@ User guides and architecture for the **Context Synthesizer** proxy.
 | [guides/DASHBOARD.md](guides/DASHBOARD.md) | Live dashboard |
 | [guides/CURSOR_TEST.md](guides/CURSOR_TEST.md) | Cursor IDE + OpenAI shim testing |
 | [guides/RELEASE.md](guides/RELEASE.md) | Build a release tarball |
-| [guides/LAUNCH.md](guides/LAUNCH.md) | HN / X / Reddit launch templates |
+| [LAUNCH.md](LAUNCH.md) | HN / X / Reddit launch templates (v0.1.1) |
 
 ## Architecture
 

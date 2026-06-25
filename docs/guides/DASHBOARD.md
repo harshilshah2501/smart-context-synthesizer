@@ -25,6 +25,7 @@ bash context-synthesizer/scripts/open_dashboard.sh --open
 | Section | Shows |
 |---------|--------|
 | **KPI cards** | Requests, compactions, $ saved, compression vs naive IDE history, cache read %, uncached tail %, IDE bloat ratio |
+| **Cache-floor banner** | Amber warning when estimated L1+L2 prefix is below Anthropic's 1,024-token cache minimum |
 | **Billing bifurcation** | Per turn: `cache_read` / `cache_write` / `uncached` tokens (Anthropic billing buckets) |
 | **Four-layer payload** | Est. L1 (rules) / L2 (ledger) / L3 (recent) / L4 (prompt) tokens |
 | **Naive vs shaped** | Full IDE transcript estimate vs synthesizer-shaped payload — see [COST_SAVINGS.md](COST_SAVINGS.md) |

@@ -13,8 +13,8 @@
 
 | Feature | Status | Location / notes |
 |---------|--------|------------------|
-| Four-layer index-aligned payload | **Shipped** | `proxy_tool.py` — `build_optimized_messages()` |
-| Ignore IDE cumulative history; use last user turn only | **Shipped** | `normalize_content(incoming_messages[-1])` |
+| Four-layer index-aligned payload | **Shipped** | `/v1/messages`: `assemble_upstream_messages()` + `proxy_message_bridge.py`; `/v1/chat/completions`: legacy `build_optimized_messages()` |
+| Ignore IDE cumulative history; use last user turn only | **Partial** | OpenAI shim only; `/v1/messages` preserves tool-faithful recent tail |
 | Per-session state via `X-Session-Id` header | **Shipped** | `resolve_session_id()` — not in message body |
 | `cache_control` on Layer 1 + Layer 2 | **Shipped** | `build_layer1_message()`, `build_layer2_message()` |
 | Async Anthropic client | **Shipped** | `AsyncAnthropic` |
@@ -28,8 +28,10 @@
 | Layer 1 token budget verifier | **Shipped** | `count_tokens.py` |
 | Model registry | **Shipped** | `models.py` |
 | Tool-faithful message bridge | **Shipped** | `proxy_message_bridge.py` |
-| Full ~200K production `Claude.md` | **Planned** | Large project rules file; starter ~380 tokens |
-| State Override validation | **Partial** | Rules in Dreaming v4; stricter post-check planned |
+| Production `Claude.md` template | **Shipped** | Default install ~1,600+ tokens (above 1,024 cache floor); `Claude.minimal.md` stub ~380 tokens for experiments |
+| State Override validation | **Shipped** | `ledger_validation.py` — programmatic override after `dream_compact()`; Dreaming v4 rules |
+| `csynth upgrade` | **Shipped** | `scripts/upgrade.sh` — in-place update from git or GitHub archive |
+| Dashboard cache-floor banner | **Shipped** | `dashboard_api.prefix_cache_status()` when L1+L2 < 1,024 tokens |
 | Asymmetric tiered routing (§7) | **Planned** | Not in codebase |
 | Per-layer token counts in telemetry | **Planned** | Char estimates in `ContextSnapshot` today |
 
@@ -139,7 +141,7 @@ Other models use different base rates (e.g. Claude Fable 5: $10 / $1 / $12.50 pe
 
 For **Claude Sonnet 4.6** on the Claude API: **1,024 tokens** per cache block. Shorter blocks are processed without caching — no error returned. Verify via `cache_read_input_tokens` and `cache_creation_input_tokens` in `usage`.
 
-The shipped starter `Claude.md` (~380 tokens) is below this threshold, which explains zero cache activity on Turns 1–3 of our benchmark.
+The **default shipped** `Claude.md` is a **production template (~1,600+ tokens)** — above the 1,024-token floor on Sonnet-class models. The **`Claude.minimal.md` stub (~380 tokens)** is below the floor; use it only for experiments. Early turns may still show zero `cache_read` until the prefix is written once; judge long sessions on dashboard **cost vs payload**, not turn 1.
 
 ### The Cache-Busting Vulnerability
 
@@ -213,13 +215,16 @@ Transformers have non-local token dependencies. Eviction is **semantic consolida
 
 ### The Four-Layer Context Stack
 
-The proxy rebuilds every outbound request from owned state. **JetBrains' full `messages` array is discarded** except the latest user turn (Layer 4).
+The proxy rebuilds outbound requests from owned state (L1/L2) plus a recent tail.
+
+- **`POST /v1/messages` (Claude Code):** tool-faithful — preserves `tool_use` / `tool_result` in the recent tail via `assemble_upstream_messages()`.
+- **`POST /v1/chat/completions` (Cursor shim):** legacy path — uses `build_optimized_messages()` from session state + latest user prompt (see [CURSOR_TEST.md](guides/CURSOR_TEST.md)).
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  LAYER 1 — Static Architecture Blueprint                    │
 │  Claude.md                                                  │
-│  Target: ~200,000 tokens  |  Shipped starter: ~380 tokens   │
+│  Target: project-sized (up to ~200K)  |  Shipped default: ~1,600+ tokens   │
 │  cache_control: { type: "ephemeral" }                       │
 │  → Target: cache_read @ $0.30/1M after warm-up              │
 ├─────────────────────────────────────────────────────────────┤
@@ -280,7 +285,7 @@ turn_counter >= MAX_TURNS_THRESHOLD
 
 **Shipped compaction prompt** (summary): merge turns into ledger; preserve decisions, paths, constraints; drop boilerplate; output ledger body only.
 
-### State Override semantics (partially shipped)
+### State Override semantics (shipped)
 
 When a fact changes (e.g. PostgreSQL → MongoDB), the ledger should record **current truth only**:
 
@@ -289,7 +294,7 @@ When a fact changes (e.g. PostgreSQL → MongoDB), the ledger should record **cu
 ✅  - Database layer: MongoDB (document store) — relational schema deprecated
 ```
 
-`dream_compact()` includes State Override instructions and a ~2,000-token cap. Stricter post-synthesis validation is planned.
+`dream_compact()` includes State Override instructions in Dreaming v4 rules. **`validate_and_normalize_ledger()`** in `ledger_validation.py` enforces latest-wins per file path and stack key before storing L2.
 
 ---
 
@@ -361,17 +366,17 @@ Printed per request in the proxy terminal; appended to `stats/*.jsonl` (local on
 
 ### 8.1 Proxy simulator benchmark
 
-12-turn run via `test_simulator.py` against starter `Claude.md`.
+12-turn run via `test_simulator.py`. **Table below used `Claude.minimal.md` (~380 tokens)** — below the cache floor. Default install uses the **production template (~1,600+ tokens)**; re-run after customizing `Claude.md`.
 
-| Metric | Measured | Production target (200K L1) |
-|--------|----------|------------------------------|
-| Cumulative savings | **10.2%** | **80–90%** input cost |
-| Cache efficiency | **29.6%** | **70–90%+** after turn 2 |
-| Layer 1 size | ~380 tokens | ~200,000 tokens |
-| Turn 7 `input_tokens` | 1,074 (L3+L4) | ~3,000 |
-| Turn 7 `cache_read` | 2,541 | ~200,500 |
+| Metric | Measured (minimal stub) | With production template / long sessions |
+|--------|-------------------------|------------------------------------------|
+| Cumulative savings | **10.2%** | Varies — run simulator + dashboard on your project |
+| Cache efficiency | **29.6%** | Higher once L1+L2 prefix warms |
+| Layer 1 size | ~380 tokens (stub) | ~1,600+ tokens (default template) |
+| Turn 7 `input_tokens` | 1,074 (L3+L4) | Depends on session |
+| Turn 7 `cache_read` | 2,541 | Grows with prefix size |
 
-**Conclusion:** Architecture behaved correctly; savings were modest because the cached prefix was ~2.5K tokens, not 200K. Replace `Claude.md`, re-run `count_tokens.py`, then `test_simulator.py`.
+**Conclusion:** Architecture behaved correctly; stub benchmark savings were modest because the prefix was small. Customize `Claude.md`, run `count_tokens.py`, then `test_simulator.py` on your machine.
 
 Live savings on real sessions: see [COST_SAVINGS.md](guides/COST_SAVINGS.md) and the dashboard bifurcation view.
 
@@ -385,12 +390,16 @@ smart-context-synthesizer/
     ├── proxy_tool.py              # FastAPI gateway
     ├── proxy_message_bridge.py    # Tool-faithful message assembly
     ├── compaction.py              # Dreaming v4 preprocessing rules
+    ├── ledger_validation.py       # L2 post-compaction validation
+    ├── dashboard_api.py           # Dashboard aggregation + cache-floor status
     ├── telemetry.py               # Cost / cache bifurcation
     ├── test_simulator.py          # 12-turn proxy benchmark
     ├── count_tokens.py            # Layer 1 token budget
     ├── models.py
-    ├── Claude.md                  # Layer 1 starter (~380 tokens)
-    ├── scripts/                   # setup, csynth CLI, proxy systemd
+    ├── Claude.md                  # Layer 1 production template (~1,600+ tokens)
+    ├── Claude.minimal.md          # Optional stub (~380 tokens, below cache floor)
+    ├── experimental/              # Unsupported code (e.g. Copilot backend archive)
+    ├── scripts/                   # setup, csynth CLI, upgrade.sh, proxy systemd
     ├── stats/                     # Local telemetry (gitignored)
     └── README.md
 ```
@@ -401,7 +410,9 @@ smart-context-synthesizer/
 |----------|------|
 | `load_claude_md()` | Load Layer 1 at startup from `CLAUDE_MD_PATH` |
 | `normalize_content()` | String or JetBrains block-array → plain text |
-| `build_optimized_messages()` | Assemble layers 1–4 |
+| `assemble_upstream_messages()` | Tool-faithful layers 1–4 for `POST /v1/messages` |
+| `build_optimized_messages()` | Legacy layered assembly for OpenAI `/v1/chat/completions` shim |
+| `validate_and_normalize_ledger()` | Post-compaction L2 validation (`ledger_validation.py`) |
 | `resolve_session_id()` | `X-Session-Id` header → per-session `SessionState` |
 | `resolve_developer_id()` | `X-Developer-Id` or `TELEMETRY_DEVELOPER_ID` |
 | `record_telemetry()` | Terminal report + append JSONL event |
@@ -556,7 +567,7 @@ Block 4: New prompt (40)     — no cache_control
 Bad ledger: `- Database: was PostgreSQL, now MongoDB`  
 Good ledger: `- Database layer: MongoDB — relational schema deprecated`
 
-*Answer:* State Override rule — current truth only. **Partially shipped** in `dream_compact()` prompt; stricter validation planned.
+*Answer:* State Override rule — current truth only. **Shipped** in Dreaming v4 + `ledger_validation.py`.
 
 ---
 
@@ -564,6 +575,6 @@ Good ledger: `- Database layer: MongoDB — relational schema deprecated`
 
 ---
 
-> **Repository:** `Out-of-bound-chronicles/context-synthesizer/`  
+> **Repository:** https://github.com/harshilshah2501/smart-context-synthesizer  
 > **Key references:** [Anthropic Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) · `matt1398/claude-devtools` · `rtk-ai/rtk`  
-> **Last aligned with codebase:** 2026-06-24 (public OSS repository)
+> **Last aligned with codebase:** 2026-06-25 (v0.1.1 public OSS)
