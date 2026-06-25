@@ -49,13 +49,17 @@ csynth proxy on | off | restart
 
 ## Cache warmup & what success looks like
 
-Anthropic caches prompt **prefixes** marked with `cache_control`. Each block must reach **~1,024 tokens** before cache reads apply. The default `Claude.md` is a small starter file (~380 tokens), so the proxy can be working correctly while `cache_read` stays at zero for the first several turns.
+Anthropic caches prompt **prefixes** marked with `cache_control`. Each block must reach **~1,024 tokens** before cache reads apply. The default `Claude.md` is a **production template (~1,600+ tokens)** — cache-eligible from install. Use `Claude.minimal.md` only if you intentionally want the tiny stub below the cache floor.
 
 **Normal early behavior**
 
-- `cache_read` low or zero until Layer 1 + Layer 2 grow past the cache floor
+- First request may show `cache_creation` before `cache_read` climbs
 - `payload` on the dashboard may still look large — compare **cost**, not payload alone
 - After ~10 turns (or 100K estimated history tokens), compaction runs and Layer 2 expands
+
+**Not a failure mode:** using `Claude.minimal.md` (stub below 1,024 tokens).
+
+**Customize Layer 1:** edit `context-synthesizer/Claude.md`, then run `python3 count_tokens.py`. See [COST_SAVINGS.md](COST_SAVINGS.md).
 
 **Signs the proxy is working**
 
@@ -65,10 +69,6 @@ Anthropic caches prompt **prefixes** marked with `cache_control`. Each block mus
 | Compaction fired | logs → `[MEMORY MANAGER] Dreaming v4` |
 | Cost diverges from naive baseline | `csynth dashboard` — savings / cache efficiency KPIs |
 | Tool loops intact | Claude Code continues multi-step bash/edit flows without 502s |
-
-**Not a failure mode:** zero `cache_read` on turn 1 with the starter `Claude.md`.
-
-**Improve cache hits sooner:** edit `context-synthesizer/Claude.md` with real project rules, then run `python3 count_tokens.py`. See [COST_SAVINGS.md](COST_SAVINGS.md).
 
 ---
 

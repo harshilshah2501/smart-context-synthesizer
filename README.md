@@ -47,22 +47,17 @@ Build a tarball from this branch: [docs/guides/RELEASE.md](docs/guides/RELEASE.m
 
 ## Cache warmup (read this first)
 
-The shipped starter `Claude.md` is ~380 tokens. Anthropic's prompt cache requires **≥1,024 tokens per `cache_control` block** on Sonnet-class models — so **low or zero `cache_read` on early turns is expected**, not a sign the proxy is broken.
+The shipped starter `Claude.md` is a **production template (~1,600+ tokens)** — above Anthropic's **≥1,024-token cache minimum** on Sonnet-class models. You should see `cache_read` once the prefix warms, though Layer 2 still grows after compaction (~turn 10).
 
 | Phase | What you see |
 |-------|----------------|
-| Turns 1–9 | Layer 1 alone may be below the cache floor → little or no `cache_read` |
-| Turn 10+ | Dreaming compaction merges history into Layer 2; prefix grows |
+| Turns 1–3 | Layer 1 template is cache-eligible; `cache_read` may still be zero until the prefix is written once |
+| Turn 10+ | Dreaming compaction merges history into Layer 2; prefix grows further |
 | Long sessions | **Cost vs payload** on the dashboard diverges — that is the primary success signal |
 
 **Do not judge the proxy on turn-1 cache hits.** Watch `csynth dashboard` over a real coding session: compaction firing, payload stabilizing, and billed cost dropping relative to naive history growth.
 
-**Production tip:** replace `context-synthesizer/Claude.md` with your project's architecture rules (aim ≥1,500 tokens). Verify with:
-
-```bash
-cd context-synthesizer
-python3 count_tokens.py
-```
+**Customize for your project:** edit `context-synthesizer/Claude.md` (replace template tables). Verify with `python3 count_tokens.py`. Minimal stub: `Claude.minimal.md` (~380 tokens, below cache floor).
 
 More detail: [docs/guides/COST_SAVINGS.md](docs/guides/COST_SAVINGS.md) · [docs/guides/DEVELOPER_ONBOARDING.md](docs/guides/DEVELOPER_ONBOARDING.md#cache-warmup--what-success-looks-like)
 
