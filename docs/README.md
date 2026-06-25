@@ -4,6 +4,14 @@ User guides and architecture for the **Context Synthesizer** proxy.
 
 **Cheatsheet:** [guides/DOCS_CHEATSHEET.md](guides/DOCS_CHEATSHEET.md)
 
+## Community
+
+| Doc | Purpose |
+|-----|---------|
+| [../CONTRIBUTING.md](../CONTRIBUTING.md) | How to contribute, run tests |
+| [../SECURITY.md](../SECURITY.md) | Dashboard exposure, API keys, telemetry |
+| [../CHANGELOG.md](../CHANGELOG.md) | Release history |
+
 ## Guides
 
 | Doc | Purpose |

@@ -25,6 +25,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt pytest
 
+      - name: Bytecode compile check
+        run: python -m compileall -q .
+
       - name: Run unit tests
         run: |
           pytest test_proxy_message_bridge.py test_compaction.py test_ledger_validation.py -q

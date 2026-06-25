@@ -1,12 +1,20 @@
 # Context Synthesizer
 
+[![Project status](https://img.shields.io/badge/status-beta-orange)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/harshilshah2501/smart-context-synthesizer/actions/workflows/ci.yml/badge.svg)](https://github.com/harshilshah2501/smart-context-synthesizer/actions/workflows/ci.yml)
+
+> **Context Synthesizer** is a local Claude Code/Cursor proxy that keeps long coding sessions cheaper and more coherent by combining prompt-cache-aligned context layers, tool-faithful recent turns, background compaction, pinned memory, and live cost telemetry.
+
 A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
+
+**Fully self-contained** — this public repo is complete for install and daily use. No private repo required.
 
 Open-source release — proxy + dashboard only. Internal team tooling lives in a separate private repository.
 
 **Requires Anthropic** (Claude Code Max/Pro or Cursor with an Anthropic model). Prompt-cache economics use Anthropic `cache_control` breakpoints — not a generic OpenAI/Ollama proxy.
 
-**Docs:** [docs/README.md](docs/README.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
+**Docs:** [docs/README.md](docs/README.md) · **Security:** [SECURITY.md](SECURITY.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
 ---
 
@@ -72,7 +80,36 @@ More detail: [docs/guides/COST_SAVINGS.md](docs/guides/COST_SAVINGS.md) · [docs
 | **Tool-faithful proxy** | Preserves `tool_use` / `tool_result` in active loops |
 | **Pinned checkpoints** | `@synth-remember:` in user messages → L2a |
 | **Live dashboard** | Cache read / uncached / cost bifurcation per request |
-| **Dual API** | Anthropic `/v1/messages` + OpenAI `/v1/chat/completions` (Cursor) |
+| **Dual API** | Anthropic `/v1/messages` (full fidelity) + OpenAI `/v1/chat/completions` (Cursor — see [limitations](#limitations)) |
+
+---
+
+## Project status
+
+**Beta** — core proxy, compaction, and dashboard are production-tested locally, but behavior and APIs may evolve. See [CHANGELOG.md](CHANGELOG.md). Report issues on [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer/issues).
+
+---
+
+## Limitations
+
+| Topic | Detail |
+|-------|--------|
+| **Claude Code (recommended)** | `/v1/messages` path is tool-faithful — preserves `tool_use` / `tool_result` in active loops. |
+| **Cursor / OpenAI shim** | `/v1/chat/completions` uses a simpler legacy payload builder — not full parity with the Anthropic path. Fine for chat + telemetry; not ideal for heavy tool loops. See [docs/guides/CURSOR_TEST.md](docs/guides/CURSOR_TEST.md). |
+| **Sessions** | In-memory only — restart clears ledger and pins. |
+| **Scale** | Single-machine local proxy — not horizontally scalable. |
+| **Savings** | Cost reduction depends on session length, model pricing, and `Claude.md` size. Run `python test_simulator.py` for a reproducible local benchmark — avoid quoting fixed % savings without your own numbers. |
+| **Anthropic-only economics** | Prompt-cache breakpoints require Anthropic API semantics. |
+
+---
+
+## Privacy & security
+
+- **API keys** pass through to Anthropic per request; store them only in `.env` (gitignored).
+- **Telemetry** (`stats/telemetry.jsonl`) and **pinned checkpoints** stay on your machine but may contain project text.
+- **Dashboard** — default bind is `127.0.0.1`. If you use `PROXY_HOST=0.0.0.0`, set `DASHBOARD_TOKEN` or `DASHBOARD_LOCALHOST_ONLY=1`.
+
+Full details: [SECURITY.md](SECURITY.md)
 
 ---
 
@@ -117,4 +154,4 @@ Full reference: [docs/guides/CSYNTH_QUICK_REFERENCE.md](docs/guides/CSYNTH_QUICK
 
 ## License
 
-MIT — see [LICENSE](LICENSE). · Issues: [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer)
+MIT — see [LICENSE](LICENSE). · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md) · Issues: [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer)

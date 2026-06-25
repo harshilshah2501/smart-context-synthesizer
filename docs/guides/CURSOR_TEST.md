@@ -3,6 +3,20 @@
 Use this guide to validate the synthesizer proxy on your own machine using
 Cursor before rolling out to the wider team on Claude Code.
 
+## Known limitation (OpenAI shim)
+
+Cursor uses `/v1/chat/completions`, which builds a **simpler layered payload**
+(`build_optimized_messages`) — not the full tool-faithful path used by Claude
+Code's `/v1/messages` endpoint.
+
+| Client | Endpoint | Tool-faithful recent tail |
+|--------|----------|---------------------------|
+| **Claude Code** | `/v1/messages` | Yes — full `tool_use` / `tool_result` preserved |
+| **Cursor** | `/v1/chat/completions` | Partial — text-shaped history + compaction layers |
+
+For heavy tool-loop sessions, prefer **Claude Code** through the proxy. Cursor is
+best for validating telemetry, compaction, pins, and chat-shaped workflows.
+
 ## What this tests
 
 - The proxy receives requests, builds the layered payload (L1 Claude.md +
