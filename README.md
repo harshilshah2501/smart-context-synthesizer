@@ -4,6 +4,8 @@ A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. 
 
 Open-source release — proxy + dashboard only. Internal team tooling lives in a separate private repository.
 
+**Requires Anthropic** (Claude Code Max/Pro or Cursor with an Anthropic model). Prompt-cache economics use Anthropic `cache_control` breakpoints — not a generic OpenAI/Ollama proxy.
+
 **Docs:** [docs/README.md](docs/README.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
 ---
@@ -40,6 +42,29 @@ bash run-setup.sh your.handle
 ```
 
 Build a tarball from this branch: [docs/guides/RELEASE.md](docs/guides/RELEASE.md).
+
+---
+
+## Cache warmup (read this first)
+
+The shipped starter `Claude.md` is ~380 tokens. Anthropic's prompt cache requires **≥1,024 tokens per `cache_control` block** on Sonnet-class models — so **low or zero `cache_read` on early turns is expected**, not a sign the proxy is broken.
+
+| Phase | What you see |
+|-------|----------------|
+| Turns 1–9 | Layer 1 alone may be below the cache floor → little or no `cache_read` |
+| Turn 10+ | Dreaming compaction merges history into Layer 2; prefix grows |
+| Long sessions | **Cost vs payload** on the dashboard diverges — that is the primary success signal |
+
+**Do not judge the proxy on turn-1 cache hits.** Watch `csynth dashboard` over a real coding session: compaction firing, payload stabilizing, and billed cost dropping relative to naive history growth.
+
+**Production tip:** replace `context-synthesizer/Claude.md` with your project's architecture rules (aim ≥1,500 tokens). Verify with:
+
+```bash
+cd context-synthesizer
+python3 count_tokens.py
+```
+
+More detail: [docs/guides/COST_SAVINGS.md](docs/guides/COST_SAVINGS.md) · [docs/guides/DEVELOPER_ONBOARDING.md](docs/guides/DEVELOPER_ONBOARDING.md#cache-warmup--what-success-looks-like)
 
 ---
 

@@ -47,6 +47,31 @@ csynth proxy on | off | restart
 
 ---
 
+## Cache warmup & what success looks like
+
+Anthropic caches prompt **prefixes** marked with `cache_control`. Each block must reach **~1,024 tokens** before cache reads apply. The default `Claude.md` is a small starter file (~380 tokens), so the proxy can be working correctly while `cache_read` stays at zero for the first several turns.
+
+**Normal early behavior**
+
+- `cache_read` low or zero until Layer 1 + Layer 2 grow past the cache floor
+- `payload` on the dashboard may still look large — compare **cost**, not payload alone
+- After ~10 turns (or 100K estimated history tokens), compaction runs and Layer 2 expands
+
+**Signs the proxy is working**
+
+| Signal | Where to check |
+|--------|----------------|
+| Requests routed through proxy | `csynth logs` → `[PROXY] → POST /v1/messages` |
+| Compaction fired | logs → `[MEMORY MANAGER] Dreaming v4` |
+| Cost diverges from naive baseline | `csynth dashboard` — savings / cache efficiency KPIs |
+| Tool loops intact | Claude Code continues multi-step bash/edit flows without 502s |
+
+**Not a failure mode:** zero `cache_read` on turn 1 with the starter `Claude.md`.
+
+**Improve cache hits sooner:** edit `context-synthesizer/Claude.md` with real project rules, then run `python3 count_tokens.py`. See [COST_SAVINGS.md](COST_SAVINGS.md).
+
+---
+
 ## WSL + dashboard
 
 Proxy and Claude Code run **inside WSL**. The live dashboard is served from WSL too.
@@ -110,7 +135,8 @@ Full reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
 | Item | Notes |
 |------|-------|
 | `python3`, `curl`, `tar` | Linux / macOS / WSL |
-| Claude Code | Normal CLI use |
+| **Anthropic backend** | Claude Code Max/Pro, or Cursor with an Anthropic model — not generic OpenAI/Ollama |
+| Claude Code or Cursor | Normal IDE/CLI use through the local proxy |
 | Browser | WSL IP in Windows browser; see `open_dashboard.sh` |
 
 ### Smoke test
@@ -127,6 +153,8 @@ bash context-synthesizer/scripts/check_proxy_ready.sh
 bash context-synthesizer/scripts/open_dashboard.sh
 bash context-synthesizer/scripts/verify_claude_routing.sh
 ```
+
+Send one message in Claude Code — the dashboard should update per request. On a **long session** (10+ turns), confirm compaction ran (`[MEMORY MANAGER]` in `csynth logs`) and **cost** trends down on the dashboard even if early `cache_read` was zero. See [Cache warmup](#cache-warmup--what-success-looks-like) above.
 
 **WSL + Claude Code on Windows:** setup configures WSL `~/.claude/settings.json`, Windows `%USERPROFILE%\.claude\settings.json`, and VS Code `claudeCode.environmentVariables`. Restart VS Code after re-running configure.
 
