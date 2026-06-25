@@ -27,4 +27,4 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pytest test_proxy_message_bridge.py test_compaction.py -q
+          pytest test_proxy_message_bridge.py test_compaction.py test_ledger_validation.py -q

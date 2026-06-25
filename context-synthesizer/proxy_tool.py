@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from dashboard_routes import attach_dashboard
 from compaction import build_compaction_prompt, extract_pins, format_turns_for_compaction
+from ledger_validation import validate_and_normalize_ledger
 from models import DEFAULT_CHAT_MODEL, DEFAULT_COMPACTION_MODEL
 from proxy_message_bridge import (
     build_upstream_messages,
@@ -875,7 +876,11 @@ async def dream_compact(
             messages=[{"role": "user", "content": prompt}],
         )
         elapsed_time = time.perf_counter() - start_time
-        new_ledger = extract_assistant_text(response.content).strip()
+        raw_ledger = extract_assistant_text(response.content).strip()
+        if not raw_ledger:
+            print(f"[MEMORY MANAGER] Compaction produced empty ledger for {session_id}; keeping prior.")
+            return False
+        new_ledger = validate_and_normalize_ledger(raw_ledger, fallback=ledger_snapshot)
         if not new_ledger:
             print(f"[MEMORY MANAGER] Compaction produced empty ledger for {session_id}; keeping prior.")
             return False
