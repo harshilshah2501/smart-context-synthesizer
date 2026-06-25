@@ -27,6 +27,7 @@ csynth — Context Synthesizer
   csynth doctor        Full routing + proxy preflight
   csynth logs          Tail proxy journal
   csynth restart       Restart proxy user service
+  csynth upgrade       Pull latest release and refresh venv
 
 Install: cd context-synthesizer-toolkit-latest && bash run-setup.sh firstname.lastname
 EOF
@@ -99,6 +100,9 @@ case "$cmd" in
   restart)
     systemctl --user restart context-synthesizer-proxy
     systemctl --user status context-synthesizer-proxy --no-pager
+    ;;
+  upgrade)
+    exec bash "$SCRIPTS/upgrade.sh" "$@"
     ;;
   -h|--help|help) usage 0 ;;
   *) echo "Unknown command: $cmd" >&2; usage 1 ;;
