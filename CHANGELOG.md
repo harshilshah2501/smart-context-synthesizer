@@ -17,6 +17,11 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - GitHub Copilot backend moved to `context-synthesizer/experimental/` — not loaded by the supported proxy
 - Cursor/OpenAI path limitations documented in README and `docs/guides/CURSOR_TEST.md`
 
+### Added (unreleased continued)
+
+- FastAPI contract tests (`test_proxy_routes.py`, `test_dashboard_api.py`)
+- Dashboard cache-floor banner when L1+L2 prefix is below 1,024 tokens
+
 ## [0.1.0] - 2026-06-24
 
 ### Added

@@ -9,7 +9,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from telemetry import MIN_CACHE_TOKENS, TELEMETRY_LOG_PATH, get_live_events
+from telemetry import MIN_CACHE_TOKENS, TELEMETRY_LOG_PATH, estimate_tokens, get_live_events
 
 
 def _avg(vals: list[float]) -> float:
@@ -320,6 +320,32 @@ def compaction_timeline(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows[-30:]
 
 
+def prefix_cache_status() -> dict[str, Any]:
+    """Estimate whether the cached L1+L2 prefix meets Anthropic's cache floor."""
+    try:
+        from proxy_tool import CLAUDE_MD_CONTENT, _sessions
+    except ImportError:
+        return {
+            "min_cache_tokens": MIN_CACHE_TOKENS,
+            "est_layer1_tokens": 0,
+            "est_layer2_tokens": 0,
+            "est_prefix_tokens": 0,
+            "below_floor": False,
+        }
+
+    l1_tokens = estimate_tokens(len(CLAUDE_MD_CONTENT or ""))
+    ledger_chars = max((len(s.history_ledger or "") for s in _sessions.values()), default=0)
+    l2_tokens = estimate_tokens(ledger_chars)
+    prefix_tokens = l1_tokens + l2_tokens
+    return {
+        "min_cache_tokens": MIN_CACHE_TOKENS,
+        "est_layer1_tokens": l1_tokens,
+        "est_layer2_tokens": l2_tokens,
+        "est_prefix_tokens": prefix_tokens,
+        "below_floor": prefix_tokens < MIN_CACHE_TOKENS,
+    }
+
+
 def recommendations(summary: dict[str, Any]) -> list[str]:
     recs: list[str] = []
     if summary["proxy_requests"] == 0:
@@ -411,6 +437,7 @@ def dashboard_payload(
     summary = aggregate_summary(events)
     return {
         "summary": summary,
+        "prefix_cache": prefix_cache_status(),
         "filters": list_filter_options(events),
         "series": build_chart_series(events, max_points=chart_points),
         "compactions": compaction_timeline(events),

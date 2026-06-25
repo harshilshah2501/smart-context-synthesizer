@@ -249,6 +249,7 @@
       <strong>No proxy requests yet.</strong> Use Claude Code through the synthesizer proxy
       (<code>ANTHROPIC_BASE_URL</code> → local proxy). Run <code>csynth doctor</code> to verify routing.
     </div>
+    <div id="cacheFloorBanner" class="banner warn" style="display:none"></div>
 
     <div id="compareHero" class="compare"></div>
     <div id="metaRow" class="meta-row"></div>
@@ -556,6 +557,23 @@
       document.getElementById('noDataBanner').style.display = n === 0 ? '' : 'none';
     }
 
+    function showCacheFloor(pc) {
+      const el = document.getElementById('cacheFloorBanner');
+      if (!pc || !pc.below_floor) {
+        el.style.display = 'none';
+        return;
+      }
+      el.style.display = '';
+      el.innerHTML = `
+        <strong>Cache prefix below ${fmt(pc.min_cache_tokens)}-token floor.</strong>
+        Estimated L1 + L2 prefix is ~${fmt(pc.est_prefix_tokens)} tokens
+        (L1 ~${fmt(pc.est_layer1_tokens)}, L2 ~${fmt(pc.est_layer2_tokens)}).
+        Expect low <code>cache_read</code> until the prefix grows — customize
+        <code>Claude.md</code> or wait for compaction (~turn 10).
+        This is normal with the minimal stub; see README cache warmup.
+      `;
+    }
+
     function scheduleRefresh() {
       clearTimeout(refreshTimer);
       refreshTimer = setTimeout(loadData, 400);
@@ -585,6 +603,7 @@
         renderRecs(data.recommendations);
         renderCompactions(data.compactions);
         renderRecent(data.recent);
+        showCacheFloor(data.prefix_cache);
         fillSelect('devFilter', data.filters.developers, dev);
         fillSelect('sessionFilter', data.filters.sessions, session);
         document.getElementById('footer').textContent =

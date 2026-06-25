@@ -43,8 +43,8 @@ Please open an issue before large refactors or new features so we can align on d
 1. **Scope** — One logical change per PR when possible.
 2. **Tests** — Add or update tests for behavior changes. Run:
    ```bash
-   cd context-synthesizer
-   pytest test_proxy_message_bridge.py test_compaction.py test_ledger_validation.py -q
+cd context-synthesizer
+pytest test_proxy_message_bridge.py test_compaction.py test_ledger_validation.py test_proxy_routes.py test_dashboard_api.py -q
    python -m compileall .
    ```
 3. **Secrets** — Never commit `.env`, `stats/`, API keys, or local telemetry.
