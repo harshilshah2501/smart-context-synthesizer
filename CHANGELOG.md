@@ -6,6 +6,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-06-25
+
+### Fixed
+
+- **Tool loop 502 mid-conversation** — proxy message assembly could place a `tool_result` immediately after the L1/L2 user prefix without the matching assistant `tool_use`, causing Anthropic `400 invalid_request_error` (surfaced as `502`). Added tail alignment, orphan `tool_result` repair, and a rolling-fallback guard when the last turn has tool blocks.
+
+### Added
+
+- Regression tests for tool_result / tool_use pairing in `test_proxy_message_bridge.py` (37 tests in CI)
+
 ## [0.1.1] - 2026-06-25
 
 ### Added
@@ -40,6 +50,7 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 - GitHub Actions CI (unit tests)
 - Install one-liner and release tarball
 
-[Unreleased]: https://github.com/harshilshah2501/smart-context-synthesizer/compare/v0.1.1...main
+[Unreleased]: https://github.com/harshilshah2501/smart-context-synthesizer/compare/v0.1.2...main
+[0.1.2]: https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.2
 [0.1.1]: https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.1
 [0.1.0]: https://github.com/harshilshah2501/smart-context-synthesizer/releases/tag/v0.1.0

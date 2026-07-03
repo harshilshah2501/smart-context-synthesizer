@@ -225,6 +225,99 @@ def incoming_ends_with_user(incoming: list[dict[str, Any]]) -> bool:
     return bool(incoming) and incoming[-1].get("role") == "user"
 
 
+def _tool_result_ids_from_user(msg: dict[str, Any]) -> list[str]:
+    ids: list[str] = []
+    for block in _iter_content_blocks(msg.get("content")):
+        if block.get("type") == "tool_result":
+            rid = block.get("tool_use_id")
+            if rid:
+                ids.append(rid)
+    return ids
+
+
+def _tool_use_ids_from_assistant(msg: dict[str, Any] | None) -> set[str]:
+    if not msg or msg.get("role") != "assistant":
+        return set()
+    ids: set[str] = set()
+    for block in _iter_content_blocks(msg.get("content")):
+        if block.get("type") == "tool_use":
+            tid = block.get("id")
+            if tid:
+                ids.add(tid)
+    return ids
+
+
+def align_tail_start_for_tool_chain(incoming: list[dict[str, Any]], start: int) -> int:
+    """
+    Never begin a tail slice on a user tool_result without its assistant tool_use.
+
+    The compressed L1/L2 prefix ends with user-role messages, so a tail that
+    starts with tool_result would violate Anthropic's pairing rule and yield:
+    messages.N.content.M: unexpected 'tool_use_id' found in 'tool_result' block.
+    """
+    if start >= len(incoming):
+        return start
+    msg = incoming[start]
+    if msg.get("role") != "user" or not _tool_result_ids_from_user(msg):
+        return start
+    if start > 0:
+        prev = incoming[start - 1]
+        if prev.get("role") == "assistant":
+            needed = set(_tool_result_ids_from_user(msg))
+            have = _tool_use_ids_from_assistant(prev)
+            if needed <= have:
+                return start - 1
+    i = start - 1
+    while i >= 0:
+        if incoming[i].get("role") == "assistant" and _tool_use_ids_from_assistant(incoming[i]):
+            return i
+        i -= 1
+    return start
+
+
+def repair_orphaned_tool_results(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """
+    Drop tool_result blocks that lack a matching tool_use in the previous message.
+
+    Safety net after prefix+tail assembly; also cleans stale orphans in long tails.
+    """
+    if not messages:
+        return messages
+    out: list[dict[str, Any]] = []
+    dropped = 0
+    for msg in messages:
+        if msg.get("role") != "user":
+            out.append(msg)
+            continue
+        content = msg.get("content")
+        if not isinstance(content, list):
+            out.append(msg)
+            continue
+        if not any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
+            out.append(msg)
+            continue
+        prev = out[-1] if out else None
+        prev_ids = _tool_use_ids_from_assistant(prev)
+        new_content: list[Any] = []
+        for block in content:
+            if isinstance(block, dict) and block.get("type") == "tool_result":
+                rid = block.get("tool_use_id")
+                if prev_ids and rid and rid in prev_ids:
+                    new_content.append(block)
+                else:
+                    dropped += 1
+            else:
+                new_content.append(block)
+        if not new_content:
+            continue
+        if len(new_content) != len(content):
+            msg = {**msg, "content": new_content}
+        out.append(msg)
+    if dropped:
+        print(f"[PROXY] dropped {dropped} orphaned tool_result block(s) before upstream")
+    return out
+
+
 def find_faithful_tail_start(incoming: list[dict[str, Any]], max_recent_messages: int) -> int:
     """
     Start index for the verbatim suffix of incoming messages.
@@ -254,7 +347,7 @@ def find_faithful_tail_start(incoming: list[dict[str, Any]], max_recent_messages
             continue
         break
 
-    return min(start, window_start)
+    return align_tail_start_for_tool_chain(incoming, min(start, window_start))
 
 
 def recent_window_has_tools(incoming: list[dict[str, Any]], max_recent_messages: int) -> bool:
@@ -356,21 +449,26 @@ def build_upstream_messages(
     last_role = incoming[-1].get("role")
     prefix_len = len(compressed_prefix)
 
+    def _finalize(out: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        repaired = repair_orphaned_tool_results(out)
+        return enforce_cache_control_budget(repaired, preserve_prefix=prefix_len)
+
     if last_role != "user":
         tail_start = find_faithful_tail_start(incoming, max_recent_messages)
         tail = [strip_message_cache_control(m) for m in incoming[tail_start:]]
-        out = list(compressed_prefix) + tail
-        return enforce_cache_control_budget(out, preserve_prefix=prefix_len)
+        return _finalize(list(compressed_prefix) + tail)
 
     last = strip_message_cache_control(incoming[-1])
-    if recent_window_has_tools(incoming, max_recent_messages):
+    use_incoming_tail = recent_window_has_tools(
+        incoming, max_recent_messages
+    ) or message_has_tool_blocks(incoming[-1])
+    if use_incoming_tail:
         tail_start = find_faithful_tail_start(incoming, max_recent_messages)
         middle = [strip_message_cache_control(m) for m in incoming[tail_start : n - 1]]
     else:
         middle = [strip_message_cache_control(m) for m in rolling_fallback]
 
-    out = list(compressed_prefix) + middle + [last]
-    return enforce_cache_control_budget(out, preserve_prefix=prefix_len)
+    return _finalize(list(compressed_prefix) + middle + [last])
 
 
 def passthrough_api_kwargs(

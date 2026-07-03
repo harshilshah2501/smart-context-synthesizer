@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from proxy_message_bridge import (
+    align_tail_start_for_tool_chain,
     build_upstream_messages,
     count_cache_control_blocks,
     enforce_cache_control_budget,
     message_has_tool_blocks,
     normalize_content_with_tools,
     passthrough_api_kwargs,
+    repair_orphaned_tool_results,
     user_message_has_content,
 )
 from compaction import prepare_turn_text
@@ -216,3 +218,110 @@ def test_prepare_turn_text_keeps_different_updates_same_path():
     )
     out = prepare_turn_text(raw)
     assert out.count("/repo/api/client.py") == 2
+
+
+def test_align_tail_start_includes_assistant_before_tool_result():
+    incoming = [
+        {"role": "user", "content": "old"},
+        {"role": "assistant", "content": [{"type": "text", "text": "read file"}]},
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "tool_use", "id": "tu_read", "name": "Read", "input": {"path": "Foo.java"}},
+            ],
+        },
+        {
+            "role": "user",
+            "content": [{"type": "tool_result", "tool_use_id": "tu_read", "content": "class Foo {}"}],
+        },
+    ]
+    # Slice from tool_result alone would omit the assistant at index 2
+    assert align_tail_start_for_tool_chain(incoming, 3) == 2
+
+
+def test_build_upstream_tool_result_not_first_after_prefix():
+    """Regression: prefix is all user-role; tail must not start with orphan tool_result."""
+    incoming = [
+        {"role": "user", "content": "msg " + str(i)} for i in range(30)
+    ]
+    incoming.extend(
+        [
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "tool_use", "id": "tu_1", "name": "Read", "input": {"path": "Config.java"}},
+                ],
+            },
+            {
+                "role": "user",
+                "content": [{"type": "tool_result", "tool_use_id": "tu_1", "content": "ok"}],
+            },
+        ]
+    )
+    prefix = [
+        {"role": "user", "content": [{"type": "text", "text": "L1"}]},
+        {"role": "user", "content": [{"type": "text", "text": "L2"}]},
+    ]
+    out = build_upstream_messages(
+        incoming=incoming,
+        compressed_prefix=prefix,
+        rolling_fallback=[{"role": "user", "content": "stale"}],
+        max_recent_messages=4,
+    )
+    assert out[0]["content"][0]["text"] == "L1"
+    assert out[1]["content"][0]["text"] == "L2"
+    first_tail = out[2]
+    if isinstance(first_tail.get("content"), list):
+        block_types = [b.get("type") for b in first_tail["content"] if isinstance(b, dict)]
+        assert "tool_result" not in block_types
+    assert out[-2]["role"] == "assistant"
+    assert out[-2]["content"][0]["type"] == "tool_use"
+    assert out[-1]["content"][0]["type"] == "tool_result"
+
+
+def test_repair_orphaned_tool_results_strips_unpaired():
+    messages = [
+        {"role": "user", "content": [{"type": "text", "text": "rules"}]},
+        {
+            "role": "user",
+            "content": [{"type": "tool_result", "tool_use_id": "tu_orphan", "content": "bad"}],
+        },
+        {
+            "role": "assistant",
+            "content": [{"type": "tool_use", "id": "tu_ok", "name": "bash", "input": {}}],
+        },
+        {
+            "role": "user",
+            "content": [{"type": "tool_result", "tool_use_id": "tu_ok", "content": "ok"}],
+        },
+    ]
+    out = repair_orphaned_tool_results(messages)
+    assert len(out) == 3
+    assert out[0]["content"][0]["text"] == "rules"
+    assert out[1]["content"][0]["type"] == "tool_use"
+    assert out[2]["content"][0]["tool_use_id"] == "tu_ok"
+
+
+def test_build_upstream_assistant_last_includes_tool_use_before_result():
+    incoming = [
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "tool_use", "id": "tu_1", "name": "Read", "input": {"path": "Config.java"}},
+            ],
+        },
+        {
+            "role": "user",
+            "content": [{"type": "tool_result", "tool_use_id": "tu_1", "content": "class Config {}"}],
+        },
+    ]
+    prefix = [{"role": "user", "content": [{"type": "text", "text": "RULES"}]}]
+    out = build_upstream_messages(
+        incoming=incoming,
+        compressed_prefix=prefix,
+        rolling_fallback=[],
+        max_recent_messages=4,
+    )
+    assert out[1]["role"] == "assistant"
+    assert out[1]["content"][0]["type"] == "tool_use"
+    assert out[2]["content"][0]["type"] == "tool_result"
