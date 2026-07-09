@@ -515,7 +515,11 @@ pyinstaller --onefile context-synthesizer/proxy_tool.py
 
 ## 11. Ecosystem Comparison
 
-| Capability | `claude-devtools` | `rtk-ai/rtk` | **Context Synthesizer** |
+Context Synthesizer sits in a **two-layer** landscape: (a) **companion tools** around the IDE/terminal, and (b) **cache/reuse systems** that attack long-context cost at different stack levels. LMCache and vLLM operate at **inference** (KV tensors on GPUs you control); Context Synthesizer operates at the **API client** (prompt text sent to Anthropic’s hosted models).
+
+### 11.1 Companion tools (IDE / terminal)
+
+| Capability | [`claude-devtools`](https://github.com/matt1398/claude-devtools) | [`rtk-ai/rtk`](https://github.com/rtk-ai/rtk) | **Context Synthesizer** |
 |---|---|---|---|
 | **Primary role** | Visual observability dashboard | Shell output compressor | API-layer context memory manager |
 | **Operates on** | Local `~/.claude/` logs | Bash pipe outputs | Live HTTP API payloads |
@@ -525,9 +529,54 @@ pyinstaller --onefile context-synthesizer/proxy_tool.py
 | **Metrics** | Visual UI | No | Per-turn terminal audit + live dashboard |
 | **Offline proof** | Session viewer | No | `test_simulator.py` — 12-turn gateway benchmark |
 
-**Complementary chain:** `rtk` → **Context Synthesizer** → Anthropic API → `claude-devtools` for visual audit.
+**Complementary chain:** [`rtk`](https://github.com/rtk-ai/rtk) → **Context Synthesizer** → Anthropic API → [`claude-devtools`](https://github.com/matt1398/claude-devtools) for visual audit.
 
-**Install:** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `install.sh` / `run-setup.sh`, live compaction proxy by default.
+### 11.2 Inference-layer vs API-layer context reuse
+
+| | [LMCache](https://github.com/LMCache/LMCache) | [vLLM APC](https://docs.vllm.ai/en/stable/features/automatic_prefix_caching/) | [Anthropic prompt cache](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | **Context Synthesizer** |
+|---|---|---|---|---|
+| **Stack layer** | Inference / serving | Inference / serving | Cloud API (hosted) | API client / proxy |
+| **What is reused** | KV cache blocks (attention state) | KV cache blocks for shared prefixes | Provider-side prefix state for byte-identical prompts | Structured `messages[]` + `cache_control` breakpoints |
+| **Reuse fidelity** | Lossless (exact tokens) | Lossless (exact tokens) | Lossless for cached prefix bytes | **Lossy synthesis** — old turns → L2 ledger; tool loop kept verbatim |
+| **Typical deployment** | Daemon beside vLLM; CPU/RAM/Redis/S3 tiers | `enable_prefix_caching=True` on self-hosted vLLM | Automatic when client sends `cache_control` | Local FastAPI proxy (`proxy_tool.py`) |
+| **Primary win** | Lower **TTFT**, higher **throughput** on owned GPUs | Skip redundant **prefill** on shared prefixes | Lower **API cost** (`cache_read` vs full input) | Lower **API cost** + bounded payload on long coding sessions |
+| **Multi-turn agents** | Yes — engine-level session reuse | Yes — prefix reuse across rounds | Yes — if prefix stays stable | Yes — L1/L2/L3 + tool-faithful tail |
+| **Claude Code cloud (Max/Pro)** | No — you do not run the inference engine | No — same | Yes — native provider feature | **Yes** — purpose-built for this path |
+| **Compaction / summarization** | No — stores tensors, not text | No | No | **Yes** — Dreaming v4 (Haiku) → architecture ledger |
+
+**How to read the rows:** LMCache and vLLM solve *“don’t recompute attention for tokens we already prefilled.”* Anthropic prompt caching solves *“don’t bill me full price for a stable prefix the provider already has.”* Context Synthesizer solves *“my transcript is too long — compress history into cache-aligned layers while keeping active tools intact.”* Those goals overlap in **agentic multi-turn** workloads but are **not interchangeable**: you cannot drop LMCache into a Claude Code → Anthropic cloud path because you never see GPU KV state.
+
+```mermaid
+flowchart TB
+  subgraph api ["API layer (Context Synthesizer)"]
+    CC[Claude Code / Cursor]
+    CS[Context Synthesizer proxy]
+    CC --> CS
+  end
+  subgraph cloud ["Anthropic cloud"]
+    PC[Prompt cache — provider-side]
+    CS --> PC
+  end
+  subgraph infer ["Inference layer (self-hosted only)"]
+    SE[vLLM / serving engine]
+    LM[LMCache — KV tiering]
+    SE <--> LM
+  end
+```
+
+### 11.3 Reference links
+
+| Topic | Link |
+|-------|------|
+| **Context Synthesizer (this project)** | [github.com/harshilshah2501/smart-context-synthesizer](https://github.com/harshilshah2501/smart-context-synthesizer) |
+| **LMCache** (KV cache management layer) | [github.com/LMCache/LMCache](https://github.com/LMCache/LMCache) · [paper (arXiv:2510.09665)](https://arxiv.org/abs/2510.09665) |
+| **vLLM** (serving engine) | [github.com/vllm-project/vllm](https://github.com/vllm-project/vllm) · [Automatic Prefix Caching](https://docs.vllm.ai/en/stable/features/automatic_prefix_caching/) |
+| **Anthropic prompt caching** (hosted prefix reuse) | [platform.claude.com/docs — Prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) |
+| **SGLang RadixAttention** (related inference-layer prefix sharing) | [github.com/sgl-project/sglang](https://github.com/sgl-project/sglang) |
+| **Companion: session observability** | [github.com/matt1398/claude-devtools](https://github.com/matt1398/claude-devtools) |
+| **Companion: shell output compression** | [github.com/rtk-ai/rtk](https://github.com/rtk-ai/rtk) |
+
+**Install (this repo):** [DEVELOPER_ONBOARDING.md](guides/DEVELOPER_ONBOARDING.md) — `install.sh` / `run-setup.sh`, live compaction proxy by default.
 
 ---
 
@@ -576,5 +625,5 @@ Good ledger: `- Database layer: MongoDB — relational schema deprecated`
 ---
 
 > **Repository:** https://github.com/harshilshah2501/smart-context-synthesizer  
-> **Key references:** [Anthropic Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) · `matt1398/claude-devtools` · `rtk-ai/rtk`  
-> **Last aligned with codebase:** 2026-06-25 (v0.1.1 public OSS)
+> **Key references:** [Anthropic Prompt Caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) · [LMCache](https://github.com/LMCache/LMCache) · [vLLM APC](https://docs.vllm.ai/en/stable/features/automatic_prefix_caching/) · [claude-devtools](https://github.com/matt1398/claude-devtools) · [rtk](https://github.com/rtk-ai/rtk)  
+> **Last aligned with codebase:** 2026-07-09 (v0.1.2 public OSS)
