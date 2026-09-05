@@ -399,7 +399,7 @@ smart-context-synthesizer/
     ├── Claude.md                  # Layer 1 production template (~1,600+ tokens)
     ├── Claude.minimal.md          # Optional stub (~380 tokens, below cache floor)
     ├── experimental/              # Unsupported code (e.g. Copilot backend archive)
-    ├── scripts/                   # setup, csynth CLI, upgrade.sh, proxy systemd
+    ├── scripts/                   # setup, csynth CLI, upgrade.sh, proxy systemd/launchd
     ├── stats/                     # Local telemetry (gitignored)
     └── README.md
 ```

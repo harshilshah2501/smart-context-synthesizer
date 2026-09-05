@@ -8,8 +8,6 @@
 
 A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
 
-**Platform:** Linux or WSL2 with a systemd user service. Native macOS is not a first-class install path.
-
 **Requires Anthropic** (Claude Code Max/Pro or Cursor with an Anthropic model). Prompt-cache economics use Anthropic `cache_control` breakpoints — not a generic OpenAI/Ollama proxy.
 
 ![Live cost dashboard — cache read / write / uncached per turn](docs/assets/dashboard-snapshot.png)
@@ -20,9 +18,22 @@ A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. 
 
 ---
 
+## What it does
+
+| Feature | Description |
+|---------|-------------|
+| **Layered compaction** | L1 rules + L2 ledger + L3 recent turns + L4 prompt |
+| **Prompt cache alignment** | `cache_control` breakpoints on stable prefix |
+| **Tool-faithful proxy** | Preserves `tool_use` / `tool_result` in active loops |
+| **Pinned checkpoints** | `@synth-remember:` in user messages → L2a |
+| **Live dashboard** | Cache read / uncached / cost bifurcation per request |
+| **Dual API** | Anthropic `/v1/messages` (full fidelity) + OpenAI `/v1/chat/completions` (Cursor — see [limitations](#limitations)) |
+
+---
+
 ## Quick start
 
-Supported on **Linux / WSL2** (systemd user service).
+**Linux, WSL2, or macOS.** Linux/WSL uses a systemd user service; macOS uses a LaunchAgent. Native Windows without WSL is not supported.
 
 ```bash
 git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
@@ -57,7 +68,7 @@ Build a tarball from this branch: [docs/guides/RELEASE.md](docs/guides/RELEASE.m
 
 ---
 
-## Cache warmup (read this first)
+## Cache warmup
 
 The shipped starter `Claude.md` is a **production template (~1,600+ tokens)** — above Anthropic's **≥1,024-token cache minimum** on Sonnet-class models. You should see `cache_read` once the prefix warms, though Layer 2 still grows after compaction (~turn 10).
 
@@ -96,19 +107,6 @@ Watch live metrics: `csynth dashboard` in a third terminal.
 
 ---
 
-## What it does
-
-| Feature | Description |
-|---------|-------------|
-| **Layered compaction** | L1 rules + L2 ledger + L3 recent turns + L4 prompt |
-| **Prompt cache alignment** | `cache_control` breakpoints on stable prefix |
-| **Tool-faithful proxy** | Preserves `tool_use` / `tool_result` in active loops |
-| **Pinned checkpoints** | `@synth-remember:` in user messages → L2a |
-| **Live dashboard** | Cache read / uncached / cost bifurcation per request |
-| **Dual API** | Anthropic `/v1/messages` (full fidelity) + OpenAI `/v1/chat/completions` (Cursor — see [limitations](#limitations)) |
-
----
-
 ## Project status
 
 **Beta** — core proxy, compaction, and dashboard are production-tested locally, but behavior and APIs may evolve. See [CHANGELOG.md](CHANGELOG.md). Report issues on [GitHub](https://github.com/harshilshah2501/smart-context-synthesizer/issues).
@@ -121,7 +119,7 @@ Watch live metrics: `csynth dashboard` in a third terminal.
 |-------|--------|
 | **Claude Code (recommended)** | `/v1/messages` path is tool-faithful — preserves `tool_use` / `tool_result` in active loops. |
 | **Cursor / OpenAI shim** | `/v1/chat/completions` uses a simpler legacy payload builder — not full parity with the Anthropic path. Fine for chat + telemetry; not ideal for heavy tool loops. See [docs/guides/CURSOR_TEST.md](docs/guides/CURSOR_TEST.md). |
-| **Platform** | Linux / WSL2 (`systemd --user` for the proxy). macOS can run the Python process by hand; the installer and `csynth proxy` commands expect systemd. |
+| **Platform** | Linux / WSL2 (systemd user service) and macOS (LaunchAgent). Native Windows without WSL is not supported. |
 | **Sessions** | In-memory only — restart clears ledger and pins. |
 | **Scale** | Single-machine local proxy — not horizontally scalable. |
 | **Savings** | Cost reduction depends on session length, model pricing, and `Claude.md` size. Run `python test_simulator.py` for a reproducible local benchmark — avoid quoting fixed % savings without your own numbers. |

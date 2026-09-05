@@ -2,7 +2,7 @@
 
 **Time:** ~5 minutes once. After setup: use Claude Code normally.
 
-**Platform:** Linux or WSL2. The installer registers a **systemd user service**; native macOS is not a first-class path (`systemctl --user` is required for `csynth proxy on`).
+**Platform:** Linux, WSL2, or macOS. The installer registers a **systemd user service** (Linux/WSL) or a **LaunchAgent** (macOS). Native Windows without WSL is not supported.
 
 **Quick CLI:** [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · **Cost metrics:** [COST_SAVINGS.md](COST_SAVINGS.md)
 
@@ -143,7 +143,7 @@ Full reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
 
 | Item | Notes |
 |------|-------|
-| `python3`, `curl`, `tar` | Linux / WSL2 (systemd user session required for the live proxy) |
+| `python3`, `curl`, `tar` | Linux, WSL2, or macOS |
 | **Anthropic backend** | Claude Code Max/Pro, or Cursor with an Anthropic model — not generic OpenAI/Ollama |
 | Claude Code or Cursor | Normal IDE/CLI use through the local proxy |
 | Browser | WSL IP in Windows browser; see `open_dashboard.sh` |
@@ -157,7 +157,7 @@ csynth dashboard
 ```
 
 ```bash
-systemctl --user status context-synthesizer-proxy
+csynth status
 bash context-synthesizer/scripts/check_proxy_ready.sh
 bash context-synthesizer/scripts/open_dashboard.sh
 bash context-synthesizer/scripts/verify_claude_routing.sh
@@ -170,7 +170,7 @@ Send one message in Claude Code — the dashboard should update per request. On 
 If the service won't start:
 
 ```bash
-journalctl --user -u context-synthesizer-proxy -n 40 --no-pager
+csynth logs
 ```
 
 **Broken venv (`anyio._backends`):**

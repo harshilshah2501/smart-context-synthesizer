@@ -156,15 +156,36 @@ if [[ -d "$HOME/.config/Code/User" ]]; then
   VSCODE_CONFIGURED=1
 fi
 
+if [[ -d "$HOME/Library/Application Support/Code/User" ]]; then
+  VSCODE_MAC="$HOME/Library/Application Support/Code/User/settings.json"
+  echo "Configuring macOS VS Code → $WSL_PROXY_URL"
+  write_vscode_claude_settings "$VSCODE_MAC" "$WSL_PROXY_URL" "$TELEMETRY_DEVELOPER_ID"
+  VSCODE_CONFIGURED=1
+fi
+
+if [[ -d "$HOME/.config/Cursor/User" ]]; then
+  CURSOR_LINUX="$HOME/.config/Cursor/User/settings.json"
+  echo "Configuring Linux Cursor → $WSL_PROXY_URL"
+  write_vscode_claude_settings "$CURSOR_LINUX" "$WSL_PROXY_URL" "$TELEMETRY_DEVELOPER_ID"
+  VSCODE_CONFIGURED=1
+fi
+
+if [[ -d "$HOME/Library/Application Support/Cursor/User" ]]; then
+  CURSOR_MAC="$HOME/Library/Application Support/Cursor/User/settings.json"
+  echo "Configuring macOS Cursor → $WSL_PROXY_URL"
+  write_vscode_claude_settings "$CURSOR_MAC" "$WSL_PROXY_URL" "$TELEMETRY_DEVELOPER_ID"
+  VSCODE_CONFIGURED=1
+fi
+
 if [[ "$VSCODE_CONFIGURED" -eq 0 ]]; then
   echo "VS Code settings.json not found — add manually in VS Code:"
   echo '  Settings → Claude Code: Environment Variables → Edit in settings.json'
   echo '  "claudeCode.environmentVariables": ['
-  echo '    {"name": "ANTHROPIC_BASE_URL", "value": "http://<WSL_IP>:8080"},'
+  echo '    {"name": "ANTHROPIC_BASE_URL", "value": "http://127.0.0.1:8080"},'
   echo '    {"name": "TELEMETRY_DEVELOPER_ID", "value": "'"$TELEMETRY_DEVELOPER_ID"'"}'
   echo '  ]'
 fi
 
 echo ""
-echo "Restart VS Code / Claude Code after this change."
-echo "Verbose proxy trace: journalctl --user -u context-synthesizer-proxy -f | grep -E '\\[ACCESS\\]|\\[PROXY\\]'"
+echo "Restart VS Code / Cursor / Claude Code after this change."
+echo "Verbose proxy trace: csynth logs"

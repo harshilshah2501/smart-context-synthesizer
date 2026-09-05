@@ -4,6 +4,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
+# shellcheck source=lib/service.sh
+source "$SCRIPT_DIR/lib/service.sh"
 ENV_FILE="${REPO_ROOT}/context-synthesizer/.env"
 PORT="8080"
 PROXY_HOST="127.0.0.1"
@@ -52,10 +54,10 @@ echo ""
 
 # 1. Proxy health
 if curl -sf --max-time 3 "http://127.0.0.1:${PORT}/health" >/dev/null; then
-  ok "Proxy health OK on WSL 127.0.0.1:${PORT}"
+  ok "Proxy health OK on 127.0.0.1:${PORT}"
 else
   fail "Proxy not responding on 127.0.0.1:${PORT}"
-  echo "    systemctl --user status context-synthesizer-proxy"
+  echo "    csynth status"
   exit 1
 fi
 
@@ -73,9 +75,9 @@ echo "Claude Code settings (ANTHROPIC_BASE_URL):"
 
 WSL_SETTINGS="${HOME}/.claude/settings.json"
 WSL_URL="$(read_setting "$WSL_SETTINGS")"
-echo "  WSL (~/.claude/settings.json):     $WSL_URL"
+echo "  Local (~/.claude/settings.json):     $WSL_URL"
 if [[ "$WSL_URL" == *"127.0.0.1:${PORT}"* ]] || [[ "$WSL_URL" == *"localhost:${PORT}"* ]]; then
-  ok "WSL settings look correct for Claude Code inside WSL"
+  ok "CLI settings look correct for Claude Code on this machine"
 elif [[ "$WSL_URL" == "(not set)"* ]] || [[ "$WSL_URL" == "(file missing)" ]]; then
   fail "WSL settings missing — run: bash context-synthesizer/scripts/configure_claude_proxy.sh"
 else
@@ -150,35 +152,45 @@ if [[ -f "$HOME/.config/Code/User/settings.json" ]]; then
   echo "  Linux VS Code:    $VSCODE_LINUX_URL"
   VSCODE_CHECKED=1
 fi
+if [[ -f "$HOME/Library/Application Support/Code/User/settings.json" ]]; then
+  echo "  macOS VS Code:    $(read_vscode_base_url "$HOME/Library/Application Support/Code/User/settings.json")"
+  VSCODE_CHECKED=1
+fi
+if [[ -f "$HOME/.config/Cursor/User/settings.json" ]]; then
+  echo "  Linux Cursor:     $(read_vscode_base_url "$HOME/.config/Cursor/User/settings.json")"
+  VSCODE_CHECKED=1
+fi
+if [[ -f "$HOME/Library/Application Support/Cursor/User/settings.json" ]]; then
+  echo "  macOS Cursor:     $(read_vscode_base_url "$HOME/Library/Application Support/Cursor/User/settings.json")"
+  VSCODE_CHECKED=1
+fi
 if [[ "$VSCODE_CHECKED" -eq 0 ]]; then
   warn "No VS Code settings.json found — if using Claude Code in VS Code, run configure_claude_proxy.sh"
 fi
 
 echo ""
-echo "Recent proxy traffic (journal):"
-if command -v journalctl >/dev/null 2>&1; then
-  MSG_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -cE 'POST /v1/messages|→ POST /v1/messages' || true)"
-  CHAT_COUNT="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -cE 'POST /v1/chat/completions|→ POST /v1/chat/completions' || true)"
-  REJECTED="$(journalctl --user -u context-synthesizer-proxy --since "24 hours ago" --no-pager 2>/dev/null | grep -c 'rejected: no API key' || true)"
-  if [[ "$MSG_COUNT" -gt 0 ]]; then
-    ok "Claude Code traffic: ${MSG_COUNT} POST /v1/messages in last 24h"
-  elif [[ "$CHAT_COUNT" -gt 0 ]]; then
-    ok "Cursor/test traffic: ${CHAT_COUNT} POST /v1/chat/completions in last 24h"
-  else
-    fail "No API traffic in last 24h — only health/dashboard hits"
-    echo ""
-    echo "  Claude Code in VS Code: extension needs claudeCode.environmentVariables"
-    echo "    bash context-synthesizer/scripts/configure_claude_proxy.sh"
-    echo "    Restart VS Code, send one message."
-    echo ""
-    echo "  Live trace while testing:"
-    echo "    journalctl --user -u context-synthesizer-proxy -f | grep -E '\\[ACCESS\\]|\\[PROXY\\]'"
-  fi
-  if [[ "$REJECTED" -gt 0 ]]; then
-    warn "${REJECTED} requests reached proxy but were rejected (no API key) — check auth in VS Code env"
-  fi
+echo "Recent proxy traffic (service logs):"
+MSG_COUNT="$(synth_service_grep_logs 'POST /v1/messages|→ POST /v1/messages' | grep -c . || true)"
+CHAT_COUNT="$(synth_service_grep_logs 'POST /v1/chat/completions|→ POST /v1/chat/completions' | grep -c . || true)"
+REJECTED="$(synth_service_grep_logs 'rejected: no API key' | grep -c . || true)"
+MSG_COUNT="${MSG_COUNT:-0}"
+CHAT_COUNT="${CHAT_COUNT:-0}"
+REJECTED="${REJECTED:-0}"
+if [[ "$MSG_COUNT" -gt 0 ]]; then
+  ok "Claude Code traffic: ${MSG_COUNT} POST /v1/messages in logs"
+elif [[ "$CHAT_COUNT" -gt 0 ]]; then
+  ok "Cursor/test traffic: ${CHAT_COUNT} POST /v1/chat/completions in logs"
 else
-  warn "journalctl not available"
+  fail "No API traffic in logs — only health/dashboard hits"
+  echo ""
+  echo "  Claude Code in VS Code / Cursor: extension needs claudeCode.environmentVariables"
+  echo "    bash context-synthesizer/scripts/configure_claude_proxy.sh"
+  echo "    Restart the editor, send one message."
+  echo ""
+  echo "  Live trace while testing:  csynth logs"
+fi
+if [[ "$REJECTED" -gt 0 ]]; then
+  warn "${REJECTED} requests reached proxy but were rejected (no API key) — check auth in editor env"
 fi
 
 echo ""

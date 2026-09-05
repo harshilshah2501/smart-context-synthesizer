@@ -24,6 +24,4 @@ print('OK: fastapi', fastapi.__version__, 'anyio backend loaded')
 "
 
 echo ""
-echo "Restart proxy:"
-echo "  systemctl --user restart context-synthesizer-proxy"
-echo "  systemctl --user status context-synthesizer-proxy"
+echo "Restart proxy:  csynth restart && csynth status"

@@ -4,7 +4,7 @@ Real-time bifurcation of **where the Context Synthesizer saves tokens and cost**
 
 The README screenshot is an **illustrative 12-turn demo** (sample telemetry). Quote savings from your own `csynth dashboard` or `python test_simulator.py` run, not from that image.
 
-**URL:** run `csynth dashboard` or `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
+**URL:** run `csynth dashboard` or `bash context-synthesizer/scripts/open_dashboard.sh` — prints local URLs (WSL IP on Windows). Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
 
 **WSL + Windows browser:** use the **WSL IP** URL from `open_dashboard.sh` — **never** `127.0.0.1` in Windows Chrome (`ERR_EMPTY_RESPONSE`).
 
@@ -12,7 +12,7 @@ The README screenshot is an **illustrative 12-turn demo** (sample telemetry). Qu
 
 ```bash
 echo 'PROXY_HOST=0.0.0.0' >> context-synthesizer/.env
-systemctl --user restart context-synthesizer-proxy
+csynth restart
 bash context-synthesizer/scripts/open_dashboard.sh --open
 ```
 
@@ -42,7 +42,7 @@ Updates automatically via **Server-Sent Events** when Claude Code hits the proxy
 
 ## Prerequisites
 
-1. Proxy running (`csynth status` or `systemctl --user status context-synthesizer-proxy`)
+1. Proxy running (`csynth status`)
 2. Claude Code routed through proxy (`csynth proxy on` or `ANTHROPIC_BASE_URL` in `~/.claude/settings.json`)
 3. Use Claude Code in a project — dashboard populates on each API call
 

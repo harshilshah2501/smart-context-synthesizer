@@ -6,10 +6,16 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- macOS LaunchAgent support — `install.sh` / `csynth proxy` work without systemd (`scripts/lib/service.sh`)
+- Configure and doctor now pick up macOS VS Code and Cursor `settings.json` paths
+- CI shell syntax checks plus a macOS runner smoke test for the supervisor helper
+
 ### Changed
 
 - README hero now includes the live dashboard screenshot, captioned as illustrative sample telemetry (not a published savings benchmark)
-- README and onboarding state the supported platform: Linux / WSL2 with systemd
+- README leads with what the proxy does; supported platforms are Linux, WSL2, and macOS
 - Dropped stale `docs/LAUNCH.md` links from the docs index (file is not in the public tree)
 
 ## [0.1.2] - 2026-06-25

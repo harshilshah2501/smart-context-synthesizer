@@ -32,10 +32,10 @@ best for validating telemetry, compaction, pins, and chat-shaped workflows.
 
 ```bash
 # Proxy must be running
-systemctl --user status context-synthesizer-proxy
+csynth status
 
 # If not running, start it
-systemctl --user start context-synthesizer-proxy
+csynth proxy on
 
 # Confirm it responds
 curl -s http://127.0.0.1:8080/health
@@ -88,7 +88,7 @@ Then send a message in Cursor chat. Within a second you should see:
 If you see the **"No proxy requests recorded yet"** amber banner, the request
 did not reach the proxy. Check:
 ```bash
-journalctl --user -u context-synthesizer-proxy -n 20 --no-pager
+csynth logs
 ```
 Look for a line like:
 ```

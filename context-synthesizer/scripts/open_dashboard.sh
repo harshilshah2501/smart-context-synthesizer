@@ -43,7 +43,7 @@ health() {
 }
 
 echo "Proxy dashboard URLs:"
-echo "  WSL / Claude Code:  $(dashboard_url "http://127.0.0.1:${PORT}")"
+echo "  Local / Claude Code:  $(dashboard_url "http://127.0.0.1:${PORT}")"
 
 if [[ -n "$DASH_TOKEN" ]]; then
   echo "  (token required — URLs above include ?token=...)"
@@ -59,9 +59,9 @@ if [[ "$IS_WSL" -eq 1 && -n "$WSL_IP" ]]; then
     if [[ "$PROXY_HOST" == "127.0.0.1" ]]; then
       echo "  Fix: add to ${ENV_FILE}:"
       echo "       PROXY_HOST=0.0.0.0"
-      echo "  Then: systemctl --user restart context-synthesizer-proxy"
+      echo "  Then: csynth restart"
     else
-      echo "  Check: systemctl --user status context-synthesizer-proxy"
+      echo "  Check: csynth status"
     fi
   elif health "http://127.0.0.1:${PORT}"; then
     echo "  ✓ Proxy reachable on WSL IP"
@@ -70,14 +70,19 @@ elif health "http://127.0.0.1:${PORT}"; then
   echo "  ✓ Proxy health OK"
 else
   echo ""
-  echo "  ⚠ Proxy not responding — run: systemctl --user status context-synthesizer-proxy"
+  echo "  ⚠ Proxy not responding — run: csynth status"
 fi
 
 if [[ "${1:-}" == "--open" ]]; then
+  URL="$(dashboard_url "http://127.0.0.1:${PORT}")"
   if [[ "$IS_WSL" -eq 1 && -n "$WSL_IP" ]]; then
-    cmd.exe /c start "$(dashboard_url "http://${WSL_IP}:${PORT}")" 2>/dev/null || true
+    URL="$(dashboard_url "http://${WSL_IP}:${PORT}")"
+    cmd.exe /c start "$URL" 2>/dev/null || true
+  elif command -v open >/dev/null 2>&1; then
+    open "$URL" 2>/dev/null || true
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$URL" 2>/dev/null || true
   else
-    cmd.exe /c start "$(dashboard_url "http://127.0.0.1:${PORT}")" 2>/dev/null || \
-      xdg-open "$(dashboard_url "http://127.0.0.1:${PORT}")" 2>/dev/null || true
+    cmd.exe /c start "$URL" 2>/dev/null || true
   fi
 fi

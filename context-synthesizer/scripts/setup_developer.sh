@@ -52,22 +52,8 @@ fi
 REPO_ROOT="${INSTALL_DIR:-$_DEFAULT_ROOT}"
 export REPO_ROOT
 
-check_systemd_user() {
-  if ! command -v systemctl >/dev/null 2>&1; then
-    echo "ERROR: systemctl not found — live proxy requires systemd user services." >&2
-    exit 1
-  fi
-  if ! systemctl --user show-environment >/dev/null 2>&1; then
-    echo "" >&2
-    echo "ERROR: systemd user session is not available." >&2
-    if [[ -f /proc/version ]] && grep -qi microsoft /proc/version; then
-      echo "  WSL: [boot] systemd=true in /etc/wsl.conf, then wsl --shutdown" >&2
-    else
-      echo "  Ubuntu: loginctl enable-linger \$USER" >&2
-    fi
-    exit 1
-  fi
-}
+# shellcheck source=lib/service.sh
+source "$SCRIPT_DIR/lib/service.sh"
 
 echo "=== Context Synthesizer — developer setup ==="
 bash "$SCRIPT_DIR/setup.sh"
@@ -84,7 +70,7 @@ chmod 600 "$CONFIG_FILE"
 echo "Wrote $CONFIG_FILE"
 
 if [[ "$ENABLE_PROXY" -eq 1 ]]; then
-  check_systemd_user
+  synth_require_supervisor
   ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
   if [[ -n "$API_KEY" ]]; then
     grep -q '^ANTHROPIC_API_KEY=' "$ENV_FILE" 2>/dev/null || echo "ANTHROPIC_API_KEY=${API_KEY}" >>"$ENV_FILE"
@@ -113,7 +99,7 @@ finally:
   if ! _port_free "$PROXY_PORT"; then
     if [[ "$PROXY_PORT" == "8080" ]] && _port_free 8081; then
       if grep -q '^PROXY_PORT=' "$ENV_FILE" 2>/dev/null; then
-        sed -i 's/^PROXY_PORT=.*/PROXY_PORT=8081/' "$ENV_FILE"
+        synth_replace_line "$ENV_FILE" 's/^PROXY_PORT=.*/PROXY_PORT=8081/'
       else
         echo 'PROXY_PORT=8081' >>"$ENV_FILE"
       fi
@@ -148,7 +134,7 @@ echo "  csynth proxy on | csynth proxy off"
 echo ""
 if [[ "$ENABLE_PROXY" -eq 1 ]]; then
   echo "Smoke test:"
-  echo "  systemctl --user status context-synthesizer-proxy"
+  echo "  csynth status"
 fi
 echo "Install location: ${REPO_ROOT}"
 

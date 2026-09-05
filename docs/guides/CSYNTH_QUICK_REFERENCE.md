@@ -67,7 +67,7 @@ csynth proxy on    # if proxy was off
 | `csynth proxy off` | Stop proxy service + remove proxy URL from Claude settings (direct Anthropic) |
 | `csynth proxy` | Show proxy service + Claude routing status |
 | `csynth restart` | Restart `context-synthesizer-proxy` user service |
-| `csynth status` | `systemctl` status + routing snippet |
+| `csynth status` | Proxy service status + routing snippet |
 
 ### Typical flows
 
@@ -107,13 +107,13 @@ systemctl --user start context-synthesizer-proxy
 
 | Command | Purpose |
 |---------|---------|
-| `csynth status` | Proxy systemd status + routing check |
+| `csynth status` | Proxy service status + routing check |
 | `csynth proxy on` | Enable proxy routing |
 | `csynth proxy off` | Disable proxy routing |
 | `csynth proxy` | Proxy on/off summary |
 | `csynth dashboard` | Print (and optionally open) live dashboard URL |
 | `csynth doctor` | Full preflight: service, port, Claude settings, health |
-| `csynth logs` | Tail proxy journal (`journalctl -f`) |
+| `csynth logs` | Tail proxy logs (journalctl on Linux; LaunchAgent logs on macOS) |
 | `csynth restart` | Restart proxy service |
 | `csynth upgrade` | Pull latest from GitHub; refresh venv (preserves `.env`, `stats/`) |
 | `csynth help` | Short usage |

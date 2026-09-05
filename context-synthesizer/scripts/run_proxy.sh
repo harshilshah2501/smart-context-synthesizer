@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# systemd ExecStart launcher — correct cwd, load .env, forward exit codes to journal.
+# systemd / launchd ExecStart launcher — correct cwd, load .env, forward exit codes.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -23,7 +23,7 @@ fi
 if ! "$PY" -c "import anyio._backends._asyncio" 2>/dev/null; then
   echo "context-synthesizer-proxy: broken Python deps (anyio._backends missing)" >&2
   echo "  Fix: bash ${REPO_ROOT}/context-synthesizer/scripts/repair_venv.sh" >&2
-  echo "  Then: systemctl --user restart context-synthesizer-proxy" >&2
+  echo "  Then: csynth restart" >&2
   exit 1
 fi
 
@@ -35,6 +35,6 @@ if [[ -f "$ENV_FILE" ]]; then
 fi
 
 cd "${REPO_ROOT}/context-synthesizer"
-# PYTHONUNBUFFERED=1 ensures print() flushes immediately to the systemd journal
+# PYTHONUNBUFFERED=1 ensures print() flushes immediately to the service log
 # instead of buffering until the first request arrives (which can be minutes later).
 exec env PYTHONUNBUFFERED=1 "$PY" "$PROXY_PY"

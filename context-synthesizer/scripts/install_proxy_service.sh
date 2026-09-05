@@ -1,25 +1,15 @@
 #!/usr/bin/env bash
-# systemd user service: keep proxy_tool.py running (live compaction benefit).
+# Keep proxy_tool.py running: systemd user unit (Linux/WSL) or LaunchAgent (macOS).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/config.sh
 source "$SCRIPT_DIR/lib/config.sh"
+# shellcheck source=lib/service.sh
+source "$SCRIPT_DIR/lib/service.sh"
 load_developer_config
 
-UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
-UNIT_FILE="$UNIT_DIR/context-synthesizer-proxy.service"
-ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
-
-mkdir -p "$UNIT_DIR"
-
-# API key optional at install: Claude Code forwards x-api-key per request (Max/Pro login).
-# Optional fallback: ANTHROPIC_API_KEY in context-synthesizer/.env for non-CLI clients.
-
-RUN_PROXY="${REPO_ROOT}/context-synthesizer/scripts/run_proxy.sh"
-chmod +x "$RUN_PROXY" "${SCRIPT_DIR}/check_proxy_ready.sh"
-
-systemctl --user stop context-synthesizer-proxy.service 2>/dev/null || true
+chmod +x "${SCRIPT_DIR}/check_proxy_ready.sh"
 
 if ! bash "${SCRIPT_DIR}/check_proxy_ready.sh"; then
   echo "" >&2
@@ -28,37 +18,4 @@ if ! bash "${SCRIPT_DIR}/check_proxy_ready.sh"; then
   exit 1
 fi
 
-cat >"$UNIT_FILE" <<EOF
-[Unit]
-Description=Context Synthesizer proxy (Claude Code gateway)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-WorkingDirectory=${REPO_ROOT}/context-synthesizer
-EnvironmentFile=-${ENV_FILE}
-# Flush Python print() immediately so startup logs appear in journalctl
-# without waiting for the first incoming request.
-Environment=PYTHONUNBUFFERED=1
-ExecStart=${RUN_PROXY}
-Restart=on-failure
-RestartSec=5
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=default.target
-EOF
-
-systemctl --user daemon-reload
-systemctl --user enable --now context-synthesizer-proxy.service
-sleep 1
-if ! systemctl --user is-active --quiet context-synthesizer-proxy.service; then
-  echo "" >&2
-  echo "Proxy failed to stay up. Logs:" >&2
-  echo "  journalctl --user -u context-synthesizer-proxy -n 40 --no-pager" >&2
-  systemctl --user status context-synthesizer-proxy.service --no-pager >&2 || true
-  exit 1
-fi
-echo "Proxy service enabled → systemctl --user status context-synthesizer-proxy"
+synth_service_install

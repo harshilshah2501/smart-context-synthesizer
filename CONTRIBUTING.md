@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in Context Synthesizer. This public repository is **fully usable on its own** — you do not need access to the private internal repo to install, run, or contribute to the proxy.
+Thanks for your interest in Context Synthesizer. This public repository is **fully usable on its own** — you do not need access to the private internal repo to install, run, or contribute to the proxy. Install targets Linux, WSL2, and macOS.
 
 ## Project status
 

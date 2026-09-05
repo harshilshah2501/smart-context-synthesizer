@@ -6,6 +6,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/config.sh
 source "$SCRIPT_DIR/lib/config.sh"
 
+# shellcheck source=lib/service.sh
+source "$SCRIPT_DIR/lib/service.sh"
+
 load_developer_config
 
 GITHUB_REPO="${SYNTH_GITHUB_REPO:-harshilshah2501/smart-context-synthesizer}"
@@ -54,9 +57,9 @@ fi
 
 install -m 755 "$PKG/scripts/csynth" "${HOME}/.local/bin/csynth"
 
-if [[ "${ENABLE_PROXY:-0}" == "1" ]] && command -v systemctl >/dev/null 2>&1; then
+if [[ "${ENABLE_PROXY:-0}" == "1" ]]; then
   echo "Restarting proxy..."
-  systemctl --user restart context-synthesizer-proxy
+  synth_service_restart || echo "WARN: could not restart proxy — run: csynth restart" >&2
 fi
 
 echo ""

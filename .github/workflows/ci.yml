@@ -28,6 +28,28 @@ jobs:
       - name: Bytecode compile check
         run: python -m compileall -q .
 
+      - name: Shell syntax
+        run: |
+          bash -n scripts/lib/service.sh
+          bash -n scripts/csynth
+          bash -n scripts/install_proxy_service.sh
+          bash -n scripts/set_proxy_enabled.sh
+          bash -n scripts/setup_developer.sh
+          bash -n scripts/upgrade.sh
+          bash -n scripts/configure_claude_proxy.sh
+          bash -n scripts/verify_claude_routing.sh
+          bash -n scripts/open_dashboard.sh
+          bash scripts/test_service_lib.sh
+
       - name: Run unit tests
         run: |
           pytest test_proxy_message_bridge.py test_compaction.py test_ledger_validation.py test_proxy_routes.py test_dashboard_api.py -q
+
+  shell-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Launchd helper smoke test
+        run: |
+          bash -n context-synthesizer/scripts/lib/service.sh
+          bash context-synthesizer/scripts/test_service_lib.sh

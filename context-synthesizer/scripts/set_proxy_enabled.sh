@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Enable or disable live compaction proxy (routing + optional systemd service).
+# Enable or disable live compaction proxy (routing + optional user service).
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,6 +20,8 @@ esac
 
 # shellcheck source=lib/config.sh
 source "$SCRIPT_DIR/lib/config.sh"
+# shellcheck source=lib/service.sh
+source "$SCRIPT_DIR/lib/service.sh"
 load_developer_config
 
 _set_enable_proxy_flag() {
@@ -29,7 +31,7 @@ _set_enable_proxy_flag() {
     exit 1
   fi
   if grep -q '^ENABLE_PROXY=' "$CONFIG_FILE"; then
-    sed -i "s/^ENABLE_PROXY=.*/ENABLE_PROXY=${val}/" "$CONFIG_FILE"
+    synth_replace_line "$CONFIG_FILE" "s/^ENABLE_PROXY=.*/ENABLE_PROXY=${val}/"
   else
     echo "ENABLE_PROXY=${val}" >>"$CONFIG_FILE"
   fi
@@ -38,9 +40,8 @@ _set_enable_proxy_flag() {
 if [[ "$MODE" == on ]]; then
   echo "=== Enabling Context Synthesizer proxy ==="
   bash "$SCRIPT_DIR/configure_claude_proxy.sh"
-  UNIT="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/context-synthesizer-proxy.service"
-  if [[ -f "$UNIT" ]]; then
-    systemctl --user enable --now context-synthesizer-proxy.service
+  if { synth_is_darwin && [[ -f "$(synth_launch_plist)" ]]; } || { ! synth_is_darwin && [[ -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/${SYNTH_SYSTEMD_UNIT}" ]]; }; then
+    synth_service_start
   else
     bash "$SCRIPT_DIR/install_proxy_service.sh"
   fi
@@ -51,8 +52,8 @@ if [[ "$MODE" == on ]]; then
 else
   echo "=== Disabling Context Synthesizer proxy ==="
   bash "$SCRIPT_DIR/disable_claude_proxy.sh"
-  if systemctl --user is-active --quiet context-synthesizer-proxy.service 2>/dev/null; then
-    systemctl --user stop context-synthesizer-proxy.service
+  if synth_service_is_active; then
+    synth_service_stop
     echo "Stopped context-synthesizer-proxy service."
   fi
   _set_enable_proxy_flag 0

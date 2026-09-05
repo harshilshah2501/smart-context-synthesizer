@@ -14,6 +14,17 @@ fi
 
 SCRIPTS="$REPO_ROOT/context-synthesizer/scripts"
 ENV_FILE="$REPO_ROOT/context-synthesizer/.env"
+_SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -f "$SCRIPTS/lib/service.sh" ]]; then
+  # shellcheck source=lib/service.sh
+  source "$SCRIPTS/lib/service.sh"
+elif [[ -f "$_SELF_DIR/lib/service.sh" ]]; then
+  # shellcheck source=lib/service.sh
+  source "$_SELF_DIR/lib/service.sh"
+else
+  echo "csynth: missing scripts/lib/service.sh (run setup or csynth upgrade)" >&2
+  exit 1
+fi
 
 usage() {
   cat <<EOF
@@ -25,7 +36,7 @@ csynth — Context Synthesizer
   csynth proxy         Same as: csynth proxy status
   csynth dashboard     Print / open live dashboard URL
   csynth doctor        Full routing + proxy preflight
-  csynth logs          Tail proxy journal
+  csynth logs          Tail proxy logs (journalctl or LaunchAgent)
   csynth restart       Restart proxy user service
   csynth upgrade       Pull latest release and refresh venv
 
@@ -39,7 +50,7 @@ proxy_status() {
   local service="stopped"
   local settings="${CLAUDE_SETTINGS_PATH:-$HOME/.claude/settings.json}"
 
-  if systemctl --user is-active --quiet context-synthesizer-proxy 2>/dev/null; then
+  if synth_service_is_active; then
     service="running"
   fi
   if [[ -f "$settings" ]] && python3 -c "
@@ -63,7 +74,7 @@ shift || true
 
 case "$cmd" in
   status)
-    systemctl --user status context-synthesizer-proxy --no-pager 2>&1 || true
+    synth_service_print_status
     echo ""
     if [[ -x "$SCRIPTS/verify_claude_routing.sh" ]]; then
       bash "$SCRIPTS/verify_claude_routing.sh" 2>&1 | head -20
@@ -95,11 +106,11 @@ case "$cmd" in
     exec bash "$SCRIPTS/verify_claude_routing.sh"
     ;;
   logs)
-    exec journalctl --user -u context-synthesizer-proxy -f
+    synth_service_logs_follow
     ;;
   restart)
-    systemctl --user restart context-synthesizer-proxy
-    systemctl --user status context-synthesizer-proxy --no-pager
+    synth_service_restart
+    synth_service_print_status
     ;;
   upgrade)
     exec bash "$SCRIPTS/upgrade.sh" "$@"
