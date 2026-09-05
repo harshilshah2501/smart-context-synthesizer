@@ -43,3 +43,8 @@ context-synthesizer/packaging/build/
 
 # Windows ADS metadata
 **/*:Zone.Identifier
+
+.DS_Store
+
+# Local announcement drafts (removed from the public tree)
+docs/LAUNCH.md

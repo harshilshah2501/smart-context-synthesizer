@@ -2,6 +2,8 @@
 
 **Time:** ~5 minutes once. After setup: use Claude Code normally.
 
+**Platform:** Linux or WSL2. The installer registers a **systemd user service**; native macOS is not a first-class path (`systemctl --user` is required for `csynth proxy on`).
+
 **Quick CLI:** [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md) · **Cost metrics:** [COST_SAVINGS.md](COST_SAVINGS.md)
 
 ---
@@ -141,7 +143,7 @@ Full reference: [CSYNTH_QUICK_REFERENCE.md](CSYNTH_QUICK_REFERENCE.md)
 
 | Item | Notes |
 |------|-------|
-| `python3`, `curl`, `tar` | Linux / macOS / WSL |
+| `python3`, `curl`, `tar` | Linux / WSL2 (systemd user session required for the live proxy) |
 | **Anthropic backend** | Claude Code Max/Pro, or Cursor with an Anthropic model — not generic OpenAI/Ollama |
 | Claude Code or Cursor | Normal IDE/CLI use through the local proxy |
 | Browser | WSL IP in Windows browser; see `open_dashboard.sh` |

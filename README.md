@@ -8,17 +8,21 @@
 
 A local API proxy between **Claude Code** and **Cursor** and the Anthropic API. It compacts long session history into cached layers (L1/L2), preserves active tool loops, and exposes a live cost dashboard.
 
-**Fully self-contained** — this public repo is complete for install and daily use. No private repo required.
-
-Open-source release — proxy + dashboard only. Internal team tooling lives in a separate private repository.
+**Platform:** Linux or WSL2 with a systemd user service. Native macOS is not a first-class install path.
 
 **Requires Anthropic** (Claude Code Max/Pro or Cursor with an Anthropic model). Prompt-cache economics use Anthropic `cache_control` breakpoints — not a generic OpenAI/Ollama proxy.
+
+![Live cost dashboard — cache read / write / uncached per turn](docs/assets/dashboard-snapshot.png)
+
+*Illustrative 12-turn demo session (sample telemetry). Dollar and percent figures are not a published benchmark — measure on your machine with `python test_simulator.py` and `csynth dashboard`.*
 
 **Docs:** [docs/README.md](docs/README.md) · **Security:** [SECURITY.md](SECURITY.md) · **Cheatsheet:** [docs/guides/DOCS_CHEATSHEET.md](docs/guides/DOCS_CHEATSHEET.md)
 
 ---
 
 ## Quick start
+
+Supported on **Linux / WSL2** (systemd user service).
 
 ```bash
 git clone https://github.com/harshilshah2501/smart-context-synthesizer.git
@@ -117,6 +121,7 @@ Watch live metrics: `csynth dashboard` in a third terminal.
 |-------|--------|
 | **Claude Code (recommended)** | `/v1/messages` path is tool-faithful — preserves `tool_use` / `tool_result` in active loops. |
 | **Cursor / OpenAI shim** | `/v1/chat/completions` uses a simpler legacy payload builder — not full parity with the Anthropic path. Fine for chat + telemetry; not ideal for heavy tool loops. See [docs/guides/CURSOR_TEST.md](docs/guides/CURSOR_TEST.md). |
+| **Platform** | Linux / WSL2 (`systemd --user` for the proxy). macOS can run the Python process by hand; the installer and `csynth proxy` commands expect systemd. |
 | **Sessions** | In-memory only — restart clears ledger and pins. |
 | **Scale** | Single-machine local proxy — not horizontally scalable. |
 | **Savings** | Cost reduction depends on session length, model pricing, and `Claude.md` size. Run `python test_simulator.py` for a reproducible local benchmark — avoid quoting fixed % savings without your own numbers. |

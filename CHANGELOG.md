@@ -6,6 +6,12 @@ Format loosely follows [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Changed
+
+- README hero now includes the live dashboard screenshot, captioned as illustrative sample telemetry (not a published savings benchmark)
+- README and onboarding state the supported platform: Linux / WSL2 with systemd
+- Dropped stale `docs/LAUNCH.md` links from the docs index (file is not in the public tree)
+
 ## [0.1.2] - 2026-06-25
 
 ### Fixed

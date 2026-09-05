@@ -2,6 +2,8 @@
 
 Real-time bifurcation of **where the Context Synthesizer saves tokens and cost** — served by the same proxy process as Claude Code traffic.
 
+The README screenshot is an **illustrative 12-turn demo** (sample telemetry). Quote savings from your own `csynth dashboard` or `python test_simulator.py` run, not from that image.
+
 **URL:** run `csynth dashboard` or `bash context-synthesizer/scripts/open_dashboard.sh` — prints WSL + Linux URLs. Default port `8080` (or `PROXY_PORT` in `context-synthesizer/.env`).
 
 **WSL + Windows browser:** use the **WSL IP** URL from `open_dashboard.sh` — **never** `127.0.0.1` in Windows Chrome (`ERR_EMPTY_RESPONSE`).
